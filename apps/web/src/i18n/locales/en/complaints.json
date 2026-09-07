@@ -1,0 +1,192 @@
+{
+  "title": "Cases",
+  "createCase": "Create Case",
+  "caseNumber": "Case Number",
+  "status": {
+    "open": "Open",
+    "in_progress": "In Progress",
+    "waiting_for_customer": "Waiting for Customer",
+    "waiting_for_internal_action": "Waiting for Internal Action",
+    "resolved": "Resolved",
+    "closed": "Closed"
+  },
+  "priority": {
+    "low": "Low",
+    "normal": "Normal",
+    "high": "High",
+    "urgent": "Urgent"
+  },
+  "category": {
+    "order": "Order",
+    "delivery": "Delivery",
+    "product": "Product",
+    "payment": "Payment",
+    "return": "Return",
+    "exchange": "Exchange",
+    "damaged_item": "Damaged Item",
+    "missing_item": "Missing Item",
+    "wrong_item": "Wrong Item",
+    "quality": "Quality",
+    "other": "Other"
+  },
+  "source": {
+    "phone": "Phone",
+    "email": "Email",
+    "chat": "Chat",
+    "social_media": "Social Media",
+    "shopfa": "Shopfa",
+    "in_person": "In Person",
+    "other": "Other"
+  },
+  "list": {
+    "searchPlaceholder": "Search by case number, subject, or description",
+    "customerSearchPlaceholder": "Search by customer name, phone, or email",
+    "filterStatus": "Status",
+    "filterPriority": "Priority",
+    "filterCategory": "Category",
+    "filterAssignedTo": "Assigned to",
+    "filterDateFrom": "From date",
+    "filterDateTo": "To date",
+    "allStatuses": "All statuses",
+    "allPriorities": "All priorities",
+    "allCategories": "All categories",
+    "allStaff": "All staff",
+    "unassigned": "Unassigned",
+    "resultsCount_one": "{{count}} case",
+    "resultsCount_other": "{{count}} cases",
+    "columns": {
+      "caseNumber": "Case Number",
+      "customer": "Customer",
+      "subject": "Subject",
+      "category": "Category",
+      "priority": "Priority",
+      "status": "Status",
+      "assignedTo": "Assigned To",
+      "lastActivity": "Last Activity",
+      "created": "Created"
+    },
+    "sortBy": "Sort by",
+    "empty": "No cases match your filters"
+  },
+  "form": {
+    "title": "Create Case",
+    "customer": "Customer",
+    "customerHelp": "Search Shopfa customers by name, phone, or email",
+    "subject": "Subject",
+    "description": "Description",
+    "category": "Category",
+    "priority": "Priority",
+    "source": "Source",
+    "assignedTo": "Assign to (optional)",
+    "relatedOrder": "Related order (optional)",
+    "relatedItem": "Related item (optional)",
+    "tags": "Tags (optional)",
+    "tagsPlaceholder": "Type a tag and press Enter",
+    "submit": "Create Case",
+    "submitting": "Creating…",
+    "success": "Case created successfully"
+  },
+  "detail": {
+    "customerSummary": {
+      "orders": "Orders",
+      "totalSpent": "Total Spent",
+      "averageOrderValue": "Average Order Value",
+      "lastOrder": "Last Order",
+      "loading": "Loading customer information…",
+      "unavailable": "Customer information unavailable"
+    },
+    "sections": {
+      "timeline": "Timeline",
+      "information": "Case Information",
+      "attachments": "Attachments"
+    },
+    "fields": {
+      "category": "Category",
+      "source": "Source",
+      "priority": "Priority",
+      "status": "Status",
+      "assignedTo": "Assigned To",
+      "tags": "Tags",
+      "relatedOrders": "Related Orders",
+      "relatedItems": "Related Items",
+      "createdBy": "Created By",
+      "createdAt": "Created",
+      "lastActivityAt": "Last Activity"
+    },
+    "actions": {
+      "changeStatus": "Change Status",
+      "changePriority": "Change Priority",
+      "assignStaff": "Assign Staff",
+      "addNote": "Add Note",
+      "addInternalNote": "Add Internal Note",
+      "addCustomerNote": "Add Customer Interaction",
+      "linkOrder": "Link Order",
+      "linkItem": "Link Item",
+      "addTag": "Add Tag",
+      "resolve": "Resolve",
+      "reopen": "Reopen",
+      "close": "Close",
+      "uploadAttachment": "Upload Attachment"
+    },
+    "noteDialog": {
+      "internalTitle": "Add Internal Note",
+      "customerTitle": "Add Customer Interaction Note",
+      "bodyLabel": "Note",
+      "submit": "Add Note"
+    },
+    "statusDialog": {
+      "title": "Change Status",
+      "newStatus": "New status",
+      "reason": "Reason (optional)",
+      "noValidTransitions": "No status changes are available from the current status"
+    },
+    "priorityDialog": {
+      "title": "Change Priority",
+      "newPriority": "New priority"
+    },
+    "assignDialog": {
+      "title": "Assign Staff",
+      "staffMember": "Staff member"
+    },
+    "linkOrderDialog": {
+      "title": "Link Order",
+      "orderId": "Order ID or number"
+    },
+    "linkItemDialog": {
+      "title": "Link Item",
+      "sku": "SKU or item ID"
+    },
+    "tagDialog": {
+      "title": "Add Tag",
+      "tag": "Tag"
+    },
+    "notFound": "Case not found",
+    "unassigned": "Unassigned"
+  },
+  "events": {
+    "created": "Case created",
+    "note_added": "Note added",
+    "internal_note": "Internal note added",
+    "customer_message": "Customer interaction logged",
+    "status_changed": "Status changed: {{from}} → {{to}}",
+    "assignment_changed": "Assigned to {{toUserName}}",
+    "assignment_changed_unassigned": "Unassigned",
+    "assignment_changed_from": "Reassigned from {{fromUserName}} to {{toUserName}}",
+    "priority_changed": "Priority changed: {{from}} → {{to}}",
+    "order_linked": "Order {{orderNumber}} linked",
+    "item_linked": "Item {{title}} ({{sku}}) linked",
+    "attachment_added": "Attachment added: {{filename}}",
+    "resolved": "Case resolved",
+    "reopened": "Case reopened",
+    "closed": "Case closed",
+    "tag_added": "Tag added: {{tag}}",
+    "tag_removed": "Tag removed: {{tag}}",
+    "by": "by {{name}}",
+    "bySystem": "by system"
+  },
+  "attachments": {
+    "empty": "No attachments yet",
+    "upload": "Upload File",
+    "uploadedBy": "Uploaded by {{name}}"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "required": "این فیلد الزامی است",
+  "minLength": "باید حداقل {{count}} کاراکتر باشد",
+  "maxLength": "باید حداکثر {{count}} کاراکتر باشد",
+  "invalidEmail": "آدرس ایمیل نامعتبر است",
+  "selectCustomer": "لطفاً یک مشتری انتخاب کنید",
+  "selectCategory": "لطفاً یک دسته‌بندی انتخاب کنید",
+  "selectPriority": "لطفاً یک اولویت انتخاب کنید",
+  "selectSource": "لطفاً یک منبع انتخاب کنید",
+  "fileTooLarge": "حجم فایل بیش از حد مجاز است",
+  "unsupportedFileType": "نوع فایل پشتیبانی نمی‌شود"
+}

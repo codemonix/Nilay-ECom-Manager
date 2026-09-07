@@ -1,0 +1,20 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: complaint-system-mongo
+    restart: unless-stopped
+    # Host port 27020 (not the default 27017) so this doesn't collide with
+    # another MongoDB instance you may already have running locally. Update
+    # MONGODB_URI in apps/api/.env if you change this.
+    ports:
+      - "27020:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongo_data:

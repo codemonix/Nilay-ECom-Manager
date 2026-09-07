@@ -1,0 +1,26 @@
+{
+  "name": "complaint-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Internal business operations system (V1: Complaint / Case Management) for the Shopfa jewelry business.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build:shared": "npm run build --workspace=packages/shared",
+    "dev": "npm run build:shared && (npm run dev --workspace=apps/api & npm run dev --workspace=apps/web & wait)",
+    "dev:api": "npm run build:shared && npm run dev --workspace=apps/api",
+    "dev:web": "npm run build:shared && npm run dev --workspace=apps/web",
+    "build": "npm run build:shared && npm run build --workspace=apps/api && npm run build --workspace=apps/web",
+    "test": "npm run build:shared && npm run test --workspace=apps/api && npm run test --workspace=apps/web",
+    "test:api": "npm run build:shared && npm run test --workspace=apps/api",
+    "test:web": "npm run test --workspace=apps/web",
+    "seed": "npm run build:shared && npm run seed --workspace=apps/api",
+    "lint": "npm run lint --workspace=apps/api && npm run lint --workspace=apps/web",
+    "typecheck": "npm run build:shared && npm run typecheck --workspace=apps/api && npm run typecheck --workspace=apps/web",
+    "mongo:up": "docker compose up -d mongo",
+    "mongo:down": "docker compose down"
+  },
+  "license": "UNLICENSED"
+}

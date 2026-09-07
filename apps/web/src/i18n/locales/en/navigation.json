@@ -1,0 +1,16 @@
+{
+  "brand": "Business Operations",
+  "modules": {
+    "cases": "Cases",
+    "orderCheck": "Order Pre-Check",
+    "packing": "Packing",
+    "purchasing": "Purchasing",
+    "inventory": "Inventory",
+    "reporting": "Reporting"
+  },
+  "comingSoon": "Coming soon",
+  "breadcrumbs": {
+    "cases": "Cases",
+    "caseDetailLabel": "Case"
+  }
+}

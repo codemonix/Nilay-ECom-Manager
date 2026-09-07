@@ -1,0 +1,12 @@
+{
+  "required": "This field is required",
+  "minLength": "Must be at least {{count}} characters",
+  "maxLength": "Must be at most {{count}} characters",
+  "invalidEmail": "Invalid email address",
+  "selectCustomer": "Please select a customer",
+  "selectCategory": "Please select a category",
+  "selectPriority": "Please select a priority",
+  "selectSource": "Please select a source",
+  "fileTooLarge": "File is too large",
+  "unsupportedFileType": "Unsupported file type"
+}

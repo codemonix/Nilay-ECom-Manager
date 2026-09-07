@@ -1,0 +1,54 @@
+{
+  "app": {
+    "title": "Business Operations",
+    "shortTitle": "BizOps"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create",
+    "close": "Close",
+    "edit": "Edit",
+    "delete": "Delete",
+    "search": "Search",
+    "filters": "Filters",
+    "clearFilters": "Clear filters",
+    "apply": "Apply",
+    "back": "Back",
+    "confirm": "Confirm",
+    "upload": "Upload",
+    "view": "View",
+    "add": "Add",
+    "remove": "Remove"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "fa": "Persian"
+  },
+  "devUser": {
+    "label": "Acting as",
+    "placeholder": "Select staff member",
+    "none": "No user selected"
+  },
+  "state": {
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "empty": "No results found",
+    "retry": "Retry"
+  },
+  "pagination": {
+    "rowsPerPage": "Rows per page",
+    "of": "of"
+  },
+  "roles": {
+    "admin": "Admin",
+    "customer_service": "Customer Service",
+    "warehouse": "Warehouse",
+    "manager": "Manager",
+    "purchasing": "Purchasing"
+  },
+  "currency": {
+    "IRR": "IRR"
+  }
+}

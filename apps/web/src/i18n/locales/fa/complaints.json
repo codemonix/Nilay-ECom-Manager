@@ -1,0 +1,192 @@
+{
+  "title": "پرونده‌ها",
+  "createCase": "ایجاد پرونده",
+  "caseNumber": "شماره پرونده",
+  "status": {
+    "open": "باز",
+    "in_progress": "در حال پیگیری",
+    "waiting_for_customer": "منتظر پاسخ مشتری",
+    "waiting_for_internal_action": "منتظر اقدام داخلی",
+    "resolved": "حل‌شده",
+    "closed": "بسته‌شده"
+  },
+  "priority": {
+    "low": "کم",
+    "normal": "عادی",
+    "high": "بالا",
+    "urgent": "فوری"
+  },
+  "category": {
+    "order": "سفارش",
+    "delivery": "ارسال",
+    "product": "محصول",
+    "payment": "پرداخت",
+    "return": "مرجوعی",
+    "exchange": "تعویض",
+    "damaged_item": "کالای آسیب‌دیده",
+    "missing_item": "کسری کالا",
+    "wrong_item": "کالای اشتباه",
+    "quality": "کیفیت",
+    "other": "سایر"
+  },
+  "source": {
+    "phone": "تلفن",
+    "email": "ایمیل",
+    "chat": "چت",
+    "social_media": "شبکه اجتماعی",
+    "shopfa": "شاپفا",
+    "in_person": "حضوری",
+    "other": "سایر"
+  },
+  "list": {
+    "searchPlaceholder": "جستجو بر اساس شماره پرونده، موضوع یا شرح",
+    "customerSearchPlaceholder": "جستجو بر اساس نام، تلفن یا ایمیل مشتری",
+    "filterStatus": "وضعیت",
+    "filterPriority": "اولویت",
+    "filterCategory": "دسته‌بندی",
+    "filterAssignedTo": "مسئول رسیدگی",
+    "filterDateFrom": "از تاریخ",
+    "filterDateTo": "تا تاریخ",
+    "allStatuses": "همه وضعیت‌ها",
+    "allPriorities": "همه اولویت‌ها",
+    "allCategories": "همه دسته‌بندی‌ها",
+    "allStaff": "همه کارمندان",
+    "unassigned": "بدون مسئول",
+    "resultsCount_one": "{{count}} پرونده",
+    "resultsCount_other": "{{count}} پرونده",
+    "columns": {
+      "caseNumber": "شماره پرونده",
+      "customer": "مشتری",
+      "subject": "موضوع",
+      "category": "دسته‌بندی",
+      "priority": "اولویت",
+      "status": "وضعیت",
+      "assignedTo": "مسئول رسیدگی",
+      "lastActivity": "آخرین فعالیت",
+      "created": "تاریخ ایجاد"
+    },
+    "sortBy": "مرتب‌سازی بر اساس",
+    "empty": "هیچ پرونده‌ای با این فیلترها مطابقت ندارد"
+  },
+  "form": {
+    "title": "ایجاد پرونده",
+    "customer": "مشتری",
+    "customerHelp": "جستجوی مشتریان شاپفا بر اساس نام، تلفن یا ایمیل",
+    "subject": "موضوع",
+    "description": "شرح",
+    "category": "دسته‌بندی",
+    "priority": "اولویت",
+    "source": "منبع",
+    "assignedTo": "مسئول رسیدگی (اختیاری)",
+    "relatedOrder": "سفارش مرتبط (اختیاری)",
+    "relatedItem": "کالای مرتبط (اختیاری)",
+    "tags": "برچسب‌ها (اختیاری)",
+    "tagsPlaceholder": "یک برچسب بنویسید و Enter را بزنید",
+    "submit": "ایجاد پرونده",
+    "submitting": "در حال ایجاد…",
+    "success": "پرونده با موفقیت ایجاد شد"
+  },
+  "detail": {
+    "customerSummary": {
+      "orders": "تعداد سفارش‌ها",
+      "totalSpent": "مجموع خرید",
+      "averageOrderValue": "میانگین ارزش سفارش",
+      "lastOrder": "آخرین سفارش",
+      "loading": "در حال بارگذاری اطلاعات مشتری…",
+      "unavailable": "اطلاعات مشتری در دسترس نیست"
+    },
+    "sections": {
+      "timeline": "خط زمانی",
+      "information": "اطلاعات پرونده",
+      "attachments": "پیوست‌ها"
+    },
+    "fields": {
+      "category": "دسته‌بندی",
+      "source": "منبع",
+      "priority": "اولویت",
+      "status": "وضعیت",
+      "assignedTo": "مسئول رسیدگی",
+      "tags": "برچسب‌ها",
+      "relatedOrders": "سفارش‌های مرتبط",
+      "relatedItems": "کالاهای مرتبط",
+      "createdBy": "ایجادکننده",
+      "createdAt": "تاریخ ایجاد",
+      "lastActivityAt": "آخرین فعالیت"
+    },
+    "actions": {
+      "changeStatus": "تغییر وضعیت",
+      "changePriority": "تغییر اولویت",
+      "assignStaff": "تعیین مسئول",
+      "addNote": "افزودن یادداشت",
+      "addInternalNote": "افزودن یادداشت داخلی",
+      "addCustomerNote": "ثبت تعامل با مشتری",
+      "linkOrder": "اتصال سفارش",
+      "linkItem": "اتصال کالا",
+      "addTag": "افزودن برچسب",
+      "resolve": "حل شد",
+      "reopen": "بازگشایی",
+      "close": "بستن پرونده",
+      "uploadAttachment": "بارگذاری پیوست"
+    },
+    "noteDialog": {
+      "internalTitle": "افزودن یادداشت داخلی",
+      "customerTitle": "ثبت تعامل با مشتری",
+      "bodyLabel": "یادداشت",
+      "submit": "افزودن یادداشت"
+    },
+    "statusDialog": {
+      "title": "تغییر وضعیت",
+      "newStatus": "وضعیت جدید",
+      "reason": "دلیل (اختیاری)",
+      "noValidTransitions": "هیچ تغییر وضعیتی از وضعیت فعلی امکان‌پذیر نیست"
+    },
+    "priorityDialog": {
+      "title": "تغییر اولویت",
+      "newPriority": "اولویت جدید"
+    },
+    "assignDialog": {
+      "title": "تعیین مسئول",
+      "staffMember": "کارمند"
+    },
+    "linkOrderDialog": {
+      "title": "اتصال سفارش",
+      "orderId": "شناسه یا شماره سفارش"
+    },
+    "linkItemDialog": {
+      "title": "اتصال کالا",
+      "sku": "کد کالا یا شناسه"
+    },
+    "tagDialog": {
+      "title": "افزودن برچسب",
+      "tag": "برچسب"
+    },
+    "notFound": "پرونده یافت نشد",
+    "unassigned": "بدون مسئول"
+  },
+  "events": {
+    "created": "پرونده ایجاد شد",
+    "note_added": "یادداشت افزوده شد",
+    "internal_note": "یادداشت داخلی افزوده شد",
+    "customer_message": "تعامل با مشتری ثبت شد",
+    "status_changed": "تغییر وضعیت: {{from}} ← {{to}}",
+    "assignment_changed": "به {{toUserName}} واگذار شد",
+    "assignment_changed_unassigned": "مسئول حذف شد",
+    "assignment_changed_from": "از {{fromUserName}} به {{toUserName}} واگذار شد",
+    "priority_changed": "تغییر اولویت: {{from}} ← {{to}}",
+    "order_linked": "سفارش {{orderNumber}} متصل شد",
+    "item_linked": "کالای {{title}} ({{sku}}) متصل شد",
+    "attachment_added": "پیوست افزوده شد: {{filename}}",
+    "resolved": "پرونده حل شد",
+    "reopened": "پرونده بازگشایی شد",
+    "closed": "پرونده بسته شد",
+    "tag_added": "برچسب افزوده شد: {{tag}}",
+    "tag_removed": "برچسب حذف شد: {{tag}}",
+    "by": "توسط {{name}}",
+    "bySystem": "توسط سیستم"
+  },
+  "attachments": {
+    "empty": "هنوز پیوستی وجود ندارد",
+    "upload": "بارگذاری فایل",
+    "uploadedBy": "بارگذاری‌شده توسط {{name}}"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "brand": "عملیات کسب‌وکار",
+  "modules": {
+    "cases": "پرونده‌ها",
+    "orderCheck": "بررسی اولیه سفارش",
+    "packing": "بسته‌بندی",
+    "purchasing": "خرید",
+    "inventory": "موجودی انبار",
+    "reporting": "گزارش‌گیری"
+  },
+  "comingSoon": "به‌زودی",
+  "breadcrumbs": {
+    "cases": "پرونده‌ها",
+    "caseDetailLabel": "پرونده"
+  }
+}

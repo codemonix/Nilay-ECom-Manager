@@ -1,0 +1,54 @@
+{
+  "app": {
+    "title": "عملیات کسب‌وکار",
+    "shortTitle": "بیزآپس"
+  },
+  "actions": {
+    "save": "ذخیره",
+    "cancel": "انصراف",
+    "create": "ایجاد",
+    "close": "بستن",
+    "edit": "ویرایش",
+    "delete": "حذف",
+    "search": "جستجو",
+    "filters": "فیلترها",
+    "clearFilters": "پاک کردن فیلترها",
+    "apply": "اعمال",
+    "back": "بازگشت",
+    "confirm": "تأیید",
+    "upload": "بارگذاری",
+    "view": "مشاهده",
+    "add": "افزودن",
+    "remove": "حذف"
+  },
+  "language": {
+    "label": "زبان",
+    "en": "انگلیسی",
+    "fa": "فارسی"
+  },
+  "devUser": {
+    "label": "کاربر فعال",
+    "placeholder": "انتخاب کارمند",
+    "none": "کاربری انتخاب نشده"
+  },
+  "state": {
+    "loading": "در حال بارگذاری…",
+    "error": "خطایی رخ داد",
+    "empty": "نتیجه‌ای یافت نشد",
+    "retry": "تلاش مجدد"
+  },
+  "pagination": {
+    "rowsPerPage": "ردیف در هر صفحه",
+    "of": "از"
+  },
+  "roles": {
+    "admin": "مدیر سیستم",
+    "customer_service": "خدمات مشتریان",
+    "warehouse": "انبار",
+    "manager": "مدیر",
+    "purchasing": "خرید"
+  },
+  "currency": {
+    "IRR": "ریال"
+  }
+}
