@@ -31,4 +31,9 @@ export interface OrderSummaryDTO {
     title: string;
     quantity: number;
   }>;
+  /** Customer identity carried on the order itself, when the source client provides one (e.g. Shopfa's order fields) -- lets order search results be matched to a customer without a separate lookup. */
+  externalCustomerId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
 }

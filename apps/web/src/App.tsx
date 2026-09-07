@@ -6,6 +6,8 @@ import { Provider } from "react-redux";
 import { store } from "./app/store";
 import { createAppTheme } from "./theme/createAppTheme";
 import { getEmotionCache } from "./theme/rtlCache";
+import { ColorModeProvider } from "./theme/ColorModeContext";
+import { useColorMode } from "./theme/useColorMode";
 import { isRtl } from "./i18n/i18n";
 import { useActiveLanguage } from "./i18n/useActiveLanguage";
 import { AppRoutes } from "./routes/AppRoutes";
@@ -13,14 +15,19 @@ import { AppRoutes } from "./routes/AppRoutes";
 function ThemedApp() {
   const language = useActiveLanguage();
   const direction = isRtl(language) ? "rtl" : "ltr";
+  const { resolvedMode } = useColorMode();
 
-  const theme = useMemo(() => createAppTheme(language), [language]);
+  const theme = useMemo(() => createAppTheme(language, resolvedMode), [language, resolvedMode]);
   const cache = useMemo(() => getEmotionCache(direction), [direction]);
 
   useEffect(() => {
     document.documentElement.dir = direction;
     document.documentElement.lang = language;
   }, [direction, language]);
+
+  useEffect(() => {
+    document.documentElement.style.colorScheme = resolvedMode;
+  }, [resolvedMode]);
 
   return (
     <CacheProvider value={cache}>
@@ -35,7 +42,9 @@ function ThemedApp() {
 export default function App() {
   return (
     <Provider store={store}>
-      <ThemedApp />
+      <ColorModeProvider>
+        <ThemedApp />
+      </ColorModeProvider>
     </Provider>
   );
 }

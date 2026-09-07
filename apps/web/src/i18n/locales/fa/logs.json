@@ -1,0 +1,56 @@
+{
+  "title": "گزارش‌ها",
+  "description": "سه گزارش مستقل: فعالیت کارکنان در سیستم، هر تماس با API شاپفا، و رویدادهای داخلی سیستم در سطح گزارش تنظیم‌شده.",
+  "resultsCount_one": "{{count}} مورد",
+  "resultsCount_other": "{{count}} مورد",
+  "tabs": {
+    "activity": "فعالیت کاربران",
+    "shopfa": "تراکنش‌های شاپفا",
+    "system": "گزارش سیستم"
+  },
+  "levels": {
+    "error": "خطا",
+    "warn": "هشدار",
+    "info": "اطلاعات",
+    "http": "درخواست HTTP",
+    "debug": "اشکال‌زدایی"
+  },
+  "activity": {
+    "searchPlaceholder": "جستجو بر اساس کاربر یا مسیر",
+    "empty": "هنوز فعالیتی از کاربران ثبت نشده است",
+    "columns": {
+      "time": "زمان",
+      "user": "کاربر",
+      "role": "نقش",
+      "action": "درخواست",
+      "status": "وضعیت",
+      "duration": "مدت زمان",
+      "ip": "آدرس IP"
+    }
+  },
+  "shopfa": {
+    "searchPlaceholder": "جستجو بر اساس مسیر یا خطا",
+    "empty": "هنوز تراکنشی با شاپفا ثبت نشده است",
+    "allOutcomes": "همه نتایج",
+    "success": "موفق",
+    "failed": "ناموفق",
+    "columns": {
+      "time": "زمان",
+      "endpoint": "مسیر",
+      "status": "کد HTTP",
+      "outcome": "نتیجه",
+      "duration": "مدت زمان"
+    }
+  },
+  "system": {
+    "searchPlaceholder": "جستجو بر اساس پیام یا زمینه",
+    "empty": "هنوز رویدادی در گزارش سیستم ثبت نشده است",
+    "allLevels": "همه سطوح",
+    "columns": {
+      "time": "زمان",
+      "level": "سطح",
+      "message": "پیام",
+      "context": "زمینه"
+    }
+  }
+}

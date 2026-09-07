@@ -6,11 +6,20 @@
     "packing": "بسته‌بندی",
     "purchasing": "خرید",
     "inventory": "موجودی انبار",
-    "reporting": "گزارش‌گیری"
+    "reporting": "گزارش‌گیری",
+    "settings": "تنظیمات",
+    "users": "کاربران",
+    "logs": "گزارش‌ها"
   },
+  "administration": "مدیریت سیستم",
   "comingSoon": "به‌زودی",
+  "more": "بیشتر",
   "breadcrumbs": {
     "cases": "پرونده‌ها",
     "caseDetailLabel": "پرونده"
+  },
+  "noAccess": {
+    "title": "بدون دسترسی",
+    "description": "شما هنوز به هیچ بخشی دسترسی ندارید. از یک مدیر بخواهید برایتان دسترسی تعریف کند."
   }
 }

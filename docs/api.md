@@ -80,6 +80,34 @@ Anything else returns `409 CONFLICT` with the allowed next statuses in
 |---|---|---|
 | GET | `/users` | Active staff only, sorted by name |
 
+## Settings & order import
+
+Until live Shopfa API credentials are available, order/customer data comes
+from orders imported via an xlsx upload -- see
+[architecture.md#shopfa-integration](architecture.md#shopfa-integration).
+
+| Method | Path | Body / Query | Notes |
+|---|---|---|---|
+| GET | `/settings` | — | `{ dataSource, shopfaApiConfigured, lastImport, updatedAt }` |
+| PATCH | `/settings/data-source` | `{ dataSource: "imported_file" \| "live_api" }` | `400` if switching to `live_api` without `SHOPFA_API_BASE_URL`/`SHOPFA_API_TOKEN` configured |
+| POST | `/settings/orders/import` | multipart `file` field (`.xlsx`) | Parses a Shopfa order export, upserts by order code (re-importing an order updates it, never duplicates), returns `{ rowsProcessed, rowsSkipped, ordersImported, itemsImported, skippedSamples, settings }` |
+| GET | `/orders` | query: `page, pageSize, search` | Paginated list of imported orders |
+| GET | `/orders/:externalOrderId` | — | Full order detail incl. line items |
+
+## Backups
+
+Backups use the versioned `nilay-ecom-backup` JSON format. ObjectIds and dates
+are stored with explicit `$oid` and `$date` markers so references survive a
+restore. Backup downloads are the raw JSON envelope rather than the standard
+success wrapper, and can be posted directly to the matching restore endpoint.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/settings/backup` | Settings singleton only; does not include Shopfa credentials or derived configuration |
+| POST | `/settings/restore` | Replaces the settings singleton after schema validation; operational data is untouched |
+| GET | `/settings/data-backup` | Users, cases, case events, attachment metadata and files, imported orders, and counters |
+| POST | `/settings/data-restore` | Validates all documents, references, and attachment checksums before replacing those operational collections |
+
 ## Example: create a case
 
 ```bash

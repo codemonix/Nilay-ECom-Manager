@@ -1,0 +1,85 @@
+{
+  "title": "Settings",
+  "backupRestore": {
+    "title": "Backup and Restore",
+    "description": "Keep settings and operational data in separate backup files. Restoring system data replaces current cases, users, orders, events, attachments, and counters.",
+    "backupSettings": "Back up settings",
+    "restoreSettings": "Restore settings",
+    "backupData": "Back up system data",
+    "restoreData": "Restore system data",
+    "wrongType": "This backup belongs to a different restore option.",
+    "error": "Backup or restore failed"
+  },
+  "logLevel": {
+    "title": "System Log Level",
+    "description": "Controls how much detail the internal system log records, from errors only up to full request/debug detail. Takes effect immediately, no restart required.",
+    "updateError": "Could not update the log level",
+    "levels": {
+      "error": "Error only",
+      "warn": "Warning and above",
+      "info": "Info and above (recommended)",
+      "http": "HTTP requests and above",
+      "debug": "Debug (most verbose)"
+    }
+  },
+  "dataSource": {
+    "title": "Order Data Source",
+    "description": "Until live Shopfa API access is available, order and customer data is read from orders imported below. Turn this on once Shopfa API credentials are configured on the server.",
+    "liveEnabled": "Live Shopfa API connection enabled",
+    "liveDisabled": "Using imported order data",
+    "notConfigured": "The live API can't be enabled yet — SHOPFA_API_BASE_URL and SHOPFA_API_TOKEN are not configured on the server.",
+    "updateError": "Could not update the data source",
+    "testConnectionHelp": "Check whether the app can reach the shop right now, independent of the toggle above.",
+    "testConnection": "Test Connection",
+    "testConnectionRunning": "Testing…",
+    "testConnectionSuccess": "Connected successfully",
+    "testConnectionFailure": "Connection failed",
+    "testConnectionShopInfo": "Reached \"{{title}}\" ({{domain}})",
+    "testConnectionRequestFailed": "Could not run the connection test",
+    "showRawResponse": "Show raw response",
+    "hideRawResponse": "Hide raw response"
+  },
+  "import": {
+    "title": "Import Orders",
+    "description": "Upload an xlsx export of orders from Shopfa. Re-importing the same order updates it instead of creating a duplicate.",
+    "chooseFile": "Choose File",
+    "successSummary": "Imported {{orders}} orders ({{items}} items). {{skipped}} rows skipped.",
+    "error": "Import failed",
+    "lastImport": "Last import",
+    "lastImportSummary": "{{fileName}} · {{date}} · by {{user}}",
+    "lastImportCounts": "{{orders}} orders, {{items}} items imported ({{skipped}} rows skipped)",
+    "neverImported": "No orders have been imported yet",
+    "systemUser": "system"
+  },
+  "orders": {
+    "title": "Imported Orders",
+    "searchPlaceholder": "Search by order id, buyer name, or phone",
+    "resultsCount_one": "{{count}} order",
+    "resultsCount_other": "{{count}} orders",
+    "empty": "No imported orders yet",
+    "columns": {
+      "orderId": "Order ID",
+      "buyer": "Buyer",
+      "city": "City",
+      "status": "Status",
+      "items": "Items",
+      "total": "Total",
+      "purchaseDate": "Purchase Date"
+    },
+    "detail": {
+      "title": "Order {{orderId}}",
+      "buyer": "Buyer",
+      "item": "Item",
+      "items": "Items",
+      "itemsTotal": "Items total",
+      "shippingCost": "Shipping cost",
+      "discount": "Discount",
+      "total": "Total",
+      "quantity": "Qty",
+      "unitPrice": "Unit price",
+      "amount": "Amount",
+      "userMessage": "Customer message",
+      "adminNote": "Admin note"
+    }
+  }
+}

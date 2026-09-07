@@ -12,6 +12,7 @@ import Card from "@mui/material/Card";
 import CardActionArea from "@mui/material/CardActionArea";
 import CardContent from "@mui/material/CardContent";
 import Skeleton from "@mui/material/Skeleton";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
@@ -54,17 +55,19 @@ export function CaseTable({ cases, isLoading }: CaseTableProps) {
       <Stack spacing={1.5}>
         {cases.map((c) => (
           <Card key={c.id} variant="outlined">
-            <CardActionArea onClick={() => navigate(`/cases/${c.id}`)}>
-              <CardContent>
-                <Stack spacing={0.75}>
+            <CardActionArea onClick={() => navigate(`/cases/${c.id}`)} sx={{ p: 0.5 }}>
+              <CardContent sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Stack spacing={0.75} sx={{ flexGrow: 1, minWidth: 0 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="caption" color="text.secondary">
                       <Ltr>{c.caseNumber}</Ltr>
                     </Typography>
                     <StatusChip status={c.status} />
                   </Stack>
-                  <Typography variant="subtitle1">{c.subject}</Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="subtitle1" sx={{ wordBreak: "break-word" }}>
+                    {c.subject}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" noWrap>
                     {c.customer.name}
                   </Typography>
                   <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
@@ -74,6 +77,7 @@ export function CaseTable({ cases, isLoading }: CaseTableProps) {
                     </Typography>
                   </Stack>
                 </Stack>
+                <ChevronRightIcon color="disabled" />
               </CardContent>
             </CardActionArea>
           </Card>

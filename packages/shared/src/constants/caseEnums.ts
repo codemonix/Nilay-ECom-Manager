@@ -58,6 +58,26 @@ export const CaseSource = {
 export type CaseSource = (typeof CaseSource)[keyof typeof CaseSource];
 export const CASE_SOURCE_VALUES = Object.values(CaseSource);
 
+/**
+ * The specific social media platform a case's contact point is on, used
+ * when CaseSource is SOCIAL_MEDIA. Instagram and Telegram contacts are
+ * identified by a platform-specific id/handle (see CASE_CONTACT_PLATFORMS_REQUIRING_ID).
+ */
+export const CaseContactPlatform = {
+  INSTAGRAM: "instagram",
+  TELEGRAM: "telegram",
+  WHATSAPP: "whatsapp",
+  OTHER: "other",
+} as const;
+export type CaseContactPlatform = (typeof CaseContactPlatform)[keyof typeof CaseContactPlatform];
+export const CASE_CONTACT_PLATFORM_VALUES = Object.values(CaseContactPlatform);
+
+/** Platforms where the contact's account id/handle must be captured to reach them again. */
+export const CASE_CONTACT_PLATFORMS_REQUIRING_ID: CaseContactPlatform[] = [
+  CaseContactPlatform.INSTAGRAM,
+  CaseContactPlatform.TELEGRAM,
+];
+
 export const CaseEventType = {
   CREATED: "created",
   NOTE_ADDED: "note_added",
@@ -74,6 +94,7 @@ export const CaseEventType = {
   CLOSED: "closed",
   TAG_ADDED: "tag_added",
   TAG_REMOVED: "tag_removed",
+  CONTACT_POINT_CHANGED: "contact_point_changed",
 } as const;
 export type CaseEventType = (typeof CaseEventType)[keyof typeof CaseEventType];
 export const CASE_EVENT_TYPE_VALUES = Object.values(CaseEventType);

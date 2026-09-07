@@ -1,10 +1,14 @@
 import { createApp } from "./app";
 import { connectDatabase } from "./config/db";
 import { env } from "./config/env";
-import { logger } from "./config/logger";
+import { logger, applyLogLevel } from "./config/logger";
+import * as settingsService from "./services/settingsService";
 
 async function main() {
   await connectDatabase();
+
+  const settings = await settingsService.getSettings();
+  applyLogLevel(settings.systemLogLevel);
 
   const app = createApp();
   app.listen(env.PORT, () => {

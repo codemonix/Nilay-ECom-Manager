@@ -4,6 +4,7 @@ import {
   CasePriority,
   CaseStatus,
   type CaseCategory,
+  type CaseContactPoint,
   type CaseSource,
 } from "@complaint-system/shared";
 import { caseRepository } from "../repositories/caseRepository";
@@ -131,6 +132,7 @@ export async function createCase(
     priority: input.priority as CasePriority,
     status: CaseStatus.OPEN,
     source: input.source as CaseSource,
+    contactPoint: (input.contactPoint as CaseContactPoint | undefined) ?? null,
     assignedTo: input.assignedTo ?? null,
     relatedOrders,
     relatedItems,
@@ -256,11 +258,26 @@ export async function changePriority(caseId: string, priority: CasePriority, act
   });
 }
 
+export async function changeContactPoint(
+  caseId: string,
+  contactPoint: CaseContactPoint,
+  actor: Actor | undefined,
+) {
+  return applyCaseMutationWithEvent(caseId, actor, (caseDoc) => {
+    const from = caseDoc.contactPoint ?? null;
+    caseDoc.contactPoint = contactPoint as unknown as typeof caseDoc.contactPoint;
+    return {
+      eventType: CaseEventType.CONTACT_POINT_CHANGED,
+      data: { from, to: contactPoint },
+    };
+  });
+}
+
 export async function assignCase(caseId: string, assignedTo: string | null, actor: Actor | undefined) {
   const [fromUser, toUser] = await Promise.all([
     (async () => {
       const caseDoc = await caseRepository.findById(caseId);
-      return caseDoc?.assignedTo ? userRepository.findById(String(caseDoc.assignedTo)) : null;
+      return caseDoc?.assignedTo ? userRepository.findById(String((caseDoc.assignedTo as { _id: unknown })._id)) : null;
     })(),
     assignedTo ? userRepository.findById(assignedTo) : Promise.resolve(null),
   ]);

@@ -14,6 +14,9 @@ export {
   CASE_CATEGORY_VALUES,
   CaseSource,
   CASE_SOURCE_VALUES,
+  CaseContactPlatform,
+  CASE_CONTACT_PLATFORM_VALUES,
+  CASE_CONTACT_PLATFORMS_REQUIRING_ID,
   CaseEventType,
   CASE_EVENT_TYPE_VALUES,
   StaffRole,
@@ -22,10 +25,17 @@ export {
   isValidStatusTransition,
 } from "./constants/caseEnums";
 
+export { DataSource, DATA_SOURCE_VALUES } from "./constants/settingsEnums";
+
+export { MenuKey, MENU_KEY_VALUES, DEFAULT_PERMISSIONS_BY_ROLE, hasMenuAccess } from "./constants/accessEnums";
+
+export { SystemLogLevel, SYSTEM_LOG_LEVEL_VALUES, SYSTEM_LOG_LEVEL_SEVERITY } from "./constants/logEnums";
+
 export type {
   CaseCustomerSnapshot,
   CaseRelatedOrder,
   CaseRelatedItem,
+  CaseContactPoint,
   CaseDTO,
   CaseEventDTO,
   CaseListQuery,
@@ -35,4 +45,29 @@ export type { CustomerSummaryDTO, CustomerSearchResultDTO, OrderSummaryDTO } fro
 
 export type { UserDTO } from "./types/user";
 
+export type { LoginRequestDTO, AuthResponseDTO, ChangePasswordInputDTO } from "./types/auth";
+
 export type { ApiSuccess, ApiFailure, ApiResponse, PaginatedResult } from "./types/api";
+
+export type {
+  AppSettingsDTO,
+  LastImportSummaryDTO,
+  ImportOrdersResultDTO,
+  ShopfaConnectionTestResultDTO,
+} from "./types/settings";
+
+export type {
+  ImportedOrderDTO,
+  ImportedOrderItemDTO,
+  ImportedOrderBuyerDTO,
+  ImportedOrderListQuery,
+} from "./types/order";
+
+export type {
+  SystemLogDTO,
+  SystemLogListQuery,
+  UserActivityLogDTO,
+  UserActivityLogListQuery,
+  ShopfaTransactionLogDTO,
+  ShopfaTransactionLogListQuery,
+} from "./types/log";

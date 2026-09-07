@@ -50,5 +50,6 @@ export function mapOrderToSummary(raw: ShopfaRawOrder): OrderSummaryDTO {
       title: i.title,
       quantity: i.quantity,
     })),
+    externalCustomerId: raw.customer_id,
   };
 }

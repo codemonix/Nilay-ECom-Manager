@@ -4,6 +4,7 @@
   "maxLength": "باید حداکثر {{count}} کاراکتر باشد",
   "invalidEmail": "آدرس ایمیل نامعتبر است",
   "selectCustomer": "لطفاً یک مشتری انتخاب کنید",
+  "enterCustomerName": "لطفاً نام مشتری را وارد کنید",
   "selectCategory": "لطفاً یک دسته‌بندی انتخاب کنید",
   "selectPriority": "لطفاً یک اولویت انتخاب کنید",
   "selectSource": "لطفاً یک منبع انتخاب کنید",

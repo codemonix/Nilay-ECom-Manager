@@ -6,10 +6,18 @@ import enCommon from "./locales/en/common.json";
 import enNavigation from "./locales/en/navigation.json";
 import enComplaints from "./locales/en/complaints.json";
 import enValidation from "./locales/en/validation.json";
+import enSettings from "./locales/en/settings.json";
+import enAuth from "./locales/en/auth.json";
+import enUsers from "./locales/en/users.json";
+import enLogs from "./locales/en/logs.json";
 import faCommon from "./locales/fa/common.json";
 import faNavigation from "./locales/fa/navigation.json";
 import faComplaints from "./locales/fa/complaints.json";
 import faValidation from "./locales/fa/validation.json";
+import faSettings from "./locales/fa/settings.json";
+import faAuth from "./locales/fa/auth.json";
+import faUsers from "./locales/fa/users.json";
+import faLogs from "./locales/fa/logs.json";
 
 export const SUPPORTED_LANGUAGES = ["en", "fa"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
@@ -46,18 +54,26 @@ void i18n
         navigation: enNavigation,
         complaints: enComplaints,
         validation: enValidation,
+        settings: enSettings,
+        auth: enAuth,
+        users: enUsers,
+        logs: enLogs,
       },
       fa: {
         common: faCommon,
         navigation: faNavigation,
         complaints: faComplaints,
         validation: faValidation,
+        settings: faSettings,
+        auth: faAuth,
+        users: faUsers,
+        logs: faLogs,
       },
     },
     fallbackLng: DEFAULT_LANGUAGE,
     supportedLngs: SUPPORTED_LANGUAGES as unknown as string[],
     load: "languageOnly",
-    ns: ["common", "navigation", "complaints", "validation"],
+    ns: ["common", "navigation", "complaints", "validation", "settings", "auth", "users", "logs"],
     defaultNS: "common",
     interpolation: { escapeValue: false },
     detection: {

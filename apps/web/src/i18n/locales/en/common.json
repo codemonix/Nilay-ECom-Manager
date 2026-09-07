@@ -26,10 +26,11 @@
     "en": "English",
     "fa": "Persian"
   },
-  "devUser": {
-    "label": "Acting as",
-    "placeholder": "Select staff member",
-    "none": "No user selected"
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
   },
   "state": {
     "loading": "Loading…",

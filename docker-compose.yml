@@ -1,7 +1,9 @@
+name: nilay-ecom-manager
+
 services:
   mongo:
     image: mongo:7
-    container_name: complaint-system-mongo
+    container_name: nilay-ecom-manager-mongo
     restart: unless-stopped
     # Host port 27020 (not the default 27017) so this doesn't collide with
     # another MongoDB instance you may already have running locally. Update

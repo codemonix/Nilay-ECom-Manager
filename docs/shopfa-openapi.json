@@ -1,0 +1,285 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "ShopFA API",
+    "description": "# هدف\n\nاین مستند چگونگی استفاده از وب سرویس سایت‌های ساخته شده با فروشگاه ساز شاپفا را شرح می دهد\n\n# هدف\n\nهدف از ارائه این مستند ، معرفی سرویس های ارائه شده توسط شاپفا جهت دسترسی به تمام بخش‌های فرانت اند می باشد . تمام متدها مربوطه در این مستند با ذکر مثال توضیح داده شده است .\n\n# محل و دسترسی\n\nدسترسی به درخواست‌های مختلف وب سرویس از طریق آدرس زیر امکان‌پذیر است  \n/api/\n\n# جدول روش‌های پرداخت\n\n| شماره روش پرداخت | توضیحات |\n| --- | --- |\n| `1` | زمان تحویل |\n| `2` | واریز به حساب |\n| `50` | کیف پول |\n| `3` | بانک پاسارگاد |\n| `4` | بانک پارسیان |\n| `5` | درگاه آرین پال |\n| `6` | درگاه زرین پال |\n| `8` | بانک ملت |\n| `9` | بانک سامان |\n| `10` | بانک کشاورزی |\n| `11` | بانک ملی |\n| `12` | درگاه ایران کیش |\n| `31` | درگاه ایران کیش(جدید) |\n| `13` | بانک صادرات |\n| `14` | پست بانک |\n| `15` | درگاه Pay.ir |\n| `16` | بانک رفاه |\n| `17` | درگاه IDPay |\n| `18` | درگاه PayPing |\n| `19` | درگاه آنای پرداخت |\n| `20` | بانک تجارت |\n| `21` | زیبال |\n| `22` | جیبیت |\n| `23` | سیزپی |\n| `24` | آسان پرداخت |\n| `25` | نوندار |\n| `26` | آتی‌پی |\n| `27` | بانوتا |\n| `28` | سامان کیش |\n| `29` | اعتباریون |\n| `30` | آپسان |\n| `32` | سایان |\n| `33` | اقتصاد نوین |\n| `34` | پی‌ما |\n| `35` | تارا |\n| `36` | فینوپی |\n\n# جدول روش های ارسال\n\n| شماره روش ارسال | توضیحات |\n| --- | --- |\n| `1` | پست سفارشی |\n| `2` | پست پیشتاز |\n| `3` | پیک |\n| `4` | ارسال با پیک |\n| `5` | ارسال تیپاکس |\n| `6` | ارسال با باربری |\n| `10` | لینک دانلود |\n\n# جدول توضیح برخی آیتم ها\n\n| نام | توضیحات |\n| --- | --- |\n| `tax_price` | مالیات |\n| `service_price` | هزینه سرویس(برای مثال هزینه بسته بندی) |\n| `post_price` | هزینه پست |\n| `discount_price` | مبلغ تخفیف |\n\n# جدول توضیحات خروجی های متداول :\n\n| آیتم | توضیحات |\n| --- | --- |\n| error_code | کد خطا در صورت وجود خطا |\n| error | رشته ی خطا در صورت وجود خطا |\n| successful | مقدار درست در صورت موفقیت آمیز بودن اتصال به سرور |\n| time | زمان لازم برای پردازش درخواست در سرور |\n\n# جدول وضعیت های سبد :\n\n| **توضیح** | **کد وضعیت** |\n| --- | --- |\n| حذف شده | 0 |\n| فرم تکمیل نشده | 1 |\n| فرم تکمیل شده | 2 |\n| پرداخت شده | 3 |\n| پرداخت تایید شده | 4 |\n| ارسال شده | 5 |\n| تحویل داده شده | 6 |\n| کنسل شده | 7 |\n| پردازش انبار | 8 |\n| اعلام پرداخت | 9 |\n| تایید حسابداری | 10 |\n| چاپ فاکتور | 11 |\n| آماده به ارسال | 12 |\n| ارسال شده به پست | 13 |\n| خدمات پس از فروش | 14 |\n| ثبت شده | 15 |\n| در حال پیگیری | 16 |\n| در انتظار واریز | 17 |",
+    "version": "1.0.0"
+  },
+  "servers": [],
+  "paths": {
+    "/api/system/info": {
+      "post": {
+        "tags": ["اطلاعات سرویس"],
+        "summary": "اطلاعات سرویس",
+        "description": "از این متد برای بدست آوردن اطلاعات کلی سایت استفاده می‌شود",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/system/pages": {
+      "post": {
+        "tags": ["لیست بخش‌های سایت"],
+        "summary": "لیست بخش‌های سایت",
+        "description": "برای بدست آوردن بخش های سایت از این متد استفاده نمایید",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/html_page": {
+      "post": {
+        "tags": ["محتوای صفحه HTML"],
+        "summary": "محتوای صفحه HTML",
+        "description": "از این متد جهت بدست آوردن محتوای html یک صفحه استفاده می شود",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/system/search": {
+      "post": {
+        "tags": ["جستجوی سریع"],
+        "summary": "جستجوی سریع",
+        "description": "از این متد جهت جستجوی محصولات، بخش ها، صفحات و هر چیزی استفاده می شود",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/info": {
+      "post": {
+        "tags": ["اطلاعات فروشگاه"],
+        "summary": "اطلاعات فروشگاه",
+        "description": "از این متد برای بدست آوردن اطلاعات کلی سایت استفاده می‌شود",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/system/recache": {
+      "post": {
+        "tags": ["پاکسازی کش سایت"],
+        "summary": "پاکسازی کش سایت",
+        "description": "برای پاکسازی کش سایت می‌توانید از این متد استفاده نمایید",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/system/setting": {
+      "post": {
+        "tags": ["گرفتن تنظیمات صفحات"],
+        "summary": "گرفتن تنظیمات صفحات",
+        "description": "از این متد جهت دریافت تنظیمات یک صفحه استفاده می‌شود",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/system/device": {
+      "post": {
+        "tags": ["ذخیره مدل دستگاه(فایربیس-موبایل)"],
+        "summary": "ذخیره مدل دستگاه(فایربیس-موبایل)",
+        "description": "از این متد جهت ذخیره سازی مدل دستگاه (موبایل، تبلت) استفاده می‌شود، بیشتر در اپلیکیشن موبایل کاربرد دارد",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/user/signin": {
+      "post": {
+        "tags": ["ورود - دریافت کلید خصوصی"],
+        "summary": "ورود - دریافت کلید خصوصی",
+        "description": "این متد برای ورود کاربر(لاگین) استفاده می شود. خروجی: private_key (توکنی که نشان دهنده لاگین موفق کاربر می‌باشد) و user (مشخصات کاربر). این توکن به عنوان SHOPFA_API_TOKEN در HttpShopfaClient استفاده می‌شود.",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/user/3rd_auth": {
+      "post": {
+        "tags": ["ورود با توکن شخص ثالث"],
+        "summary": "ورود با توکن شخص ثالث",
+        "description": "این متد برای ورود کاربر(لاگین) استفاده می شود. ورودی Header: Authorization: توکن ساخته شده با jwt و secret شخصی -- ارسال شده به صورت خام، نه با پیشوند Bearer. HttpShopfaClient همین قرارداد را برای هر درخواست دنبال می‌کند.",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/user/signup": {
+      "post": {
+        "tags": ["ثبت نام"],
+        "summary": "ثبت نام",
+        "description": "از این متد شما می‌توانید در دو مرحله ی جداگانه استفاده نمایید",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/user/lost_password": {
+      "post": {
+        "tags": ["ریکاوری رمز عبور"],
+        "summary": "ریکاوری رمز عبور",
+        "description": "در صورت فراموشی کلمه عبور می توانید از این متد استفاده نمایید",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/user/info": {
+      "post": {
+        "tags": ["اطلاعات کاربر"],
+        "summary": "اطلاعات کاربر",
+        "description": "از این متد برای بدست آوردن اطلاعات کاربر استفاده می شود",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/user/info/edit": {
+      "post": {
+        "tags": ["ویرایش اطلاعات کاربر"],
+        "summary": "ویرایش اطلاعات کاربر",
+        "description": "از این متد برای ویرایش اطلاعات کاربر استفاده می شود",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/user/users": {
+      "post": {
+        "tags": ["لیست کاربران"],
+        "summary": "لیست کاربران",
+        "description": "از این متد برای بدست آوردن اطلاعات کاربر استفاده می شود(تنها مدیر سایت چنین قابلیتی دارد). ورودی: limit, mobile, q. مورد استفاده در HttpShopfaClient.searchCustomer.",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/user/address": {
+      "post": {
+        "tags": ["لیست آدرس ها"],
+        "summary": "لیست آدرس ها",
+        "description": "با استفاده از این متد شما می‌توانید لیست آدرس های مربوط به کاربر را بدست آورید",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/orders": {
+      "post": {
+        "tags": ["لیست سفارش های کاربران"],
+        "summary": "لیست سفارش های کاربران",
+        "description": "با استفاده از این متد مدیر سایت می‌تواند لیست سفارش های مربوط به کاربر خاصی را بدست آورد. لیست پارامترها: limit, page, fields, user_id, search, mobile, id, ids, sate/state, city, status, payment, shipping, sort, order, from, to. خروجی شامل فیلدهایی مثل id, user_id, date, status, status_title, name, family, mobile, email, sum_price, item_price است. مورد استفاده در HttpShopfaClient.fetchOrdersByUser (برای خلاصه مشتری) و searchOrders.",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/orders/details": {
+      "post": {
+        "tags": ["نمایش جزئیات سفارش"],
+        "summary": "نمایش جزئیات سفارش",
+        "description": "این متد می‌تواند جزئیات یک سبد با ای دی خاص را نمایش دهد (لیست محصولات داخل سبد)، تنها ورودی این متد آی دی سبد می‌باشد. مورد استفاده در HttpShopfaClient.getOrder.",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/orders/create": {
+      "post": {
+        "tags": ["ساخت دستی سفارش"],
+        "summary": "ساخت دستی سفارش",
+        "description": "با این متد مدیر سایت می‌تواند سفارشی را بصورت دستی بسازد",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/orders/update": {
+      "post": {
+        "tags": ["ویرایش سفارش"],
+        "summary": "ویرایش سفارش",
+        "description": "بااین متد مدیر سایت می‌تواند سفارشی را با آی دی خاص ویرایش کند",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/orders/delete": {
+      "post": {
+        "tags": ["حذف سفارش"],
+        "summary": "حذف سفارش",
+        "description": "لیست سفارش هایی که مدیر قصد حذف کردن آنها را دارد",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/product/list": {
+      "post": {
+        "tags": ["لیست محصولات "],
+        "summary": "لیست محصولات / محصول",
+        "description": "از این متد برای بدست آوردن لیست محصولات یا محتوای محصولات داخل سایت استفاده می شود",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/product/create": {
+      "post": {
+        "tags": ["تعریف"],
+        "summary": "تعریف",
+        "description": "این متد برای ساخت یک محصول درافت (خالی از مشخصات) بکار می آید",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/product/save": {
+      "post": {
+        "tags": ["ذخیره"],
+        "summary": "ذخیره",
+        "description": "این متد برای ذخیره یا ویرایش محصول موجود بکار میرود",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/product/update": {
+      "post": {
+        "tags": ["ویرایش"],
+        "summary": "ویرایش",
+        "description": "این متد برای ذخیره یا ویرایش محصول موجود بکار میرود",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/product/delete": {
+      "post": {
+        "tags": ["حذف محصول"],
+        "summary": "حذف محصول",
+        "description": "برای حذف محصول از این متد استفاده نمایید",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/brands": {
+      "post": {
+        "tags": ["لیست برندها"],
+        "summary": "لیست برندها",
+        "description": "با استفاده از این متد شما می‌توانید لیست برندهای موجود در سایت را بدست آورید",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/pay/payment/list": {
+      "post": {
+        "tags": ["روش های پرداخت"],
+        "summary": "روش های پرداخت",
+        "description": "این متد جهت بدست آوردن روش های پرداخت استفاده می‌شود",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/wallet": {
+      "post": {
+        "tags": ["بدست آوردن موجودی کیف پول"],
+        "summary": "بدست آوردن موجودی کیف پول",
+        "description": "برای بدست آوردن موجودی کیف پول کاربر از این متد استفاده می شود",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/cart": {
+      "post": {
+        "tags": ["لیست اقلام سبد"],
+        "summary": "لیست اقلام سبد",
+        "description": "با استفاده از این متد شما می‌توانید لیست اقلام داخل سبد را بدست آورید. آرایه items هر آیتم شامل product_id, variant_id, type, type_label, title, variant_title, image, price, count, sum_price, unit است.",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/shop/warehouse/products": {
+      "post": {
+        "tags": ["لیست محصولات داخل انبار"],
+        "summary": "لیست محصولات داخل انبار",
+        "description": "این متد جهت نمایش محصولات داخل انبار سایت کاربرد دارد، دسترسی این متد برای مدیر سایت می‌باشد",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/content/article": {
+      "post": {
+        "tags": ["لیست مطالب"],
+        "summary": "لیست مطالب",
+        "description": "از این متد برای بدست آوردن لیست مطالب(مقالات) سایت استفاده می شود",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/comment": {
+      "post": {
+        "tags": ["لیست کامنت ها"],
+        "summary": "لیست کامنت ها",
+        "description": "این متد برای بدست آوردن لیست کامنت ها استفاده می شود",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    },
+    "/api/message/send": {
+      "post": {
+        "tags": ["ارسال پیامک"],
+        "summary": "ارسال پیامک",
+        "description": "از این متد جهت ارسال پیامک به کاربران استفاده می شود ( تنها مدیر سایت چنین قابلیتی دارد)",
+        "responses": { "200": { "description": "Successful response" } }
+      }
+    }
+  },
+  "components": { "schemas": {}, "securitySchemes": {} },
+  "x-note": "This is an abridged copy of the full ShopFA OpenAPI export the team was given (which also covers wishlist, coupons, shipping, returns, providers/factors, stock adjustments, and more product/cart/warehouse detail than shown here). It keeps the endpoints apps/api/src/integrations/shopfa/shopfaClient.ts actually calls, plus enough of the surrounding surface to scope future work (products, cart, wallet, content). Ask whoever supplied the original export for the complete file if a not-yet-implemented endpoint needs its full field-level documentation. Shared conventions across every endpoint in the full spec: HTTP POST only; list endpoints return rows under `items` (some return a bare array); every response can carry `{ successful, error, error_code, time }`; money amounts and unix timestamps are transmitted as strings."
+}

@@ -38,6 +38,12 @@
     "in_person": "In Person",
     "other": "Other"
   },
+  "contactPlatform": {
+    "instagram": "Instagram",
+    "telegram": "Telegram",
+    "whatsapp": "WhatsApp",
+    "other": "Other"
+  },
   "list": {
     "searchPlaceholder": "Search by case number, subject, or description",
     "customerSearchPlaceholder": "Search by customer name, phone, or email",
@@ -71,15 +77,26 @@
   "form": {
     "title": "Create Case",
     "customer": "Customer",
-    "customerHelp": "Search Shopfa customers by name, phone, or email",
+    "customerHelp": "Search by customer name, phone, or order number — shows the matching order(s)",
+    "linkedOrder": "Linked to order {{orderNumber}} · {{date}}",
     "subject": "Subject",
     "description": "Description",
     "category": "Category",
     "priority": "Priority",
     "source": "Source",
+    "contactPlatform": "Platform",
+    "contactId": "Account ID / Username",
     "assignedTo": "Assign to (optional)",
     "relatedOrder": "Related order (optional)",
     "relatedItem": "Related item (optional)",
+    "manualEntry": {
+      "toggleShow": "Can't find a matching order? Enter the customer name manually",
+      "toggleHide": "Hide manual entry",
+      "help": "Use this only when there's no order to match yet — the case won't be linked to an order.",
+      "customerName": "Customer name",
+      "sourceLive": "Live shop",
+      "sourceImported": "Imported"
+    },
     "tags": "Tags (optional)",
     "tagsPlaceholder": "Type a tag and press Enter",
     "submit": "Create Case",
@@ -103,6 +120,7 @@
     "fields": {
       "category": "Category",
       "source": "Source",
+      "contactPoint": "Contact Point",
       "priority": "Priority",
       "status": "Status",
       "assignedTo": "Assigned To",
@@ -117,6 +135,7 @@
       "changeStatus": "Change Status",
       "changePriority": "Change Priority",
       "assignStaff": "Assign Staff",
+      "moreActions": "More actions",
       "addNote": "Add Note",
       "addInternalNote": "Add Internal Note",
       "addCustomerNote": "Add Customer Interaction",
@@ -143,6 +162,9 @@
     "priorityDialog": {
       "title": "Change Priority",
       "newPriority": "New priority"
+    },
+    "contactPointDialog": {
+      "title": "Edit Contact Point"
     },
     "assignDialog": {
       "title": "Assign Staff",
@@ -173,6 +195,9 @@
     "assignment_changed_unassigned": "Unassigned",
     "assignment_changed_from": "Reassigned from {{fromUserName}} to {{toUserName}}",
     "priority_changed": "Priority changed: {{from}} → {{to}}",
+    "contact_point_changed": "Contact point set to {{platform}} ({{contactId}})",
+    "contact_point_changed_no_id": "Contact point set to {{platform}}",
+    "contact_point_changed_cleared": "Contact point cleared",
     "order_linked": "Order {{orderNumber}} linked",
     "item_linked": "Item {{title}} ({{sku}}) linked",
     "attachment_added": "Attachment added: {{filename}}",

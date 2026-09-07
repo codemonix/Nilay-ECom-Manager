@@ -100,6 +100,22 @@ export const casesApi = apiSlice.injectEndpoints({
       ],
     }),
 
+    changeContactPoint: builder.mutation<
+      CaseDTO,
+      { caseId: string; contactPoint: { platform: string; contactId?: string } }
+    >({
+      query: ({ caseId, contactPoint }) => ({
+        url: `/cases/${caseId}/contact-point`,
+        method: "POST",
+        body: { contactPoint },
+      }),
+      transformResponse: (response: ApiResponse<CaseDTO>) => unwrap(response),
+      invalidatesTags: (_r, _e, { caseId }) => [
+        { type: "Case", id: caseId },
+        { type: "CaseEvents", id: caseId },
+      ],
+    }),
+
     linkOrder: builder.mutation<CaseDTO, { caseId: string; externalOrderId: string; orderNumber: string }>({
       query: ({ caseId, ...body }) => ({ url: `/cases/${caseId}/orders`, method: "POST", body }),
       transformResponse: (response: ApiResponse<CaseDTO>) => unwrap(response),
@@ -166,6 +182,7 @@ export const {
   useAddNoteMutation,
   useChangeStatusMutation,
   useChangePriorityMutation,
+  useChangeContactPointMutation,
   useAssignCaseMutation,
   useLinkOrderMutation,
   useLinkItemMutation,

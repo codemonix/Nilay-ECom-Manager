@@ -1,4 +1,5 @@
 import Paper from "@mui/material/Paper";
+import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Avatar from "@mui/material/Avatar";
@@ -30,14 +31,16 @@ export function CustomerSummaryBar({ customer }: { customer: CaseDTO["customer"]
 
   return (
     <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-      <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
-        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 200 }}>
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "stretch", sm: "center" }}>
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: { sm: 200 } }}>
           <Avatar sx={{ bgcolor: "primary.main" }}>
             <PersonIcon />
           </Avatar>
-          <Stack spacing={0}>
-            <Typography variant="subtitle1">{customer.name}</Typography>
-            <Typography variant="body2" color="text.secondary">
+          <Stack spacing={0} sx={{ minWidth: 0 }}>
+            <Typography variant="subtitle1" noWrap>
+              {customer.name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" noWrap>
               <Ltr>{customer.phone}</Ltr>
               {customer.email ? (
                 <>
@@ -49,6 +52,7 @@ export function CustomerSummaryBar({ customer }: { customer: CaseDTO["customer"]
           </Stack>
         </Stack>
 
+        <Divider sx={{ display: { xs: "block", sm: "none" } }} />
         <Divider orientation="vertical" flexItem sx={{ display: { xs: "none", sm: "block" } }} />
 
         {isLoading && (
@@ -66,7 +70,13 @@ export function CustomerSummaryBar({ customer }: { customer: CaseDTO["customer"]
         )}
 
         {data && (
-          <Stack direction="row" spacing={3} flexWrap="wrap" useFlexGap>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(4, auto)" },
+              gap: { xs: 1.5, sm: 3 },
+            }}
+          >
             <StatBlock label={t("detail.customerSummary.orders")} value={formatNumber(data.ordersCount, language)} />
             <StatBlock
               label={t("detail.customerSummary.totalSpent")}
@@ -80,7 +90,7 @@ export function CustomerSummaryBar({ customer }: { customer: CaseDTO["customer"]
               label={t("detail.customerSummary.lastOrder")}
               value={data.lastOrderDate ? formatDate(data.lastOrderDate, language) : "—"}
             />
-          </Stack>
+          </Box>
         )}
       </Stack>
     </Paper>

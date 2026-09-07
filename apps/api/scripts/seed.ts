@@ -4,6 +4,7 @@ import {
   CasePriority,
   CaseSource,
   CaseStatus,
+  DEFAULT_PERMISSIONS_BY_ROLE,
   StaffRole,
   type CaseCategory as CaseCategoryT,
   type CasePriority as CasePriorityT,
@@ -12,6 +13,7 @@ import {
 } from "@complaint-system/shared";
 import { env } from "../src/config/env";
 import { logger } from "../src/config/logger";
+import { hashPassword } from "../src/utils/password";
 import { UserModel } from "../src/models/User";
 import { CaseModel } from "../src/models/Case";
 import { CaseEventModel } from "../src/models/CaseEvent";
@@ -241,14 +243,19 @@ async function main() {
   ]);
   logger.info("Cleared existing collections");
 
-  const users = await UserModel.insertMany([
-    { name: "Admin User", email: "admin@shopfa.internal", role: StaffRole.ADMIN, active: true },
-    { name: "Sara Vakili", email: "sara.vakili@shopfa.internal", role: StaffRole.CUSTOMER_SERVICE, active: true },
-    { name: "Behnam Rad", email: "behnam.rad@shopfa.internal", role: StaffRole.WAREHOUSE, active: true },
-    { name: "Leila Farahani", email: "leila.farahani@shopfa.internal", role: StaffRole.MANAGER, active: true },
-    { name: "Kian Sharifi", email: "kian.sharifi@shopfa.internal", role: StaffRole.PURCHASING, active: true },
-  ]);
-  logger.info(`Seeded ${users.length} staff users`);
+  const SEED_PASSWORD = "Passw0rd!";
+  const passwordHash = await hashPassword(SEED_PASSWORD);
+
+  const users = await UserModel.insertMany(
+    [
+      { name: "Admin User", email: "admin@shopfa.internal", passwordHash, role: StaffRole.ADMIN, active: true },
+      { name: "Sara Vakili", email: "sara.vakili@shopfa.internal", passwordHash, role: StaffRole.CUSTOMER_SERVICE, active: true },
+      { name: "Behnam Rad", email: "behnam.rad@shopfa.internal", passwordHash, role: StaffRole.WAREHOUSE, active: true },
+      { name: "Leila Farahani", email: "leila.farahani@shopfa.internal", passwordHash, role: StaffRole.MANAGER, active: true },
+      { name: "Kian Sharifi", email: "kian.sharifi@shopfa.internal", passwordHash, role: StaffRole.PURCHASING, active: true },
+    ].map((u) => ({ ...u, permissions: DEFAULT_PERMISSIONS_BY_ROLE[u.role] })),
+  );
+  logger.info(`Seeded ${users.length} staff users (all with password "${SEED_PASSWORD}" -- change in production)`);
 
   const actor = { id: String(users[1]!._id), name: users[1]!.name };
 

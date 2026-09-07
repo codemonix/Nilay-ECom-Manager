@@ -1,5 +1,6 @@
 import type {
   CaseCategory,
+  CaseContactPlatform,
   CaseEventType,
   CasePriority,
   CaseSource,
@@ -25,6 +26,17 @@ export interface CaseRelatedItem {
   title: string;
 }
 
+/**
+ * The channel used to reach the customer for a case, captured alongside
+ * CaseSource. Only meaningful when source is SOCIAL_MEDIA; contactId holds
+ * the platform-specific account id/handle and is required for platforms in
+ * CASE_CONTACT_PLATFORMS_REQUIRING_ID (Instagram, Telegram).
+ */
+export interface CaseContactPoint {
+  platform: CaseContactPlatform;
+  contactId?: string;
+}
+
 export interface CaseDTO {
   id: string;
   caseNumber: string;
@@ -35,6 +47,7 @@ export interface CaseDTO {
   priority: CasePriority;
   status: CaseStatus;
   source: CaseSource;
+  contactPoint: CaseContactPoint | null;
   assignedTo: { id: string; name: string } | null;
   relatedOrders: CaseRelatedOrder[];
   relatedItems: CaseRelatedItem[];

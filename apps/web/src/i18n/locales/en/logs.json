@@ -1,0 +1,56 @@
+{
+  "title": "Logs",
+  "description": "Three independent audit trails: what staff did in the system, every call made to the Shopfa API, and internal system events at the configured log level.",
+  "resultsCount_one": "{{count}} entry",
+  "resultsCount_other": "{{count}} entries",
+  "tabs": {
+    "activity": "User Activity",
+    "shopfa": "Shopfa Transactions",
+    "system": "System Log"
+  },
+  "levels": {
+    "error": "Error",
+    "warn": "Warning",
+    "info": "Info",
+    "http": "HTTP",
+    "debug": "Debug"
+  },
+  "activity": {
+    "searchPlaceholder": "Search by user or path",
+    "empty": "No user activity recorded yet",
+    "columns": {
+      "time": "Time",
+      "user": "User",
+      "role": "Role",
+      "action": "Request",
+      "status": "Status",
+      "duration": "Duration",
+      "ip": "IP Address"
+    }
+  },
+  "shopfa": {
+    "searchPlaceholder": "Search by endpoint or error",
+    "empty": "No Shopfa transactions recorded yet",
+    "allOutcomes": "All outcomes",
+    "success": "Success",
+    "failed": "Failed",
+    "columns": {
+      "time": "Time",
+      "endpoint": "Endpoint",
+      "status": "HTTP Status",
+      "outcome": "Outcome",
+      "duration": "Duration"
+    }
+  },
+  "system": {
+    "searchPlaceholder": "Search by message or context",
+    "empty": "No system log entries yet",
+    "allLevels": "All levels",
+    "columns": {
+      "time": "Time",
+      "level": "Level",
+      "message": "Message",
+      "context": "Context"
+    }
+  }
+}

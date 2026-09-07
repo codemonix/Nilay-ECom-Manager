@@ -4,12 +4,22 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import ButtonGroup from "@mui/material/ButtonGroup";
+import IconButton from "@mui/material/IconButton";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ReplayIcon from "@mui/icons-material/Replay";
 import LockIcon from "@mui/icons-material/Lock";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import ChatIcon from "@mui/icons-material/Chat";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import EditIcon from "@mui/icons-material/Edit";
+import FlagIcon from "@mui/icons-material/Flag";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { useTranslation } from "react-i18next";
 import { CASE_STATUS_TRANSITIONS, CaseStatus } from "@complaint-system/shared";
 import type { CaseDTO } from "../types";
@@ -26,7 +36,10 @@ type DialogKind = "status" | "priority" | "assign" | "internalNote" | "customerN
 
 export function CaseHeader({ caseData }: { caseData: CaseDTO }) {
   const { t } = useTranslation("complaints");
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [openDialog, setOpenDialog] = useState<DialogKind>(null);
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [changeStatus, { isLoading: isTransitioning }] = useChangeStatusMutation();
 
   const allowedNext = CASE_STATUS_TRANSITIONS[caseData.status] ?? [];
@@ -54,27 +67,19 @@ export function CaseHeader({ caseData }: { caseData: CaseDTO }) {
           </Stack>
         </Stack>
 
-        <Stack spacing={1} alignItems={{ xs: "stretch", md: "flex-end" }}>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <Button size="small" variant="outlined" onClick={() => setOpenDialog("status")}>
-              {t("detail.actions.changeStatus")}
-            </Button>
-            <Button size="small" variant="outlined" onClick={() => setOpenDialog("priority")}>
-              {t("detail.actions.changePriority")}
-            </Button>
-            <Button size="small" variant="outlined" startIcon={<PersonAddIcon />} onClick={() => setOpenDialog("assign")}>
-              {t("detail.actions.assignStaff")}
-            </Button>
-          </Stack>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <Button size="small" startIcon={<NoteAddIcon />} onClick={() => setOpenDialog("internalNote")}>
-              {t("detail.actions.addInternalNote")}
-            </Button>
-            <Button size="small" startIcon={<ChatIcon />} onClick={() => setOpenDialog("customerNote")}>
-              {t("detail.actions.addCustomerNote")}
-            </Button>
-          </Stack>
-          <ButtonGroup size="small" variant="contained">
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          flexWrap="wrap"
+          useFlexGap
+          justifyContent={{ xs: "space-between", md: "flex-end" }}
+        >
+          <ButtonGroup
+            size={isMobile ? "medium" : "small"}
+            variant="contained"
+            sx={isMobile ? { flexGrow: 1, "& .MuiButton-root": { flex: 1 } } : undefined}
+          >
             {canResolve && (
               <Button
                 color="success"
@@ -106,6 +111,98 @@ export function CaseHeader({ caseData }: { caseData: CaseDTO }) {
               </Button>
             )}
           </ButtonGroup>
+
+          {isMobile ? (
+            <>
+              <IconButton
+                aria-label={t("detail.actions.moreActions")}
+                onClick={(e) => setMenuAnchor(e.currentTarget)}
+                sx={{ border: 1, borderColor: "divider" }}
+              >
+                <MoreVertIcon />
+              </IconButton>
+              <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
+                <MenuItem
+                  onClick={() => {
+                    setOpenDialog("status");
+                    setMenuAnchor(null);
+                  }}
+                >
+                  <ListItemIcon>
+                    <EditIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>{t("detail.actions.changeStatus")}</ListItemText>
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setOpenDialog("priority");
+                    setMenuAnchor(null);
+                  }}
+                >
+                  <ListItemIcon>
+                    <FlagIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>{t("detail.actions.changePriority")}</ListItemText>
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setOpenDialog("assign");
+                    setMenuAnchor(null);
+                  }}
+                >
+                  <ListItemIcon>
+                    <PersonAddIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>{t("detail.actions.assignStaff")}</ListItemText>
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setOpenDialog("internalNote");
+                    setMenuAnchor(null);
+                  }}
+                >
+                  <ListItemIcon>
+                    <NoteAddIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>{t("detail.actions.addInternalNote")}</ListItemText>
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setOpenDialog("customerNote");
+                    setMenuAnchor(null);
+                  }}
+                >
+                  <ListItemIcon>
+                    <ChatIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>{t("detail.actions.addCustomerNote")}</ListItemText>
+                </MenuItem>
+              </Menu>
+            </>
+          ) : (
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap justifyContent="flex-end">
+              <Button size="small" variant="outlined" onClick={() => setOpenDialog("status")}>
+                {t("detail.actions.changeStatus")}
+              </Button>
+              <Button size="small" variant="outlined" onClick={() => setOpenDialog("priority")}>
+                {t("detail.actions.changePriority")}
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<PersonAddIcon />}
+                onClick={() => setOpenDialog("assign")}
+              >
+                {t("detail.actions.assignStaff")}
+              </Button>
+              <Button size="small" startIcon={<NoteAddIcon />} onClick={() => setOpenDialog("internalNote")}>
+                {t("detail.actions.addInternalNote")}
+              </Button>
+              <Button size="small" startIcon={<ChatIcon />} onClick={() => setOpenDialog("customerNote")}>
+                {t("detail.actions.addCustomerNote")}
+              </Button>
+            </Stack>
+          )}
         </Stack>
       </Stack>
 

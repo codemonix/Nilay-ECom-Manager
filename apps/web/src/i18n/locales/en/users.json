@@ -1,0 +1,40 @@
+{
+  "title": "Users",
+  "table": {
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions",
+    "active": "Active",
+    "inactive": "Inactive",
+    "access": "Access",
+    "resetPassword": "Reset password",
+    "cannotDeactivateSelf": "You cannot change your own role or status"
+  },
+  "permissions": {
+    "action": "Access",
+    "title": "Edit access for {{name}}",
+    "helper": "Choose which menu sections this user can open.",
+    "adminNotice": "Admins always have access to every section.",
+    "error": "Could not update access",
+    "summaryAll": "All access (admin)",
+    "summaryNone": "No access",
+    "summaryCount": "{{count}} sections"
+  },
+  "create": {
+    "action": "Add user",
+    "title": "Add a new user",
+    "name": "Name",
+    "email": "Email",
+    "password": "Temporary password",
+    "role": "Role",
+    "error": "Could not create user"
+  },
+  "resetPassword": {
+    "title": "Reset password for {{name}}",
+    "newPassword": "New password",
+    "success": "Password reset successfully",
+    "error": "Could not reset password"
+  }
+}

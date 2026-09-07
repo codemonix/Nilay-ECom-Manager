@@ -2,6 +2,9 @@ import type { CaseDocument } from "../models/Case";
 import type { CaseEventDocument } from "../models/CaseEvent";
 import type { AttachmentDocument } from "../models/Attachment";
 import type { UserDocument } from "../models/User";
+import type { SystemLogDocument } from "../models/SystemLog";
+import type { UserActivityLogDocument } from "../models/UserActivityLog";
+import type { ShopfaTransactionLogDocument } from "../models/ShopfaTransactionLog";
 
 type PopulatedRef = { _id: unknown; name: string; role?: string } | null | undefined;
 
@@ -22,6 +25,7 @@ export function serializeCase(caseDoc: CaseDocument) {
     priority: obj.priority,
     status: obj.status,
     source: obj.source,
+    contactPoint: obj.contactPoint ?? null,
     assignedTo: refToSummary(obj.assignedTo as unknown as PopulatedRef),
     relatedOrders: obj.relatedOrders,
     relatedItems: obj.relatedItems,
@@ -71,5 +75,49 @@ export function serializeUser(user: UserDocument) {
     email: obj.email,
     role: obj.role,
     active: obj.active,
+    permissions: obj.permissions ?? [],
+  };
+}
+
+export function serializeSystemLog(log: SystemLogDocument) {
+  const obj = log.toObject();
+  return {
+    id: String(obj._id),
+    level: obj.level,
+    message: obj.message,
+    context: obj.context ?? null,
+    meta: obj.meta ?? null,
+    createdAt: obj.createdAt,
+  };
+}
+
+export function serializeUserActivityLog(log: UserActivityLogDocument) {
+  const obj = log.toObject();
+  return {
+    id: String(obj._id),
+    userId: obj.userId ? String(obj.userId) : null,
+    userName: obj.userName,
+    userRole: obj.userRole,
+    method: obj.method,
+    path: obj.path,
+    statusCode: obj.statusCode,
+    durationMs: obj.durationMs,
+    ip: obj.ip ?? null,
+    createdAt: obj.createdAt,
+  };
+}
+
+export function serializeShopfaTransactionLog(log: ShopfaTransactionLogDocument) {
+  const obj = log.toObject();
+  return {
+    id: String(obj._id),
+    method: obj.method,
+    endpoint: obj.endpoint,
+    requestParams: obj.requestParams ?? null,
+    statusCode: obj.statusCode ?? null,
+    success: obj.success,
+    durationMs: obj.durationMs,
+    errorMessage: obj.errorMessage ?? null,
+    createdAt: obj.createdAt,
   };
 }

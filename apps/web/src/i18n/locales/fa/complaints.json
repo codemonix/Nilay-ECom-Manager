@@ -38,6 +38,12 @@
     "in_person": "حضوری",
     "other": "سایر"
   },
+  "contactPlatform": {
+    "instagram": "اینستاگرام",
+    "telegram": "تلگرام",
+    "whatsapp": "واتس‌اپ",
+    "other": "سایر"
+  },
   "list": {
     "searchPlaceholder": "جستجو بر اساس شماره پرونده، موضوع یا شرح",
     "customerSearchPlaceholder": "جستجو بر اساس نام، تلفن یا ایمیل مشتری",
@@ -71,15 +77,26 @@
   "form": {
     "title": "ایجاد پرونده",
     "customer": "مشتری",
-    "customerHelp": "جستجوی مشتریان شاپفا بر اساس نام، تلفن یا ایمیل",
+    "customerHelp": "بر اساس نام مشتری، شماره تلفن یا شماره سفارش جستجو کنید — سفارش(های) منطبق نمایش داده می‌شود",
+    "linkedOrder": "مرتبط با سفارش {{orderNumber}} · {{date}}",
     "subject": "موضوع",
     "description": "شرح",
     "category": "دسته‌بندی",
     "priority": "اولویت",
     "source": "منبع",
+    "contactPlatform": "پلتفرم",
+    "contactId": "شناسه/نام کاربری",
     "assignedTo": "مسئول رسیدگی (اختیاری)",
     "relatedOrder": "سفارش مرتبط (اختیاری)",
     "relatedItem": "کالای مرتبط (اختیاری)",
+    "manualEntry": {
+      "toggleShow": "سفارش منطبقی پیدا نمی‌کنید؟ نام مشتری را به‌صورت دستی وارد کنید",
+      "toggleHide": "پنهان کردن ورود دستی",
+      "help": "فقط زمانی از این گزینه استفاده کنید که هنوز سفارشی برای تطبیق وجود ندارد — پرونده به هیچ سفارشی متصل نخواهد شد.",
+      "customerName": "نام مشتری",
+      "sourceLive": "فروشگاه زنده",
+      "sourceImported": "وارد شده"
+    },
     "tags": "برچسب‌ها (اختیاری)",
     "tagsPlaceholder": "یک برچسب بنویسید و Enter را بزنید",
     "submit": "ایجاد پرونده",
@@ -103,6 +120,7 @@
     "fields": {
       "category": "دسته‌بندی",
       "source": "منبع",
+      "contactPoint": "نقطه تماس",
       "priority": "اولویت",
       "status": "وضعیت",
       "assignedTo": "مسئول رسیدگی",
@@ -117,6 +135,7 @@
       "changeStatus": "تغییر وضعیت",
       "changePriority": "تغییر اولویت",
       "assignStaff": "تعیین مسئول",
+      "moreActions": "سایر عملیات",
       "addNote": "افزودن یادداشت",
       "addInternalNote": "افزودن یادداشت داخلی",
       "addCustomerNote": "ثبت تعامل با مشتری",
@@ -143,6 +162,9 @@
     "priorityDialog": {
       "title": "تغییر اولویت",
       "newPriority": "اولویت جدید"
+    },
+    "contactPointDialog": {
+      "title": "ویرایش نقطه تماس"
     },
     "assignDialog": {
       "title": "تعیین مسئول",
@@ -173,6 +195,9 @@
     "assignment_changed_unassigned": "مسئول حذف شد",
     "assignment_changed_from": "از {{fromUserName}} به {{toUserName}} واگذار شد",
     "priority_changed": "تغییر اولویت: {{from}} ← {{to}}",
+    "contact_point_changed": "نقطه تماس روی {{platform}} ({{contactId}}) تنظیم شد",
+    "contact_point_changed_no_id": "نقطه تماس روی {{platform}} تنظیم شد",
+    "contact_point_changed_cleared": "نقطه تماس پاک شد",
     "order_linked": "سفارش {{orderNumber}} متصل شد",
     "item_linked": "کالای {{title}} ({{sku}}) متصل شد",
     "attachment_added": "پیوست افزوده شد: {{filename}}",

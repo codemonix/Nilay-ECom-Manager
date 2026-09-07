@@ -9,7 +9,7 @@ import type {
   CreateCaseInput,
   ListCasesQuery,
 } from "../validators/caseValidators";
-import type { CasePriority, CaseStatus } from "@complaint-system/shared";
+import type { CaseContactPoint, CasePriority, CaseStatus } from "@complaint-system/shared";
 
 export const listCases = asyncHandler(async (req: Request, res: Response) => {
   const query = req.query as unknown as ListCasesQuery;
@@ -53,6 +53,16 @@ export const changeStatus = asyncHandler(async (req: Request, res: Response) => 
 export const changePriority = asyncHandler(async (req: Request, res: Response) => {
   const { priority } = req.body as { priority: CasePriority };
   const { case: caseDoc } = await caseService.changePriority(req.params.id as string, priority, req.currentUser);
+  return sendSuccess(res, serializeCase(caseDoc));
+});
+
+export const changeContactPoint = asyncHandler(async (req: Request, res: Response) => {
+  const { contactPoint } = req.body as { contactPoint: CaseContactPoint };
+  const { case: caseDoc } = await caseService.changeContactPoint(
+    req.params.id as string,
+    contactPoint,
+    req.currentUser,
+  );
   return sendSuccess(res, serializeCase(caseDoc));
 });
 

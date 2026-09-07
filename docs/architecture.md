@@ -67,21 +67,76 @@ history** to aggregate over (e.g. "how many `status_changed` events to
 
 ```
 services/customerService.ts
-  -> integrations/shopfa/index.ts        (factory: mock vs. real, by SHOPFA_MOCK)
-    -> integrations/shopfa/shopfaClient.ts       (real HTTP client, axios)
-    -> integrations/shopfa/mockShopfaClient.ts   (in-memory mock, default)
-       both implement -> shopfaTypes.ts#ShopfaClient (the interface)
-    -> integrations/shopfa/shopfaMapper.ts       (raw Shopfa shape -> our DTOs)
+  -> integrations/shopfa/index.ts        (factory: mock / live / imported, see below)
+    -> integrations/shopfa/shopfaClient.ts             (real HTTP client, axios)
+    -> integrations/shopfa/mockShopfaClient.ts         (in-memory mock, dev/test)
+    -> integrations/shopfa/importedOrdersShopfaClient.ts (backed by imported-order data)
+       all three implement -> shopfaTypes.ts#ShopfaClient (the interface)
+    -> integrations/shopfa/shopfaMapper.ts             (raw Shopfa shape -> our DTOs)
 ```
 
 `customerService.ts` (and any future service) depends only on the
-`ShopfaClient` interface, never on `HttpShopfaClient` or `MockShopfaClient`
-directly (dependency inversion) — swapping providers is a one-line change in
-the factory, not a refactor.
+`ShopfaClient` interface, never on `HttpShopfaClient`, `MockShopfaClient`, or
+`ImportedOrdersShopfaClient` directly (dependency inversion) — swapping
+providers is a one-line change in the factory, not a refactor.
 
 **The frontend never receives a Shopfa credential.** `SHOPFA_API_TOKEN` is
 read only in `apps/api/src/config/env.ts` and used only inside
 `shopfaClient.ts`.
+
+### Data source: live API vs. imported orders
+
+`HttpShopfaClient` (`shopfaClient.ts`) implements the `ShopfaClient`
+interface against the real Shopfa REST API, verified directly against the
+live Nilay Jewelry store (its OpenAPI export turned out to be incomplete/
+wrong on several points that only surfaced by testing against real
+responses — see the conventions documented at the top of
+`shopfaApiTypes.ts`). Every Shopfa endpoint is called with HTTP POST, but
+Shopfa reads every parameter *including auth* from the query string, not
+the JSON body or an Authorization header: a request interceptor injects
+`private_key` (the token from `/api/user/signin`) into every call's query
+params. Errors come back as a non-2xx HTTP status with `successful: true`
+(not `false`!) and an `error`/`error_code` field, so failures are detected
+from the HTTP status. `/api/shop/orders` and `/api/shop/orders/details`
+(the same underlying list, filtered by `id`) wrap rows under `baskets`;
+`/api/user/users` wraps rows under `items`. Shopfa has no single "customer
+summary" endpoint, so `getCustomerOrderSummary` derives one by listing that
+customer's orders (`POST /api/shop/orders` filtered by `user_id`) and
+aggregating; `searchCustomer` uses `POST /api/user/users`. The wire shapes
+and this mapping live in `shopfaApiTypes.ts` / `shopfaApiMapper.ts`, kept
+separate from the simplified `ShopfaRaw*` shapes in `shopfaTypes.ts` that
+back `MockShopfaClient`/`mockData.ts` — the two never need to agree on a
+wire format, only on the `ShopfaClient` interface both implement.
+
+Because Shopfa access wasn't available for most of this project, V1 also
+ships a stopgap that remains the default: staff export an orders xlsx from
+Shopfa and upload it on the Settings page, which parses and stores it in
+the `importedorders` collection (see
+[database.md](database.md#importedorders)). `getShopfaClient()` in
+`integrations/shopfa/index.ts` picks the client at request time:
+
+1. If `SHOPFA_MOCK=true` (local dev/tests), always the static in-memory
+   mock, same as before this feature existed.
+2. Otherwise it reads the runtime `Settings.dataSource` toggle (the
+   Settings page's "live API" switch, backed by `settingsRepository`):
+   `"live_api"` returns `HttpShopfaClient`; `"imported_file"` (the default)
+   returns `ImportedOrdersShopfaClient`, which serves `getCustomer`,
+   `getOrder`, `searchCustomer`, `searchOrders` from the imported-order
+   collection instead of an HTTP call.
+
+Because the toggle lives in MongoDB rather than an env var, flipping it on
+the Settings page takes effect on the next request with no server restart.
+This is also why `getShopfaClient()` is `async` and why
+`integrations/shopfa/importedOrdersShopfaClient.ts` is the one place in the
+integrations layer allowed to depend on a repository directly (via
+`importedOrderRepository`) instead of an HTTP client — it's still just
+swapping the *backend* behind the same `ShopfaClient` interface.
+
+The imported-order browse/search surface on the Settings page
+(`GET /orders`, `GET /orders/:externalOrderId`) reads the imported-order
+collection directly through `orderService.ts`, independent of which
+`ShopfaClient` is currently active — it always shows what's actually been
+imported, regardless of the live/imported toggle.
 
 ## Authentication
 
@@ -112,6 +167,7 @@ src/
   features/
     complaints/    Case Management (V1) -- api/, components/, pages/, types/, utils/
     customers/     Read-only Shopfa customer summary/search API slice
+    settings/      Data-source toggle + xlsx order import + imported-orders browse
     users/         Staff list API slice
   i18n/            react-i18next setup, locale JSON, language hook
   layouts/         MainLayout (app bar, side nav, responsive drawer)

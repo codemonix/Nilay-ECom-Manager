@@ -26,6 +26,14 @@ export function describeEvent(event: CaseEventDTO, t: TFunction<"complaints">): 
         from: t(`priority.${data.from as string}`, { ns: "complaints" }),
         to: t(`priority.${data.to as string}`, { ns: "complaints" }),
       });
+    case "contact_point_changed": {
+      const to = data.to as { platform: string; contactId?: string } | null;
+      if (!to) return t("events.contact_point_changed_cleared");
+      const platform = t(`contactPlatform.${to.platform}`, { ns: "complaints" });
+      return to.contactId
+        ? t("events.contact_point_changed", { platform, contactId: to.contactId })
+        : t("events.contact_point_changed_no_id", { platform });
+    }
     case "assignment_changed":
       if (!data.toUserName) return t("events.assignment_changed_unassigned");
       if (data.fromUserName) {

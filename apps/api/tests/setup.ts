@@ -9,6 +9,7 @@ process.env.MONGODB_URI = mongod.getUri();
 process.env.SHOPFA_MOCK = "true";
 process.env.NODE_ENV = "test";
 process.env.CORS_ORIGIN = "http://localhost:5173";
+process.env.JWT_SECRET = "test-jwt-secret-do-not-use-in-production";
 
 const mongoose = (await import("mongoose")).default;
 const { afterAll, afterEach, beforeAll } = await import("vitest");

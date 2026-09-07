@@ -6,6 +6,7 @@ import { idParamSchema } from "../validators/commonValidators";
 import {
   addNoteSchema,
   assignCaseSchema,
+  changeContactPointSchema,
   changePrioritySchema,
   changeStatusSchema,
   createCaseSchema,
@@ -42,6 +43,13 @@ caseRoutes.post(
   validate(idParamSchema, "params"),
   validate(changePrioritySchema),
   caseController.changePriority,
+);
+
+caseRoutes.post(
+  "/:id/contact-point",
+  validate(idParamSchema, "params"),
+  validate(changeContactPointSchema),
+  caseController.changeContactPoint,
 );
 
 caseRoutes.post(

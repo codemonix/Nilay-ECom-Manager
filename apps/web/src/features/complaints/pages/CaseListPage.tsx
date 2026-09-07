@@ -1,10 +1,22 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
+import Fab from "@mui/material/Fab";
+import Badge from "@mui/material/Badge";
+import TextField from "@mui/material/TextField";
+import InputAdornment from "@mui/material/InputAdornment";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
 import TablePagination from "@mui/material/TablePagination";
 import AddIcon from "@mui/icons-material/Add";
+import SearchIcon from "@mui/icons-material/Search";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
 import type { CaseListQuery } from "@complaint-system/shared";
 import { useListCasesQuery } from "../api/casesApi";
@@ -40,8 +52,12 @@ function parseQuery(searchParams: URLSearchParams): CaseListQuery {
 
 export function CaseListPage() {
   const { t } = useTranslation("complaints");
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [searchParams, setSearchParams] = useSearchParams();
   const [createOpen, setCreateOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [mobileSearch, setMobileSearch] = useState("");
 
   const query = useMemo(() => parseQuery(searchParams), [searchParams]);
   const { data, isFetching } = useListCasesQuery(query);
@@ -56,20 +72,72 @@ export function CaseListPage() {
     setSearchParams(next);
   };
 
+  useEffect(() => setMobileSearch(query.search ?? ""), [query.search]);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      if (mobileSearch !== (query.search ?? "")) updateParams({ search: mobileSearch || undefined });
+    }, 350);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mobileSearch]);
+
+  const activeFilterCount = [
+    query.status,
+    query.priority,
+    query.category,
+    query.assignedTo,
+    query.dateFrom,
+    query.dateTo,
+  ].filter(Boolean).length;
+
   return (
-    <Stack spacing={2}>
+    <Stack spacing={2} sx={{ pb: isMobile ? 9 : 0 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" useFlexGap>
         <Typography variant="h1">{t("title")}</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>
-          {t("createCase")}
-        </Button>
+        {!isMobile && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>
+            {t("createCase")}
+          </Button>
+        )}
       </Stack>
 
-      <CaseFilters
-        value={query}
-        onChange={(patch) => updateParams(patch)}
-        onClear={() => setSearchParams(new URLSearchParams())}
-      />
+      {isMobile ? (
+        <Stack direction="row" spacing={1}>
+          <TextField
+            size="small"
+            placeholder={t("list.searchPlaceholder")}
+            value={mobileSearch}
+            onChange={(e) => setMobileSearch(e.target.value)}
+            fullWidth
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+          <Badge badgeContent={activeFilterCount} color="primary">
+            <Button
+              variant="outlined"
+              onClick={() => setFiltersOpen(true)}
+              sx={{ minWidth: 0, px: 1.5 }}
+              aria-label={t("actions.filters", { ns: "common" })}
+            >
+              <FilterListIcon fontSize="small" />
+            </Button>
+          </Badge>
+        </Stack>
+      ) : (
+        <CaseFilters
+          value={query}
+          onChange={(patch) => updateParams(patch)}
+          onClear={() => setSearchParams(new URLSearchParams())}
+        />
+      )}
 
       {data && (
         <Typography variant="body2" color="text.secondary">
@@ -91,6 +159,41 @@ export function CaseListPage() {
           onRowsPerPageChange={(e) => updateParams({ pageSize: Number(e.target.value) })}
         />
       )}
+
+      {isMobile && (
+        <Fab
+          color="primary"
+          aria-label={t("createCase")}
+          onClick={() => setCreateOpen(true)}
+          sx={{
+            position: "fixed",
+            bottom: "calc(64px + env(safe-area-inset-bottom) + 16px)",
+            insetInlineEnd: 20,
+          }}
+        >
+          <AddIcon />
+        </Fab>
+      )}
+
+      <Dialog open={filtersOpen} onClose={() => setFiltersOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle>{t("actions.filters", { ns: "common" })}</DialogTitle>
+        <DialogContent>
+          <CaseFilters value={query} onChange={(patch) => updateParams(patch)} onClear={() => {}} bare hideSearch />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setSearchParams(new URLSearchParams());
+              setFiltersOpen(false);
+            }}
+          >
+            {t("actions.clearFilters", { ns: "common" })}
+          </Button>
+          <Button variant="contained" onClick={() => setFiltersOpen(false)}>
+            {t("actions.apply", { ns: "common" })}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <CreateCaseDialog open={createOpen} onClose={() => setCreateOpen(false)} />
     </Stack>

@@ -1,6 +1,7 @@
 import { Schema, model, type InferSchemaType, type HydratedDocument, Types } from "mongoose";
 import {
   CASE_CATEGORY_VALUES,
+  CASE_CONTACT_PLATFORM_VALUES,
   CASE_PRIORITY_VALUES,
   CASE_SOURCE_VALUES,
   CASE_STATUS_VALUES,
@@ -35,6 +36,14 @@ const relatedItemSchema = new Schema(
   { _id: false },
 );
 
+const contactPointSchema = new Schema(
+  {
+    platform: { type: String, enum: CASE_CONTACT_PLATFORM_VALUES, required: true },
+    contactId: { type: String, trim: true },
+  },
+  { _id: false },
+);
+
 const caseSchema = new Schema(
   {
     caseNumber: { type: String, required: true, unique: true },
@@ -58,6 +67,7 @@ const caseSchema = new Schema(
       default: CaseStatus.OPEN,
     },
     source: { type: String, enum: CASE_SOURCE_VALUES, required: true },
+    contactPoint: { type: contactPointSchema, default: null },
 
     assignedTo: { type: Schema.Types.ObjectId, ref: "User", default: null },
 

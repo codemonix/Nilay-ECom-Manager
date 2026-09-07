@@ -6,11 +6,20 @@
     "packing": "Packing",
     "purchasing": "Purchasing",
     "inventory": "Inventory",
-    "reporting": "Reporting"
+    "reporting": "Reporting",
+    "settings": "Settings",
+    "users": "Users",
+    "logs": "Logs"
   },
+  "administration": "Administration",
   "comingSoon": "Coming soon",
+  "more": "More",
   "breadcrumbs": {
     "cases": "Cases",
     "caseDetailLabel": "Case"
+  },
+  "noAccess": {
+    "title": "No access",
+    "description": "You don't have access to any section yet. Ask an administrator to grant you access."
   }
 }

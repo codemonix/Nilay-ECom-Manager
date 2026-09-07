@@ -7,6 +7,9 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
   LOG_LEVEL: z.string().default("info"),
 
+  JWT_SECRET: z.string().min(16, "JWT_SECRET is required and must be at least 16 characters"),
+  JWT_EXPIRES_IN: z.string().default("8h"),
+
   SHOPFA_API_BASE_URL: z.string().default(""),
   SHOPFA_API_TOKEN: z.string().default(""),
   SHOPFA_MOCK: z

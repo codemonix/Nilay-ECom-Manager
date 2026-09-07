@@ -74,6 +74,38 @@ Single-purpose collection backing gapless per-day case-number sequences
 `upsert`, which is atomic at the document level regardless of transaction
 support.
 
+### `importedorders`
+
+One document per order imported from a Shopfa xlsx export (see
+[architecture.md#data-source-live-api-vs-imported-orders](architecture.md#data-source-live-api-vs-imported-orders)),
+with every line item of that order rolled up into `items`. Upserted by
+`externalOrderId` on each import, so re-importing an updated export updates
+existing orders instead of duplicating them.
+
+| Field | Type | Notes |
+|---|---|---|
+| `externalOrderId` | string, unique | Shopfa's order code (کد سفارش) |
+| `status` | string | Raw Shopfa status text -- not a controlled enum, since it's Shopfa's own workflow, not ours |
+| `purchaseDate` | Date, nullable | Parsed from the export's Gregorian purchase-date column |
+| `buyer` | embedded `{ externalBuyerId, firstName, lastName, province?, city?, address?, postalCode?, mobile?, landline?, nationalId? }` | |
+| `items` | `[{ productCode, sku?, title, quantity, unitPrice, amount }]` | |
+| `shippingCost`, `discountAmount`, `itemsTotal`, `totalAmount` | number | `totalAmount = itemsTotal + shippingCost - discountAmount` |
+| `importedAt` | Date | Set on every (re-)import, independent of `createdAt`/`updatedAt` |
+
+Indexes: `externalOrderId` unique, `{ "buyer.externalBuyerId": 1 }`,
+`{ purchaseDate: -1 }`. Search (order id, buyer name/mobile) is a bounded
+regex scan rather than a text index -- see
+`repositories/importedOrderRepository.ts` -- since a MongoDB text index's
+default stemmer isn't a good fit for mixed Farsi/numeric fields.
+
+### `settings`
+
+Singleton document (fixed `_id: "app"`, created lazily on first read) for
+app-wide settings -- currently just the order data-source toggle
+(`dataSource: "imported_file" | "live_api"`) and `lastImport` metadata
+(`fileName`, `importedAt`, `importedBy`, row/order/item counts). See
+`repositories/settingsRepository.ts`.
+
 ## Transactions & consistency
 
 Every action that changes both a `Case` and writes a `CaseEvent` (creating a

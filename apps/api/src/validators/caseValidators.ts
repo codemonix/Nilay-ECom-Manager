@@ -1,9 +1,13 @@
 import { z } from "zod";
 import {
   CASE_CATEGORY_VALUES,
+  CASE_CONTACT_PLATFORM_VALUES,
+  CASE_CONTACT_PLATFORMS_REQUIRING_ID,
   CASE_PRIORITY_VALUES,
   CASE_SOURCE_VALUES,
   CASE_STATUS_VALUES,
+  CaseSource,
+  type CaseContactPlatform,
 } from "@complaint-system/shared";
 import { objectIdSchema, paginationQuerySchema } from "./commonValidators";
 
@@ -14,26 +18,43 @@ export const customerSnapshotSchema = z.object({
   email: z.string().email().optional().or(z.literal("")),
 });
 
-export const createCaseSchema = z.object({
-  customer: customerSnapshotSchema,
-  subject: z.string().min(3).max(200),
-  description: z.string().min(1).max(5000),
-  category: z.enum(CASE_CATEGORY_VALUES as [string, ...string[]]),
-  priority: z.enum(CASE_PRIORITY_VALUES as [string, ...string[]]),
-  source: z.enum(CASE_SOURCE_VALUES as [string, ...string[]]),
-  assignedTo: objectIdSchema.optional(),
-  relatedOrder: z
-    .object({ externalOrderId: z.string().min(1), orderNumber: z.string().min(1) })
-    .optional(),
-  relatedItem: z
-    .object({
-      externalItemId: z.string().min(1),
-      sku: z.string().min(1),
-      title: z.string().min(1),
-    })
-    .optional(),
-  tags: z.array(z.string().min(1)).optional(),
-});
+export const contactPointSchema = z
+  .object({
+    platform: z.enum(CASE_CONTACT_PLATFORM_VALUES as [string, ...string[]]),
+    contactId: z.string().trim().min(1).optional(),
+  })
+  .refine(
+    (cp) =>
+      !CASE_CONTACT_PLATFORMS_REQUIRING_ID.includes(cp.platform as CaseContactPlatform) || !!cp.contactId,
+    { message: "contactId is required for this platform", path: ["contactId"] },
+  );
+
+export const createCaseSchema = z
+  .object({
+    customer: customerSnapshotSchema,
+    subject: z.string().min(3).max(200),
+    description: z.string().min(1).max(5000),
+    category: z.enum(CASE_CATEGORY_VALUES as [string, ...string[]]),
+    priority: z.enum(CASE_PRIORITY_VALUES as [string, ...string[]]),
+    source: z.enum(CASE_SOURCE_VALUES as [string, ...string[]]),
+    contactPoint: contactPointSchema.optional(),
+    assignedTo: objectIdSchema.optional(),
+    relatedOrder: z
+      .object({ externalOrderId: z.string().min(1), orderNumber: z.string().min(1) })
+      .optional(),
+    relatedItem: z
+      .object({
+        externalItemId: z.string().min(1),
+        sku: z.string().min(1),
+        title: z.string().min(1),
+      })
+      .optional(),
+    tags: z.array(z.string().min(1)).optional(),
+  })
+  .refine((data) => data.source !== CaseSource.SOCIAL_MEDIA || !!data.contactPoint, {
+    message: "contactPoint is required when source is social_media",
+    path: ["contactPoint"],
+  });
 export type CreateCaseInput = z.infer<typeof createCaseSchema>;
 
 export const listCasesQuerySchema = paginationQuerySchema.extend({
@@ -57,6 +78,10 @@ export const changeStatusSchema = z.object({
 
 export const changePrioritySchema = z.object({
   priority: z.enum(CASE_PRIORITY_VALUES as [string, ...string[]]),
+});
+
+export const changeContactPointSchema = z.object({
+  contactPoint: contactPointSchema,
 });
 
 export const assignCaseSchema = z.object({

@@ -4,6 +4,7 @@
   "maxLength": "Must be at most {{count}} characters",
   "invalidEmail": "Invalid email address",
   "selectCustomer": "Please select a customer",
+  "enterCustomerName": "Please enter a customer name",
   "selectCategory": "Please select a category",
   "selectPriority": "Please select a priority",
   "selectSource": "Please select a source",

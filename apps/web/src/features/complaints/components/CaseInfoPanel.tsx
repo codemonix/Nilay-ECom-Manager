@@ -7,12 +7,16 @@ import Divider from "@mui/material/Divider";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import IconButton from "@mui/material/IconButton";
 import { useTranslation } from "react-i18next";
+import { CaseSource } from "@complaint-system/shared";
 import type { CaseDTO } from "../types";
 import { useAddTagMutation, useRemoveTagMutation } from "../api/casesApi";
 import { Ltr } from "../../../components/Ltr";
 import { LinkOrderDialog } from "./dialogs/LinkOrderDialog";
 import { LinkItemDialog } from "./dialogs/LinkItemDialog";
+import { ContactPointDialog } from "./dialogs/ContactPointDialog";
 import { formatDateTime } from "../../../utils/localeFormat";
 import { useActiveLanguage } from "../../../i18n/useActiveLanguage";
 
@@ -33,6 +37,7 @@ export function CaseInfoPanel({ caseData }: { caseData: CaseDTO }) {
   const [newTag, setNewTag] = useState("");
   const [linkOrderOpen, setLinkOrderOpen] = useState(false);
   const [linkItemOpen, setLinkItemOpen] = useState(false);
+  const [contactPointOpen, setContactPointOpen] = useState(false);
   const [addTag] = useAddTagMutation();
   const [removeTag] = useRemoveTagMutation();
 
@@ -63,6 +68,30 @@ export function CaseInfoPanel({ caseData }: { caseData: CaseDTO }) {
         <Field label={t("detail.fields.source")}>
           <Typography variant="body2">{t(`source.${caseData.source}`)}</Typography>
         </Field>
+        {caseData.source === CaseSource.SOCIAL_MEDIA && (
+          <Field label={t("detail.fields.contactPoint")}>
+            <Stack direction="row" alignItems="center" spacing={0.5}>
+              <Typography variant="body2">
+                {caseData.contactPoint ? (
+                  <>
+                    {t(`contactPlatform.${caseData.contactPoint.platform}`)}
+                    {caseData.contactPoint.contactId && (
+                      <>
+                        {" — "}
+                        <Ltr>{caseData.contactPoint.contactId}</Ltr>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  "—"
+                )}
+              </Typography>
+              <IconButton size="small" onClick={() => setContactPointOpen(true)}>
+                <EditIcon fontSize="inherit" />
+              </IconButton>
+            </Stack>
+          </Field>
+        )}
         <Field label={t("detail.fields.assignedTo")}>
           <Typography variant="body2">{caseData.assignedTo?.name ?? t("detail.unassigned")}</Typography>
         </Field>
@@ -146,6 +175,12 @@ export function CaseInfoPanel({ caseData }: { caseData: CaseDTO }) {
 
       <LinkOrderDialog open={linkOrderOpen} onClose={() => setLinkOrderOpen(false)} caseId={caseData.id} />
       <LinkItemDialog open={linkItemOpen} onClose={() => setLinkItemOpen(false)} caseId={caseData.id} />
+      <ContactPointDialog
+        open={contactPointOpen}
+        onClose={() => setContactPointOpen(false)}
+        caseId={caseData.id}
+        currentContactPoint={caseData.contactPoint}
+      />
     </Paper>
   );
 }

@@ -1,0 +1,75 @@
+{
+  "title": "تنظیمات",
+  "logLevel": {
+    "title": "سطح گزارش سیستم",
+    "description": "میزان جزئیات ثبت‌شده در گزارش داخلی سیستم را کنترل می‌کند، از فقط خطاها تا جزئیات کامل درخواست‌ها و رفع اشکال. بلافاصله اعمال می‌شود و نیازی به راه‌اندازی مجدد نیست.",
+    "updateError": "به‌روزرسانی سطح گزارش ممکن نشد",
+    "levels": {
+      "error": "فقط خطاها",
+      "warn": "هشدار و بالاتر",
+      "info": "اطلاعات و بالاتر (پیشنهادی)",
+      "http": "درخواست‌های HTTP و بالاتر",
+      "debug": "اشکال‌زدایی (کامل‌ترین جزئیات)"
+    }
+  },
+  "dataSource": {
+    "title": "منبع داده سفارش‌ها",
+    "description": "تا زمانی که دسترسی به API زنده شاپفا فراهم شود، داده‌های سفارش و مشتری از سفارش‌های وارد شده در پایین خوانده می‌شود. پس از تنظیم اطلاعات ورود API شاپفا روی سرور، این گزینه را فعال کنید.",
+    "liveEnabled": "اتصال زنده به API شاپفا فعال است",
+    "liveDisabled": "استفاده از داده‌های وارد شده",
+    "notConfigured": "اتصال زنده هنوز قابل فعال‌سازی نیست — SHOPFA_API_BASE_URL و SHOPFA_API_TOKEN روی سرور تنظیم نشده‌اند.",
+    "updateError": "به‌روزرسانی منبع داده ممکن نشد",
+    "testConnectionHelp": "بررسی کنید که آیا برنامه در حال حاضر به فروشگاه دسترسی دارد یا نه، مستقل از کلید بالا.",
+    "testConnection": "تست اتصال",
+    "testConnectionRunning": "در حال بررسی…",
+    "testConnectionSuccess": "اتصال با موفقیت برقرار شد",
+    "testConnectionFailure": "اتصال ناموفق بود",
+    "testConnectionShopInfo": "به «{{title}}» ({{domain}}) متصل شد",
+    "testConnectionRequestFailed": "اجرای تست اتصال ممکن نشد",
+    "showRawResponse": "نمایش پاسخ خام",
+    "hideRawResponse": "پنهان کردن پاسخ خام"
+  },
+  "import": {
+    "title": "ورود سفارش‌ها",
+    "description": "فایل اکسل خروجی سفارش‌های شاپفا را بارگذاری کنید. وارد کردن دوباره یک سفارش، آن را به‌روزرسانی می‌کند نه تکرار.",
+    "chooseFile": "انتخاب فایل",
+    "successSummary": "{{orders}} سفارش ({{items}} قلم کالا) وارد شد. {{skipped}} ردیف نادیده گرفته شد.",
+    "error": "ورود اطلاعات ناموفق بود",
+    "lastImport": "آخرین ورود اطلاعات",
+    "lastImportSummary": "{{fileName}} · {{date}} · توسط {{user}}",
+    "lastImportCounts": "{{orders}} سفارش، {{items}} قلم کالا وارد شد ({{skipped}} ردیف نادیده گرفته شد)",
+    "neverImported": "هنوز هیچ سفارشی وارد نشده است",
+    "systemUser": "سیستم"
+  },
+  "orders": {
+    "title": "سفارش‌های وارد شده",
+    "searchPlaceholder": "جستجو بر اساس کد سفارش، نام خریدار یا شماره تلفن",
+    "resultsCount_one": "{{count}} سفارش",
+    "resultsCount_other": "{{count}} سفارش",
+    "empty": "هنوز سفارشی وارد نشده است",
+    "columns": {
+      "orderId": "کد سفارش",
+      "buyer": "خریدار",
+      "city": "شهر",
+      "status": "وضعیت",
+      "items": "اقلام",
+      "total": "مبلغ کل",
+      "purchaseDate": "تاریخ خرید"
+    },
+    "detail": {
+      "title": "سفارش {{orderId}}",
+      "buyer": "خریدار",
+      "item": "کالا",
+      "items": "اقلام",
+      "itemsTotal": "جمع اقلام",
+      "shippingCost": "هزینه ارسال",
+      "discount": "تخفیف",
+      "total": "مبلغ کل",
+      "quantity": "تعداد",
+      "unitPrice": "فی",
+      "amount": "مبلغ",
+      "userMessage": "پیغام مشتری",
+      "adminNote": "یادداشت مدیر"
+    }
+  }
+}
