@@ -12,6 +12,8 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Dialog from "@mui/material/Dialog";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
 import { useListAttachmentsQuery, useUploadAttachmentMutation } from "../api/casesApi";
 import { API_ORIGIN } from "../../../services/apiSlice";
@@ -20,6 +22,8 @@ import { EmptyState } from "../../../components/EmptyState";
 export function AttachmentsPanel({ caseId }: { caseId: string }) {
   const { t } = useTranslation("complaints");
   const { t: tCommon } = useTranslation("common");
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { data: attachments = [], isLoading } = useListAttachmentsQuery(caseId);
   const [uploadAttachment, { isLoading: isUploading }] = useUploadAttachmentMutation();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -33,7 +37,7 @@ export function AttachmentsPanel({ caseId }: { caseId: string }) {
   };
 
   return (
-    <Paper variant="outlined" sx={{ p: 2, mt: 2 }}>
+    <Paper variant="outlined" sx={{ p: { xs: 1.5, sm: 2 }, mt: 2, borderRadius: "16px" }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
         <Typography variant="h3">{t("detail.sections.attachments")}</Typography>
         <Button
@@ -51,12 +55,12 @@ export function AttachmentsPanel({ caseId }: { caseId: string }) {
       {!isLoading && attachments.length === 0 && <EmptyState message={t("attachments.empty")} />}
 
       {attachments.length > 0 && (
-        <ImageList cols={3} gap={8} sx={{ m: 0 }}>
+        <ImageList cols={isMobile ? 2 : 3} gap={8} sx={{ m: 0 }}>
           {attachments.map((attachment) => {
             const isImage = attachment.mimeType.startsWith("image/");
             const fileUrl = `${API_ORIGIN}${attachment.url}`;
             return (
-              <ImageListItem key={attachment.id} sx={{ borderRadius: 1, overflow: "hidden" }}>
+              <ImageListItem key={attachment.id} sx={{ borderRadius: "10px", overflow: "hidden" }}>
                 {isImage ? (
                   <img
                     src={fileUrl}

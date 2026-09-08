@@ -54,17 +54,30 @@ export function CaseTable({ cases, isLoading }: CaseTableProps) {
     return (
       <Stack spacing={1.5}>
         {cases.map((c) => (
-          <Card key={c.id} variant="outlined">
+          <Card
+            key={c.id}
+            variant="outlined"
+            sx={{
+              borderRadius: "14px",
+              overflow: "hidden",
+              borderLeft: 4,
+              borderLeftColor: "primary.main",
+              background: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(17, 24, 39, 0.94))"
+                  : "linear-gradient(135deg, rgba(79, 70, 229, 0.05), rgba(255,255,255,0.94))",
+            }}
+          >
             <CardActionArea onClick={() => navigate(`/cases/${c.id}`)} sx={{ p: 0.5 }}>
-              <CardContent sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <CardContent sx={{ display: "flex", alignItems: "center", gap: 1, py: 1.5, px: 1.5 }}>
                 <Stack spacing={0.75} sx={{ flexGrow: 1, minWidth: 0 }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ gap: 1 }}>
                     <Typography variant="caption" color="text.secondary">
                       <Ltr>{c.caseNumber}</Ltr>
                     </Typography>
                     <StatusChip status={c.status} />
                   </Stack>
-                  <Typography variant="subtitle1" sx={{ wordBreak: "break-word" }}>
+                  <Typography variant="subtitle1" sx={{ wordBreak: "break-word", fontWeight: 700 }}>
                     {c.subject}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" noWrap>

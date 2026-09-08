@@ -175,7 +175,18 @@ export function CaseFilters({ value, onChange, onClear, bare, hideSearch }: Case
   if (bare) return content;
 
   return (
-    <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+    <Paper
+      variant="outlined"
+      sx={{
+        p: { xs: 1.5, sm: 2 },
+        mb: 2,
+        borderRadius: "16px",
+        background: (theme) =>
+          theme.palette.mode === "dark"
+            ? "linear-gradient(135deg, rgba(79, 70, 229, 0.09), rgba(17, 24, 39, 0.96))"
+            : "linear-gradient(135deg, rgba(79, 70, 229, 0.04), rgba(255,255,255,0.98))",
+      }}
+    >
       {content}
     </Paper>
   );

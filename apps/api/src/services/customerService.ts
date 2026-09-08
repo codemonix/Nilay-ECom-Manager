@@ -1,9 +1,9 @@
 import { getShopfaClient } from "../integrations/shopfa";
 import { ApiError } from "../utils/ApiError";
 
-export async function getCustomerSummary(externalCustomerId: string) {
+export async function getCustomerSummary(externalCustomerId: string, phone?: string) {
   const client = await getShopfaClient();
-  const summary = await client.getCustomerOrderSummary(externalCustomerId);
+  const summary = await client.getCustomerOrderSummary(externalCustomerId, phone);
   if (!summary) throw ApiError.notFound("Customer not found");
   return summary;
 }

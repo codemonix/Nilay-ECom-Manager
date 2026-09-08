@@ -50,15 +50,45 @@ export function LoginPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        bgcolor: "background.default",
+        background: (theme) =>
+          theme.palette.mode === "dark"
+            ? "radial-gradient(circle at top, rgba(99, 102, 241, 0.28), transparent 35%), linear-gradient(135deg, #020817, #111827)"
+            : "radial-gradient(circle at top, rgba(79, 70, 229, 0.13), transparent 35%), linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%)",
         p: 2,
       }}
     >
-      <Paper variant="outlined" sx={{ p: 4, width: "100%", maxWidth: 380 }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: { xs: 2.5, sm: 4 },
+          width: "100%",
+          maxWidth: 420,
+          borderRadius: "20px",
+          border: "1px solid",
+          borderColor: "divider",
+          boxShadow: (theme) =>
+            theme.palette.mode === "dark"
+              ? "0 30px 60px rgba(15, 23, 42, 0.32)"
+              : "0 28px 55px rgba(79, 70, 229, 0.12)",
+        }}
+      >
         <Stack spacing={3} component="form" onSubmit={handleSubmit}>
           <Stack spacing={1} alignItems="center">
-            <DiamondIcon color="primary" fontSize="large" />
-            <Typography variant="h1" sx={{ fontSize: "1.4rem" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 54,
+                height: 54,
+                borderRadius: "14px",
+                background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
+                color: "white",
+              }}
+            >
+              <DiamondIcon fontSize="large" />
+            </Box>
+            <Typography variant="h1" sx={{ fontSize: "1.6rem" }}>
               {t("common:app.title")}
             </Typography>
             <Typography variant="body2" color="text.secondary">

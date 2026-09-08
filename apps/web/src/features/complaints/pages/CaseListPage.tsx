@@ -93,17 +93,35 @@ export function CaseListPage() {
 
   return (
     <Stack spacing={2} sx={{ pb: isMobile ? 9 : 0 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" useFlexGap>
+      <Stack
+        component="section"
+        direction={{ xs: "column", sm: "row" }}
+        justifyContent="space-between"
+        alignItems={{ xs: "flex-start", sm: "center" }}
+        spacing={2}
+        sx={{
+          p: { xs: 2, sm: 3 },
+          borderRadius: "16px",
+          background: (theme) =>
+            theme.palette.mode === "dark"
+              ? "linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(16, 185, 129, 0.16), rgba(17, 24, 39, 0.92))"
+              : "linear-gradient(135deg, rgba(79, 70, 229, 0.10), rgba(16, 185, 129, 0.08), rgba(255, 255, 255, 0.92))",
+          border: "1px solid",
+          borderColor: "divider",
+          boxShadow: (theme) =>
+            theme.palette.mode === "dark" ? "0 18px 40px rgba(15, 23, 42, 0.26)" : "0 16px 28px rgba(79, 70, 229, 0.08)",
+        }}
+      >
         <Typography variant="h1">{t("title")}</Typography>
         {!isMobile && (
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>
+          <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>
             {t("createCase")}
           </Button>
         )}
       </Stack>
 
       {isMobile ? (
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} sx={{ px: 0.5 }}>
           <TextField
             size="small"
             placeholder={t("list.searchPlaceholder")}

@@ -13,8 +13,11 @@ function unwrap<T>(response: ApiResponse<T>): T {
 
 export const customersApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getCustomerSummary: builder.query<CustomerSummaryDTO, string>({
-      query: (externalCustomerId) => `/customers/${externalCustomerId}/summary`,
+    getCustomerSummary: builder.query<CustomerSummaryDTO, { externalCustomerId: string; phone?: string }>({
+      query: ({ externalCustomerId, phone }) => ({
+        url: `/customers/${externalCustomerId}/summary`,
+        params: phone ? { phone } : undefined,
+      }),
       transformResponse: (response: ApiResponse<CustomerSummaryDTO>) => unwrap(response),
     }),
 

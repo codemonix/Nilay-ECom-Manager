@@ -4,7 +4,8 @@ import { sendSuccess } from "../utils/apiResponse";
 import * as customerService from "../services/customerService";
 
 export const getCustomerSummary = asyncHandler(async (req: Request, res: Response) => {
-  const summary = await customerService.getCustomerSummary(req.params.externalCustomerId as string);
+  const phone = typeof req.query.phone === "string" ? req.query.phone : undefined;
+  const summary = await customerService.getCustomerSummary(req.params.externalCustomerId as string, phone);
   return sendSuccess(res, summary);
 });
 

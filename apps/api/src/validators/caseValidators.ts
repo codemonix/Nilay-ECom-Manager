@@ -42,12 +42,14 @@ export const createCaseSchema = z
     relatedOrder: z
       .object({ externalOrderId: z.string().min(1), orderNumber: z.string().min(1) })
       .optional(),
-    relatedItem: z
-      .object({
-        externalItemId: z.string().min(1),
-        sku: z.string().min(1),
-        title: z.string().min(1),
-      })
+    relatedItems: z
+      .array(
+        z.object({
+          externalItemId: z.string().min(1),
+          sku: z.string().min(1),
+          title: z.string().min(1),
+        }),
+      )
       .optional(),
     tags: z.array(z.string().min(1)).optional(),
   })

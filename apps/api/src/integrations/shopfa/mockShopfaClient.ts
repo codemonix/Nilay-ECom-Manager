@@ -12,7 +12,7 @@ export class MockShopfaClient implements ShopfaClient {
     return this.getCustomerOrderSummary(externalCustomerId);
   }
 
-  async getCustomerOrderSummary(externalCustomerId: string): Promise<CustomerSummaryDTO | null> {
+  async getCustomerOrderSummary(externalCustomerId: string, _phone?: string): Promise<CustomerSummaryDTO | null> {
     const raw = MOCK_CUSTOMERS.find((c) => c.id === externalCustomerId);
     if (!raw) return null;
     const orders = MOCK_ORDERS.filter((o) => o.customer_id === externalCustomerId);

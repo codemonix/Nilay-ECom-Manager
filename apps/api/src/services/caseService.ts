@@ -116,7 +116,7 @@ export async function createCase(
   const caseNumber = await generateCaseNumber();
 
   const relatedOrders = input.relatedOrder ? [input.relatedOrder] : [];
-  const relatedItems = input.relatedItem ? [input.relatedItem] : [];
+  const relatedItems = input.relatedItems ?? [];
 
   const baseData = {
     caseNumber,

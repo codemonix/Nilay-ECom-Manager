@@ -88,14 +88,15 @@
     "contactId": "شناسه/نام کاربری",
     "assignedTo": "مسئول رسیدگی (اختیاری)",
     "relatedOrder": "سفارش مرتبط (اختیاری)",
-    "relatedItem": "کالای مرتبط (اختیاری)",
+    "relatedItems": "محصولات (اختیاری)",
+    "relatedItemsHelp": "محصول(های) موضوع این پرونده را انتخاب کنید",
+    "itemQuantity_one": "{{count}} عدد",
+    "itemQuantity_other": "{{count}} عدد",
     "manualEntry": {
       "toggleShow": "سفارش منطبقی پیدا نمی‌کنید؟ نام مشتری را به‌صورت دستی وارد کنید",
       "toggleHide": "پنهان کردن ورود دستی",
       "help": "فقط زمانی از این گزینه استفاده کنید که هنوز سفارشی برای تطبیق وجود ندارد — پرونده به هیچ سفارشی متصل نخواهد شد.",
-      "customerName": "نام مشتری",
-      "sourceLive": "فروشگاه زنده",
-      "sourceImported": "وارد شده"
+      "customerName": "نام مشتری"
     },
     "tags": "برچسب‌ها (اختیاری)",
     "tagsPlaceholder": "یک برچسب بنویسید و Enter را بزنید",

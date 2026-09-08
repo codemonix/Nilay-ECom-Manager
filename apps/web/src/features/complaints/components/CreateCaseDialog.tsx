@@ -12,6 +12,10 @@ import Chip from "@mui/material/Chip";
 import Alert from "@mui/material/Alert";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
+import Autocomplete from "@mui/material/Autocomplete";
+import Checkbox from "@mui/material/Checkbox";
+import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
+import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import { useTranslation } from "react-i18next";
 import {
   CASE_CATEGORY_VALUES,
@@ -26,10 +30,12 @@ import {
 } from "@complaint-system/shared";
 import { useCreateCaseMutation } from "../api/casesApi";
 import { useListUsersQuery } from "../../users/api/usersApi";
+import { useAppSelector } from "../../../app/hooks";
 import { CustomerOrderAutocomplete } from "./CustomerOrderAutocomplete";
-import type { MatchedCustomerOrder } from "../types";
+import type { MatchedCustomerOrder, MatchedCustomerOrderItem } from "../types";
 import { formatDate } from "../../../utils/localeFormat";
 import { useActiveLanguage } from "../../../i18n/useActiveLanguage";
+import { Ltr } from "../../../components/Ltr";
 
 interface CreateCaseDialogProps {
   open: boolean;
@@ -39,6 +45,8 @@ interface CreateCaseDialogProps {
 interface FormState {
   /** Set by searching the customer's orders (live shop or imported) -- identifies both the customer and, per docs/architecture.md, the order the case is about. */
   matchedOrder: MatchedCustomerOrder | null;
+  /** Products from matchedOrder the case is actually about; cleared whenever matchedOrder changes. */
+  selectedItems: MatchedCustomerOrderItem[];
   /** Fallback for a customer with no order to match yet; mutually exclusive with matchedOrder. */
   manualCustomerName: string;
   subject: string;
@@ -52,19 +60,23 @@ interface FormState {
   tags: string[];
 }
 
-const INITIAL_STATE: FormState = {
-  matchedOrder: null,
-  manualCustomerName: "",
-  subject: "",
-  description: "",
-  category: "",
-  priority: CasePriority.NORMAL,
-  source: CaseSource.PHONE,
-  contactPlatform: CaseContactPlatform.INSTAGRAM,
-  contactId: "",
-  assignedTo: "",
-  tags: [],
-};
+/** Defaults assignedTo to the case's creator -- staff who file a case are responsible for it by default, unless they explicitly reassign it. */
+function buildInitialState(assignedTo: string): FormState {
+  return {
+    matchedOrder: null,
+    selectedItems: [],
+    manualCustomerName: "",
+    subject: "",
+    description: "",
+    category: "",
+    priority: CasePriority.NORMAL,
+    source: CaseSource.PHONE,
+    contactPlatform: CaseContactPlatform.INSTAGRAM,
+    contactId: "",
+    assignedTo,
+    tags: [],
+  };
+}
 
 /** Placeholder id for a customer entered by hand and not confirmed against a server record. */
 function generateManualCustomerId(name: string): string {
@@ -85,8 +97,9 @@ export function CreateCaseDialog({ open, onClose }: CreateCaseDialogProps) {
   const language = useActiveLanguage();
   const { data: users = [] } = useListUsersQuery();
   const [createCase, { isLoading, error }] = useCreateCaseMutation();
+  const currentUser = useAppSelector((state) => state.auth.user);
 
-  const [form, setForm] = useState<FormState>(INITIAL_STATE);
+  const [form, setForm] = useState<FormState>(() => buildInitialState(currentUser?.id ?? ""));
   const [tagInput, setTagInput] = useState("");
   const [touched, setTouched] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
@@ -108,7 +121,7 @@ export function CreateCaseDialog({ open, onClose }: CreateCaseDialogProps) {
   const isValid = !Object.values(errors).some(Boolean);
 
   const handleClose = () => {
-    setForm(INITIAL_STATE);
+    setForm(buildInitialState(currentUser?.id ?? ""));
     setTagInput("");
     setTouched(false);
     setManualOpen(false);
@@ -116,7 +129,12 @@ export function CreateCaseDialog({ open, onClose }: CreateCaseDialogProps) {
   };
 
   const handleMatchChange = (matchedOrder: MatchedCustomerOrder | null) => {
-    setForm((prev) => ({ ...prev, matchedOrder, manualCustomerName: matchedOrder ? "" : prev.manualCustomerName }));
+    setForm((prev) => ({
+      ...prev,
+      matchedOrder,
+      selectedItems: [],
+      manualCustomerName: matchedOrder ? "" : prev.manualCustomerName,
+    }));
   };
 
   /** Typing a manual name after an order match invalidates that match -- the two are mutually exclusive. */
@@ -153,6 +171,10 @@ export function CreateCaseDialog({ open, onClose }: CreateCaseDialogProps) {
     const relatedOrder = form.matchedOrder
       ? { externalOrderId: form.matchedOrder.externalOrderId, orderNumber: form.matchedOrder.orderNumber }
       : undefined;
+    const relatedItems =
+      form.selectedItems.length > 0
+        ? form.selectedItems.map(({ externalItemId, sku, title }) => ({ externalItemId, sku, title }))
+        : undefined;
     const contactPoint = isSocialMedia
       ? { platform: form.contactPlatform, contactId: form.contactId.trim() || undefined }
       : undefined;
@@ -167,6 +189,7 @@ export function CreateCaseDialog({ open, onClose }: CreateCaseDialogProps) {
       contactPoint,
       assignedTo: form.assignedTo || undefined,
       relatedOrder,
+      relatedItems,
       tags: form.tags.length > 0 ? form.tags : undefined,
     }).unwrap();
 
@@ -192,6 +215,47 @@ export function CreateCaseDialog({ open, onClose }: CreateCaseDialogProps) {
                 date: form.matchedOrder.purchaseDate ? formatDate(form.matchedOrder.purchaseDate, language) : "—",
               })}
             </Typography>
+          )}
+
+          {form.matchedOrder && form.matchedOrder.items.length > 0 && (
+            <Autocomplete
+              multiple
+              disableCloseOnSelect
+              options={form.matchedOrder.items}
+              value={form.selectedItems}
+              onChange={(_e, newValue) => setForm((prev) => ({ ...prev, selectedItems: newValue }))}
+              getOptionLabel={(option) => option.title}
+              isOptionEqualToValue={(option, val) => option.externalItemId === val.externalItemId}
+              renderOption={(props, option, { selected }) => (
+                <li {...props} key={option.externalItemId}>
+                  <Checkbox
+                    icon={<CheckBoxOutlineBlankIcon fontSize="small" />}
+                    checkedIcon={<CheckBoxIcon fontSize="small" />}
+                    checked={selected}
+                    sx={{ mr: 1 }}
+                  />
+                  <Stack>
+                    <Typography variant="body2">{option.title}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      <Ltr>{option.sku}</Ltr> · {t("form.itemQuantity", { count: option.quantity })}
+                    </Typography>
+                  </Stack>
+                </li>
+              )}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    {...getTagProps({ index })}
+                    key={option.externalItemId}
+                    label={option.title}
+                    size="small"
+                  />
+                ))
+              }
+              renderInput={(params) => (
+                <TextField {...params} label={t("form.relatedItems")} helperText={t("form.relatedItemsHelp")} />
+              )}
+            />
           )}
 
           <Stack spacing={1} alignItems="flex-start">

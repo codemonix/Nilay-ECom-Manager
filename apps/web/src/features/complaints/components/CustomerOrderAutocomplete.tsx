@@ -4,7 +4,6 @@ import TextField from "@mui/material/TextField";
 import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import Chip from "@mui/material/Chip";
 import { useTranslation } from "react-i18next";
 import type { MatchedCustomerOrder } from "../types";
 import { useOrderCustomerSearch } from "../hooks/useOrderCustomerSearch";
@@ -40,20 +39,12 @@ export function CustomerOrderAutocomplete({ value, onChange, error, helperText }
       options={options}
       loading={isLoading}
       getOptionLabel={(option) => option.customerName}
-      isOptionEqualToValue={(option, val) => option.source === val.source && option.externalOrderId === val.externalOrderId}
+      isOptionEqualToValue={(option, val) => option.externalOrderId === val.externalOrderId}
       filterOptions={(x) => x}
       renderOption={(props, option) => (
-        <li {...props} key={`${option.source}:${option.externalOrderId}`}>
+        <li {...props} key={option.externalOrderId}>
           <Stack sx={{ width: "100%" }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="baseline" spacing={1}>
-              <Typography variant="body2">{option.customerName}</Typography>
-              <Chip
-                label={option.source === "live" ? t("form.manualEntry.sourceLive") : t("form.manualEntry.sourceImported")}
-                size="small"
-                color={option.source === "live" ? "success" : "default"}
-                variant="outlined"
-              />
-            </Stack>
+            <Typography variant="body2">{option.customerName}</Typography>
             <Typography variant="caption" color="text.secondary">
               <Ltr>{option.orderNumber}</Ltr>
               {" · "}

@@ -119,7 +119,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
         disabled={!item.path}
         selected={isActive}
         onClick={() => setMoreOpen(false)}
-        sx={{ borderRadius: 2, mb: 0.5, minHeight: 48, pl: indent ? 3.5 : 2 }}
+        sx={{ borderRadius: "10px", mb: 0.5, minHeight: 48, pl: indent ? 3.5 : 2 }}
       >
         <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
         <ListItemText primary={t(`navigation:modules.${item.key}`)} />
@@ -143,7 +143,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
 
       {adminItems.length > 0 && (
         <>
-          <ListItemButton onClick={toggleAdminExpanded} sx={{ borderRadius: 2, mb: 0.5, minHeight: 48 }}>
+          <ListItemButton onClick={toggleAdminExpanded} sx={{ borderRadius: "10px", mb: 0.5, minHeight: 48 }}>
             <ListItemIcon sx={{ minWidth: 36 }}>
               <AdminPanelSettingsIcon />
             </ListItemIcon>
@@ -166,12 +166,34 @@ export function MainLayout({ children }: { children: ReactNode }) {
   });
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100vh",
+        background: (theme) =>
+          theme.palette.mode === "dark"
+            ? "radial-gradient(circle at top, rgba(139, 92, 246, 0.18), transparent 35%), #0f172a"
+            : "radial-gradient(circle at top, rgba(79, 70, 229, 0.10), transparent 32%), #f5f7ff",
+      }}
+    >
       <AppBar position="fixed" sx={{ zIndex: (t) => t.zIndex.drawer + 1 }}>
-        <Toolbar sx={{ gap: 1.5 }}>
+        <Toolbar sx={{ gap: 1.5, px: { xs: 1.5, sm: 2 } }}>
           <Stack direction="row" spacing={1} alignItems="center" sx={{ flexGrow: 1, minWidth: 0 }}>
-            <DiamondIcon color="primary" />
-            <Typography variant="h3" component="h1" noWrap sx={{ fontSize: "1.1rem" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 30,
+                height: 30,
+                borderRadius: "10px",
+                background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
+                color: "white",
+              }}
+            >
+              <DiamondIcon sx={{ fontSize: 18 }} />
+            </Box>
+            <Typography variant="h3" component="h1" noWrap sx={{ fontSize: "1.08rem" }}>
               {t("navigation:brand")}
             </Typography>
           </Stack>
@@ -215,11 +237,18 @@ export function MainLayout({ children }: { children: ReactNode }) {
         <Toolbar />
         <Box
           sx={{
-            p: { xs: 1.75, sm: 3 },
+            p: { xs: 1.5, sm: 3 },
             pb: isDesktop ? { sm: 3 } : `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom) + 20px)`,
           }}
         >
-          {children}
+          <Box
+            sx={{
+              maxWidth: 1500,
+              mx: "auto",
+            }}
+          >
+            {children}
+          </Box>
         </Box>
       </Box>
 

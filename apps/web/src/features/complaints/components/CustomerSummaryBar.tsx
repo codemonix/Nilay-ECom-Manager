@@ -27,13 +27,27 @@ function StatBlock({ label, value }: { label: string; value: string }) {
 export function CustomerSummaryBar({ customer }: { customer: CaseDTO["customer"] }) {
   const { t } = useTranslation("complaints");
   const language = useActiveLanguage();
-  const { data, isLoading, isError } = useGetCustomerSummaryQuery(customer.externalCustomerId);
+  const { data, isLoading, isError } = useGetCustomerSummaryQuery({
+    externalCustomerId: customer.externalCustomerId,
+    phone: customer.phone,
+  });
 
   return (
-    <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+    <Paper
+      variant="outlined"
+      sx={{
+        p: { xs: 1.5, sm: 2 },
+        mb: 2,
+        borderRadius: "16px",
+        background: (theme) =>
+          theme.palette.mode === "dark"
+            ? "linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(17, 24, 39, 0.96))"
+            : "linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(255,255,255,0.96))",
+      }}
+    >
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "stretch", sm: "center" }}>
         <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: { sm: 200 } }}>
-          <Avatar sx={{ bgcolor: "primary.main" }}>
+          <Avatar sx={{ bgcolor: "primary.main", width: 42, height: 42 }}>
             <PersonIcon />
           </Avatar>
           <Stack spacing={0} sx={{ minWidth: 0 }}>

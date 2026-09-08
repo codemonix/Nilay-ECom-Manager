@@ -13,7 +13,12 @@ import type {
  */
 export interface ShopfaClient {
   getCustomer(externalCustomerId: string): Promise<CustomerSummaryDTO | null>;
-  getCustomerOrderSummary(externalCustomerId: string): Promise<CustomerSummaryDTO | null>;
+  /**
+   * `phone` is an optional fallback identifier for guest customers, whose
+   * externalCustomerId can't be looked up directly -- see the implementation
+   * note on HttpShopfaClient.getCustomerOrderSummary.
+   */
+  getCustomerOrderSummary(externalCustomerId: string, phone?: string): Promise<CustomerSummaryDTO | null>;
   getOrder(externalOrderId: string): Promise<OrderSummaryDTO | null>;
   searchCustomer(query: string): Promise<CustomerSearchResultDTO[]>;
   searchOrders(query: string): Promise<OrderSummaryDTO[]>;

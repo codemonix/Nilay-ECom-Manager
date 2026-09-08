@@ -95,9 +95,23 @@ export class HttpShopfaClient implements ShopfaClient {
     return this.getCustomerOrderSummary(externalCustomerId);
   }
 
-  async getCustomerOrderSummary(externalCustomerId: string): Promise<CustomerSummaryDTO | null> {
+  /**
+   * Most storefront customers check out as guests, for whom Shopfa's
+   * `user_id` is 0 -- there is no real `user_id` to look their order history
+   * up by (see the comment on isZero() in shopfaApiMapper.ts). When the
+   * direct `user_id` lookup comes up empty and a phone number is available
+   * (e.g. from the case's customer snapshot), fall back to Shopfa's generic
+   * order search filtered by that phone, which does match across a guest's
+   * orders -- confirmed live: `search=<mobile>` returns only that mobile's
+   * baskets, not a fuzzy/broader match. The `mobile ===` filter below is a
+   * defensive re-check in case `search` ever loosens to match other fields.
+   */
+  async getCustomerOrderSummary(externalCustomerId: string, phone?: string): Promise<CustomerSummaryDTO | null> {
     try {
-      const orders = await this.fetchOrdersByUser(externalCustomerId);
+      let orders = await this.fetchOrdersByUser(externalCustomerId);
+      if (orders.length === 0 && phone) {
+        orders = await this.fetchOrdersByPhone(phone);
+      }
       return summarizeCustomerOrders(externalCustomerId, orders);
     } catch (err) {
       logger.error("Shopfa getCustomerOrderSummary failed", { externalCustomerId, err });
@@ -168,5 +182,14 @@ export class HttpShopfaClient implements ShopfaClient {
       { params: { user_id: userId, limit: 200, sort: "date", order: "desc" } },
     );
     return readOrderBaskets(data);
+  }
+
+  private async fetchOrdersByPhone(phone: string): Promise<ShopfaApiOrder[]> {
+    const { data } = await this.http.post<ShopfaApiOrderListResponse>(
+      "/api/shop/orders",
+      {},
+      { params: { search: phone, limit: 200, sort: "date", order: "desc" } },
+    );
+    return readOrderBaskets(data).filter((order) => order.mobile === phone);
   }
 }

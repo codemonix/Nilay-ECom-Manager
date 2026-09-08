@@ -88,14 +88,15 @@
     "contactId": "Account ID / Username",
     "assignedTo": "Assign to (optional)",
     "relatedOrder": "Related order (optional)",
-    "relatedItem": "Related item (optional)",
+    "relatedItems": "Products (optional)",
+    "relatedItemsHelp": "Select the product(s) this case is about",
+    "itemQuantity_one": "{{count}} unit",
+    "itemQuantity_other": "{{count}} units",
     "manualEntry": {
       "toggleShow": "Can't find a matching order? Enter the customer name manually",
       "toggleHide": "Hide manual entry",
       "help": "Use this only when there's no order to match yet — the case won't be linked to an order.",
-      "customerName": "Customer name",
-      "sourceLive": "Live shop",
-      "sourceImported": "Imported"
+      "customerName": "Customer name"
     },
     "tags": "Tags (optional)",
     "tagsPlaceholder": "Type a tag and press Enter",

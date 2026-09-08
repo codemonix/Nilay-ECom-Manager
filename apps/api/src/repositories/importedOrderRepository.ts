@@ -93,6 +93,11 @@ export const importedOrderRepository = {
     return ImportedOrderModel.find({ "buyer.externalBuyerId": externalBuyerId }).sort({ purchaseDate: -1 });
   },
 
+  /** Fallback lookup for guest customers, whose externalBuyerId is only stable per-order (see HttpShopfaClient.getCustomerOrderSummary for the live-API equivalent). */
+  async findByBuyerPhone(mobile: string): Promise<ImportedOrderDocument[]> {
+    return ImportedOrderModel.find({ "buyer.mobile": mobile }).sort({ purchaseDate: -1 });
+  },
+
   /** Distinct buyers (most recent order's snapshot) matching name/mobile/id, for customer-style autocomplete search. */
   async searchBuyers(
     query: string,

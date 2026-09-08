@@ -52,7 +52,7 @@ export function CaseDetailPage() {
 
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 8 }}>
-          <Paper variant="outlined" sx={{ p: 2 }}>
+          <Paper variant="outlined" sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: "16px" }}>
             <Typography variant="h3" sx={{ mb: 2 }}>
               {t("detail.sections.timeline")}
             </Typography>

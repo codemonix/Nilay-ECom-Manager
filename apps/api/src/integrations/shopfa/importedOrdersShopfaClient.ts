@@ -46,8 +46,11 @@ export class ImportedOrdersShopfaClient implements ShopfaClient {
     return this.getCustomerOrderSummary(externalCustomerId);
   }
 
-  async getCustomerOrderSummary(externalCustomerId: string): Promise<CustomerSummaryDTO | null> {
-    const orders = await importedOrderRepository.findByBuyerId(externalCustomerId);
+  async getCustomerOrderSummary(externalCustomerId: string, phone?: string): Promise<CustomerSummaryDTO | null> {
+    let orders = await importedOrderRepository.findByBuyerId(externalCustomerId);
+    if (orders.length === 0 && phone) {
+      orders = await importedOrderRepository.findByBuyerPhone(phone);
+    }
     if (orders.length === 0) return null;
     const latest = orders[0]!;
     const totalSpent = orders.reduce((sum, order) => sum + order.totalAmount, 0);

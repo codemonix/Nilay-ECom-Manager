@@ -23,12 +23,19 @@ export interface AttachmentDTO {
 }
 
 /**
- * A single order/customer match surfaced while creating a case, normalized
- * from either the imported-orders collection or a live, read-only Shopfa
- * order search -- so selecting either kind works the same way in the UI.
+ * A single order/customer match surfaced while creating a case, from the
+ * read-only Shopfa order search -- which transparently reads from either
+ * the imported-orders collection or the live Shopfa API, depending on the
+ * admin's Settings > Data Source choice.
  */
+export interface MatchedCustomerOrderItem {
+  externalItemId: string;
+  sku: string;
+  title: string;
+  quantity: number;
+}
+
 export interface MatchedCustomerOrder {
-  source: "live" | "imported";
   externalOrderId: string;
   orderNumber: string;
   externalCustomerId: string;
@@ -36,6 +43,7 @@ export interface MatchedCustomerOrder {
   customerPhone?: string;
   purchaseDate?: string | null;
   totalAmount?: number;
+  items: MatchedCustomerOrderItem[];
 }
 
 export interface CreateCasePayload {
@@ -53,6 +61,6 @@ export interface CreateCasePayload {
   contactPoint?: { platform: string; contactId?: string };
   assignedTo?: string;
   relatedOrder?: { externalOrderId: string; orderNumber: string };
-  relatedItem?: { externalItemId: string; sku: string; title: string };
+  relatedItems?: { externalItemId: string; sku: string; title: string }[];
   tags?: string[];
 }

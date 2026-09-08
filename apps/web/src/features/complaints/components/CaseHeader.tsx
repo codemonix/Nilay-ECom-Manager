@@ -52,16 +52,27 @@ export function CaseHeader({ caseData }: { caseData: CaseDTO }) {
   const quickTransition = (status: CaseStatus) => changeStatus({ caseId: caseData.id, status });
 
   return (
-    <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+    <Paper
+      variant="outlined"
+      sx={{
+        p: { xs: 2, sm: 2.5 },
+        mb: 2,
+        borderRadius: "16px",
+        background: (theme) =>
+          theme.palette.mode === "dark"
+            ? "linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(17, 24, 39, 0.96))"
+            : "linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(255, 255, 255, 0.96))",
+      }}
+    >
       <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={2}>
         <Stack spacing={0.5} sx={{ minWidth: 0 }}>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{ color: "text.secondary", letterSpacing: 0.8, textTransform: "uppercase" }}>
             <Ltr>{caseData.caseNumber}</Ltr>
           </Typography>
           <Typography variant="h2" component="h1" sx={{ wordBreak: "break-word" }}>
             {caseData.subject}
           </Typography>
-          <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
+          <Stack direction="row" spacing={1} sx={{ mt: 0.5, flexWrap: "wrap" }} useFlexGap>
             <StatusChip status={caseData.status} />
             <PriorityChip priority={caseData.priority} />
           </Stack>
