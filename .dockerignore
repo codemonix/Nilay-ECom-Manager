@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+**/dist
+**/build
+**/coverage
+**/*.tsbuildinfo
+apps/api/uploads
+.git
+.env
+.env.*
+*.log
+.DS_Store
+.vscode
+docs

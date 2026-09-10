@@ -1,0 +1,80 @@
+name: nilay-ecom-manager
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Not published to the host: only reachable from other containers on
+    # this compose project's internal network.
+
+  api:
+    # `image:` is what the deployed instance uses (docker compose pull);
+    # `build:` is only consulted by `docker compose build`, e.g. for local
+    # testing or if you ever want to build directly on the instance instead
+    # of via GitHub Actions -- see .github/workflows/docker-publish.yml.
+    image: ghcr.io/codemonix/nilay-ecom-manager-api:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      MONGODB_URI: mongodb://mongo:27017/business_ops
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      SHOPFA_API_BASE_URL: ${SHOPFA_API_BASE_URL}
+      SHOPFA_API_TOKEN: ${SHOPFA_API_TOKEN}
+      SHOPFA_MOCK: ${SHOPFA_MOCK:-false}
+      UPLOAD_DIR: uploads
+      MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-10}
+    volumes:
+      # Local instance disk (named volume), not a separate attached volume --
+      # attachments are already covered by the app's own backup/restore
+      # (apps/api/src/services/backupService.ts), so this only needs to
+      # survive container recreation, not be independently snapshotted.
+      - uploads_data:/repo/apps/api/uploads
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://127.0.0.1:4000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    # Not published to the host: only reachable from the nginx service.
+
+  nginx:
+    image: ghcr.io/codemonix/nilay-ecom-manager-web:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      # Bound to localhost only -- the host-level Nginx (outside Docker)
+      # terminates TLS for nilay.codemonix.com and proxies to this port.
+      - "127.0.0.1:${APP_PORT:-8081}:80"
+
+volumes:
+  mongo_data:
+  uploads_data:

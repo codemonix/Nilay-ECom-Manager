@@ -14,6 +14,12 @@ import { UPLOAD_ROOT } from "./middleware/upload";
 export function createApp(): Express {
   const app = express();
 
+  // Production topology is host Nginx -> in-container Nginx -> this app,
+  // i.e. two reverse proxy hops. Without this, req.ip and the
+  // X-Forwarded-Proto seen by activityLogger/cors would reflect the
+  // in-container Nginx rather than the real client.
+  app.set("trust proxy", 2);
+
   app.use(helmet());
   app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
   app.use(express.json({ limit: "100mb" }));
