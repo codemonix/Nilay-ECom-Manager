@@ -9,6 +9,7 @@
     "build": "tsc -p .",
     "start": "node -r dotenv/config dist/src/server.js",
     "seed": "ts-node --transpile-only -r dotenv/config scripts/seed.ts",
+    "create-admin": "ts-node --transpile-only -r dotenv/config scripts/createAdmin.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint \"src/**/*.ts\"",
