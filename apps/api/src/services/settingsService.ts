@@ -3,6 +3,7 @@ import {
   type SystemLogLevel,
   type AppSettingsDTO,
   type ShopfaConnectionTestResultDTO,
+  type LogSizesDTO,
 } from "@complaint-system/shared";
 import { env } from "../config/env";
 import { settingsRepository } from "../repositories/settingsRepository";
@@ -10,6 +11,9 @@ import type { SettingsDocument } from "../models/Settings";
 import { ApiError } from "../utils/ApiError";
 import { testShopfaConnection as pingShopfa } from "../integrations/shopfa/shopfaConnectionTest";
 import { applyLogLevel } from "../config/logger";
+import { getCollectionStats } from "../utils/collectionStats";
+import { UserActivityLogModel } from "../models/UserActivityLog";
+import { ShopfaTransactionLogModel } from "../models/ShopfaTransactionLog";
 
 /** After `.populate("lastImport.importedBy", "name")`, importedBy is either null or a populated User doc. */
 type PopulatedImportedBy = { _id: unknown; name?: string } | null;
@@ -61,4 +65,18 @@ export async function setSystemLogLevel(systemLogLevel: SystemLogLevel): Promise
   const doc = await settingsRepository.setSystemLogLevel(systemLogLevel);
   applyLogLevel(systemLogLevel);
   return serialize(doc);
+}
+
+/**
+ * Sizes of UserActivityLog and ShopfaTransactionLog -- unlike SystemLog
+ * (capped at 60 days / 50 MB, see jobs/systemLogRetentionJob.ts), these two
+ * streams have no rotation yet, so the Settings page surfaces their current
+ * size for the admin to keep an eye on.
+ */
+export async function getLogSizes(): Promise<LogSizesDTO> {
+  const [userActivity, shopfaTransactions] = await Promise.all([
+    getCollectionStats(UserActivityLogModel),
+    getCollectionStats(ShopfaTransactionLogModel),
+  ]);
+  return { userActivity, shopfaTransactions };
 }

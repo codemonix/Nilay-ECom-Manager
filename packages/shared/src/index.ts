@@ -70,4 +70,6 @@ export type {
   UserActivityLogListQuery,
   ShopfaTransactionLogDTO,
   ShopfaTransactionLogListQuery,
+  LogCollectionSizeDTO,
+  LogSizesDTO,
 } from "./types/log";

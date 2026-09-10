@@ -22,6 +22,15 @@
       "debug": "Debug (most verbose)"
     }
   },
+  "logSizes": {
+    "title": "Log Storage",
+    "description": "User activity and Shopfa transaction logs are kept indefinitely (the system log is automatically capped at 60 days / 50 MB -- see the Logs page).",
+    "refresh": "Refresh",
+    "error": "Could not load log sizes",
+    "userActivity": "User Activity Log",
+    "shopfaTransactions": "Shopfa Transaction Log",
+    "summary": "{{size}} · {{entries}} entries"
+  },
   "dataSource": {
     "title": "Order Data Source",
     "description": "Until live Shopfa API access is available, order and customer data is read from orders imported below. Turn this on once Shopfa API credentials are configured on the server.",

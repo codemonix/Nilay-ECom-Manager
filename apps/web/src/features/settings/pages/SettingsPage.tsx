@@ -6,6 +6,7 @@ import { ImportOrdersCard } from "../components/ImportOrdersCard";
 import { ImportedOrdersTable } from "../components/ImportedOrdersTable";
 import { BackupRestoreCard } from "../components/BackupRestoreCard";
 import { LogLevelCard } from "../components/LogLevelCard";
+import { LogSizesCard } from "../components/LogSizesCard";
 
 export function SettingsPage() {
   const { t } = useTranslation("settings");
@@ -16,6 +17,7 @@ export function SettingsPage() {
       <DataSourceCard />
       <ImportOrdersCard />
       <LogLevelCard />
+      <LogSizesCard />
       <BackupRestoreCard />
       <ImportedOrdersTable />
     </Stack>

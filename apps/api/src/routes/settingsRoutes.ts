@@ -13,6 +13,7 @@ settingsRoutes.patch(
   validate(updateSystemLogLevelSchema),
   settingsController.updateSystemLogLevel,
 );
+settingsRoutes.get("/log-sizes", settingsController.getLogSizes);
 settingsRoutes.post("/shopfa/test-connection", settingsController.testShopfaConnection);
 settingsRoutes.post("/orders/import", uploadOrdersFile.single("file"), settingsController.importOrders);
 settingsRoutes.get("/backup", settingsController.backupSettings);

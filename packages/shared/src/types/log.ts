@@ -63,3 +63,19 @@ export interface ShopfaTransactionLogListQuery {
   from?: string;
   to?: string;
 }
+
+/** On-disk size and document count of one log collection, shown on the admin Settings page. */
+export interface LogCollectionSizeDTO {
+  sizeBytes: number;
+  documentCount: number;
+}
+
+/**
+ * Sizes of the two log streams that have no automatic rotation (unlike
+ * SystemLog, which is capped at 60 days / 50 MB -- see
+ * apps/api/src/jobs/systemLogRetentionJob.ts and models/SystemLog.ts).
+ */
+export interface LogSizesDTO {
+  userActivity: LogCollectionSizeDTO;
+  shopfaTransactions: LogCollectionSizeDTO;
+}

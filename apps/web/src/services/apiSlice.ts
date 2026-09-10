@@ -56,6 +56,7 @@ export const apiSlice = createApi({
     "SystemLogList",
     "UserActivityLogList",
     "ShopfaTransactionLogList",
+    "LogSizes",
   ],
   endpoints: () => ({}),
 });

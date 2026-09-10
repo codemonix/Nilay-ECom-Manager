@@ -3,12 +3,14 @@ import { connectDatabase } from "./config/db";
 import { env } from "./config/env";
 import { logger, applyLogLevel } from "./config/logger";
 import * as settingsService from "./services/settingsService";
+import { startSystemLogRetentionJob } from "./jobs/systemLogRetentionJob";
 
 async function main() {
   await connectDatabase();
 
   const settings = await settingsService.getSettings();
   applyLogLevel(settings.systemLogLevel);
+  startSystemLogRetentionJob();
 
   const app = createApp();
   app.listen(env.PORT, () => {

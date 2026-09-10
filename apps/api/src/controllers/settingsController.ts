@@ -24,6 +24,11 @@ export const updateSystemLogLevel = asyncHandler(async (req: Request, res: Respo
   return sendSuccess(res, settings);
 });
 
+export const getLogSizes = asyncHandler(async (_req: Request, res: Response) => {
+  const sizes = await settingsService.getLogSizes();
+  return sendSuccess(res, sizes);
+});
+
 export const testShopfaConnection = asyncHandler(async (_req: Request, res: Response) => {
   const result = await settingsService.testShopfaConnection();
   return sendSuccess(res, result);

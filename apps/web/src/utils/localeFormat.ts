@@ -69,6 +69,21 @@ export function formatNumber(value: number, language: SupportedLanguage): string
   return new Intl.NumberFormat(toLocale(language)).format(value);
 }
 
+const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB"];
+
+/** Renders a byte count as a human-readable size (e.g. "12.4 MB"), with locale-aware digits. */
+export function formatBytes(bytes: number, language: SupportedLanguage): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return `${formatNumber(0, language)} ${BYTE_UNITS[0]}`;
+  }
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), BYTE_UNITS.length - 1);
+  const value = bytes / 1024 ** exponent;
+  const formatted = new Intl.NumberFormat(toLocale(language), {
+    maximumFractionDigits: exponent === 0 ? 0 : 1,
+  }).format(value);
+  return `${formatted} ${BYTE_UNITS[exponent]}`;
+}
+
 export function formatCurrency(
   value: number,
   language: SupportedLanguage,

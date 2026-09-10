@@ -1,6 +1,6 @@
 import type { ApiResponse, DataSource, SystemLogLevel } from "@complaint-system/shared";
 import { apiSlice } from "../../../services/apiSlice";
-import type { AppSettingsDTO, ImportOrdersResultDTO, ShopfaConnectionTestResultDTO } from "../types";
+import type { AppSettingsDTO, ImportOrdersResultDTO, ShopfaConnectionTestResultDTO, LogSizesDTO } from "../types";
 
 function unwrap<T>(response: ApiResponse<T>): T {
   if (!response.success) throw new Error(response.error.message);
@@ -32,6 +32,12 @@ export const settingsApi = apiSlice.injectEndpoints({
       invalidatesTags: ["Settings"],
     }),
 
+    getLogSizes: builder.query<LogSizesDTO, void>({
+      query: () => "/settings/log-sizes",
+      transformResponse: (response: ApiResponse<LogSizesDTO>) => unwrap(response),
+      providesTags: ["LogSizes"],
+    }),
+
     importOrdersFile: builder.mutation<ImportOrdersResultDTO, File>({
       query: (file) => {
         const formData = new FormData();
@@ -48,6 +54,7 @@ export const {
   useGetSettingsQuery,
   useUpdateDataSourceMutation,
   useUpdateSystemLogLevelMutation,
+  useGetLogSizesQuery,
   useTestShopfaConnectionMutation,
   useImportOrdersFileMutation,
 } = settingsApi;
