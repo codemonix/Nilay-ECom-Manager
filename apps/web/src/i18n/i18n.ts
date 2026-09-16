@@ -10,6 +10,12 @@ import enSettings from "./locales/en/settings.json";
 import enAuth from "./locales/en/auth.json";
 import enUsers from "./locales/en/users.json";
 import enLogs from "./locales/en/logs.json";
+import enPurchasing from "./locales/en/purchasing.json";
+import enReceiving from "./locales/en/receiving.json";
+import enDevTools from "./locales/en/devTools.json";
+import enReporting from "./locales/en/reporting.json";
+import enOrderPrecheck from "./locales/en/orderPrecheck.json";
+import enPacking from "./locales/en/packing.json";
 import faCommon from "./locales/fa/common.json";
 import faNavigation from "./locales/fa/navigation.json";
 import faComplaints from "./locales/fa/complaints.json";
@@ -18,6 +24,12 @@ import faSettings from "./locales/fa/settings.json";
 import faAuth from "./locales/fa/auth.json";
 import faUsers from "./locales/fa/users.json";
 import faLogs from "./locales/fa/logs.json";
+import faPurchasing from "./locales/fa/purchasing.json";
+import faReceiving from "./locales/fa/receiving.json";
+import faDevTools from "./locales/fa/devTools.json";
+import faReporting from "./locales/fa/reporting.json";
+import faOrderPrecheck from "./locales/fa/orderPrecheck.json";
+import faPacking from "./locales/fa/packing.json";
 
 export const SUPPORTED_LANGUAGES = ["en", "fa"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
@@ -58,6 +70,12 @@ void i18n
         auth: enAuth,
         users: enUsers,
         logs: enLogs,
+        purchasing: enPurchasing,
+        receiving: enReceiving,
+        devTools: enDevTools,
+        reporting: enReporting,
+        orderPrecheck: enOrderPrecheck,
+        packing: enPacking,
       },
       fa: {
         common: faCommon,
@@ -68,12 +86,33 @@ void i18n
         auth: faAuth,
         users: faUsers,
         logs: faLogs,
+        purchasing: faPurchasing,
+        receiving: faReceiving,
+        devTools: faDevTools,
+        reporting: faReporting,
+        orderPrecheck: faOrderPrecheck,
+        packing: faPacking,
       },
     },
     fallbackLng: DEFAULT_LANGUAGE,
     supportedLngs: SUPPORTED_LANGUAGES as unknown as string[],
     load: "languageOnly",
-    ns: ["common", "navigation", "complaints", "validation", "settings", "auth", "users", "logs"],
+    ns: [
+      "common",
+      "navigation",
+      "complaints",
+      "validation",
+      "settings",
+      "auth",
+      "users",
+      "logs",
+      "purchasing",
+      "receiving",
+      "devTools",
+      "reporting",
+      "orderPrecheck",
+      "packing",
+    ],
     defaultNS: "common",
     interpolation: { escapeValue: false },
     detection: {

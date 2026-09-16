@@ -1,0 +1,38 @@
+{
+  "shortage": {
+    "title": "Shortage Report",
+    "description": "Scans every order in the selected statuses and reads its admin note (\"یادداشت مدیر\") for a shortage signal: a note with no item reference counts the whole order as short, otherwise the referenced item row(s) are resolved from the note.",
+    "liveApiRequired": "This report requires the Live API data source (see Settings) -- imported order data has no admin note field or Shopfa status codes.",
+    "timeFrame": "Time frame",
+    "range": {
+      "7": "1 Week",
+      "30": "1 Month",
+      "60": "2 Months",
+      "180": "6 Months"
+    },
+    "rangeShown": "Orders created {{from}} – {{to}}",
+    "statuses": "Order statuses",
+    "generate": "Generate report",
+    "loading": "Scanning orders and admin notes… this can take a moment.",
+    "generateError": "Could not generate the report",
+    "ordersScanned": "{{count}} order scanned",
+    "ordersScanned_other": "{{count}} orders scanned",
+    "wholeOrderShortage": "{{count}} order with no item reference (counted whole)",
+    "wholeOrderShortage_other": "{{count}} orders with no item reference (counted whole)",
+    "unresolvedNotes": "{{count}} note could not be resolved to an item (click to view)",
+    "unresolvedNotes_other": "{{count}} notes could not be resolved to an item (click to view)",
+    "generatedAt": "Generated {{time}}",
+    "noShortages": "No shortages found for the selected statuses.",
+    "itemColumn": "Item",
+    "affectedOrdersColumn": "Orders affected",
+    "totalQuantityColumn": "Total shortage qty",
+    "oldestPaymentColumn": "Oldest payment",
+    "newestPaymentColumn": "Newest payment",
+    "orderNumbers": "Order numbers",
+    "unresolvedDialogTitle": "Notes that could not be resolved to an item",
+    "unresolvedDialogDescription": "These orders' admin notes mention \"مورد\"/\"موارد\" but couldn't be matched to a specific item row (e.g. an \"all except N\" phrasing) -- review them manually.",
+    "unresolvedOrderColumn": "Order number",
+    "unresolvedNoteColumn": "Admin note",
+    "close": "Close"
+  }
+}

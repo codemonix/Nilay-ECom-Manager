@@ -5,18 +5,33 @@
     "orderCheck": "بررسی اولیه سفارش",
     "packing": "بسته‌بندی",
     "purchasing": "خرید",
+    "receiving": "دریافت مرسولات",
     "inventory": "موجودی انبار",
     "reporting": "گزارش‌گیری",
     "settings": "تنظیمات",
     "users": "کاربران",
-    "logs": "گزارش‌ها"
+    "logs": "گزارش‌ها",
+    "devTools": "ابزارهای توسعه"
+  },
+  "purchasingNav": {
+    "packages": "بسته‌ها",
+    "receiveItems": "ثبت خرید",
+    "matchRegister": "تطبیق و ثبت موجودی",
+    "overview": "نمای کلی خرید"
+  },
+  "devToolsNav": {
+    "soldQuantity": "بررسی تعداد فروش",
+    "titleAsterisk": "بررسی ستاره عنوان",
+    "orderNote": "یادداشت مدیر سفارش"
   },
   "administration": "مدیریت سیستم",
   "comingSoon": "به‌زودی",
   "more": "بیشتر",
   "breadcrumbs": {
     "cases": "پرونده‌ها",
-    "caseDetailLabel": "پرونده"
+    "caseDetailLabel": "پرونده",
+    "purchasingPackages": "بسته‌ها",
+    "receiving": "دریافت مرسولات"
   },
   "noAccess": {
     "title": "بدون دسترسی",

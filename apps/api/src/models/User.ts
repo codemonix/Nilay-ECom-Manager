@@ -9,6 +9,7 @@ const userSchema = new Schema(
     role: { type: String, enum: STAFF_ROLE_VALUES, required: true },
     active: { type: Boolean, default: true },
     permissions: { type: [String], enum: MENU_KEY_VALUES, default: [] },
+    quickAccessMenu: { type: [String], enum: MENU_KEY_VALUES, default: [] },
   },
   { timestamps: true },
 );

@@ -1,0 +1,144 @@
+{
+  "status": {
+    "draft": "پیش‌نویس",
+    "in_progress": "در حال انجام",
+    "completed": "تکمیل‌شده"
+  },
+  "packages": {
+    "title": "بسته‌ها",
+    "newPackage": "بسته جدید",
+    "tabs": {
+      "all": "همه بسته‌ها",
+      "draft": "پیش‌نویس",
+      "inProgress": "در حال انجام",
+      "completed": "تکمیل‌شده"
+    },
+    "list": {
+      "empty": "بسته‌ای یافت نشد",
+      "noSupplier": "بدون تأمین‌کننده",
+      "itemCount": "{{count}} کالا",
+      "itemCount_other": "{{count}} کالا",
+      "resultsCount": "{{count}} بسته",
+      "columns": {
+        "packageNumber": "شماره بسته",
+        "supplier": "تأمین‌کننده",
+        "items": "کالاها",
+        "totalQuantity": "جمع تعداد",
+        "matched": "تطبیق‌شده",
+        "status": "وضعیت",
+        "lastActivity": "آخرین فعالیت",
+        "created": "تاریخ ایجاد"
+      }
+    },
+    "createDialog": {
+      "title": "بسته جدید",
+      "supplierName": "تأمین‌کننده (اختیاری)"
+    }
+  },
+  "detail": {
+    "notFound": "بسته یافت نشد",
+    "changeStatus": "تغییر وضعیت",
+    "sections": {
+      "items": "کالاها",
+      "timeline": "تاریخچه",
+      "summary": "خلاصه",
+      "attachments": "پیوست‌ها"
+    },
+    "itemsEmpty": "هنوز کالایی دریافت نشده است",
+    "itemsColumns": {
+      "description": "شرح",
+      "quantity": "تعداد",
+      "unitPrice": "قیمت واحد",
+      "match": "تطبیق",
+      "receivedQuantity": "دریافت‌شده"
+    },
+    "timelineEmpty": "هنوز فعالیتی ثبت نشده است",
+    "attachmentsEmpty": "هنوز پیوستی وجود ندارد",
+    "summary": {
+      "itemCount": "تعداد کالاها",
+      "createdBy": "ایجاد شده توسط",
+      "createdAt": "تاریخ ایجاد",
+      "receivedBy": "دریافت‌شده توسط",
+      "receivedAt": "تاریخ دریافت"
+    },
+    "statusDialog": {
+      "title": "تغییر وضعیت بسته",
+      "noValidTransitions": "این بسته وضعیت بعدی معتبری ندارد.",
+      "newStatus": "وضعیت جدید",
+      "reason": "دلیل (اختیاری)"
+    }
+  },
+  "events": {
+    "created": "بسته ایجاد شد",
+    "item_received": "کالا دریافت شد",
+    "item_updated": "کالا ویرایش شد",
+    "item_removed": "کالا حذف شد",
+    "item_matched": "کالا به محصول شاپفا تطبیق داده شد",
+    "item_unmatched": "تطبیق کالا لغو شد",
+    "status_changed": "وضعیت تغییر کرد",
+    "received_quantity_updated": "تعداد دریافتی ثبت شد",
+    "attachment_added": "پیوست اضافه شد",
+    "statusChangeDetail": "{{from}} ← {{to}}"
+  },
+  "receiveItems": {
+    "title": "ثبت خرید",
+    "currentDraft": "افزودن به بسته پیش‌نویس {{packageNumber}}",
+    "viewPackage": "مشاهده بسته",
+    "takePhoto": "گرفتن عکس",
+    "retakePhoto": "گرفتن مجدد عکس",
+    "quantity": "تعداد",
+    "unitPrice": "قیمت واحد",
+    "description": "شرح (اختیاری)",
+    "variantLabel": "نوع/سایز (اختیاری)",
+    "variantLabelPlaceholder": "مثلاً سایز ۷",
+    "notes": "یادداشت (اختیاری)",
+    "addItem": "افزودن کالا",
+    "photoRequired": "برای افزودن کالا، عکس الزامی است.",
+    "itemsSoFar": "{{count}} کالا دریافت شد",
+    "itemsSoFar_other": "{{count}} کالا دریافت شد",
+    "noItemsYet": "هنوز کالایی دریافت نشده است",
+    "unnamedItem": "کالا",
+    "loadError": "بسته پیش‌نویس فعلی بارگذاری نشد"
+  },
+  "cameraDialog": {
+    "title": "گرفتن عکس",
+    "capture": "ثبت عکس",
+    "useFilePicker": "به‌جای آن یک فایل انتخاب کنید",
+    "error": "دسترسی به دوربین ممکن نشد. مجوز دوربین مرورگر را بررسی کنید یا به‌جای آن یک فایل انتخاب کنید."
+  },
+  "matchRegister": {
+    "title": "تطبیق و ثبت موجودی",
+    "description": "کالاهای دریافت‌شده را به کد محصول شاپفا متصل کنید تا ماژول موجودی بعداً بتواند موجودی را تطبیق دهد.",
+    "empty": "موردی در انتظار تطبیق نیست",
+    "matched": "تطبیق‌شده",
+    "unmatched": "تطبیق‌نشده",
+    "matchedTo": "تطبیق با {{title}} ({{code}})",
+    "unmatch": "لغو تطبیق",
+    "productCode": "کد محصول شاپفا",
+    "search": "جستجو",
+    "or": "یا",
+    "searchByName": "جستجو بر اساس نام محصول",
+    "searchByNamePlaceholder": "نام محصول را تایپ کنید…",
+    "searchByNameHint": "برای جستجو حداقل ۲ حرف تایپ کنید",
+    "noResults": "محصولی یافت نشد",
+    "confirmPrompt": "پیش از ذخیره تطبیق، مطمئن شوید کالا یکسان است و نام آن درست است.",
+    "confirmMatch": "تأیید تطبیق",
+    "availableQuantity": "موجودی در شاپفا: {{count}}",
+    "availableQuantity_other": "موجودی در شاپفا: {{count}}",
+    "availableQuantityUnknown": "موجودی شاپفا نامشخص است",
+    "asteriskFlag": "عنوان با «*» پایان می‌یابد",
+    "inventoryPending": "در انتظار تصمیم موجودی",
+    "updateShopfaTo": "موجودی شاپفا را به {{count}} به‌روزرسانی کنید",
+    "updateShopfaTo_other": "موجودی شاپفا را به {{count}} به‌روزرسانی کنید",
+    "updateShopfaBreakdown": "{{before}} در شاپفا + {{added}} دریافت‌شده",
+    "updateShopfaUnknown": "موجودی شاپفا در زمان تطبیق نامشخص بود",
+    "matchError": "محصولی با این کد در شاپفا یافت نشد"
+  },
+  "overview": {
+    "title": "نمای کلی خرید",
+    "itemsPendingMatch": "کالاهای در انتظار تطبیق",
+    "itemsPendingInventoryDecision": "در انتظار تصمیم موجودی",
+    "recentActivity": "فعالیت‌های اخیر",
+    "noRecentActivity": "فعالیت اخیری وجود ندارد"
+  }
+}

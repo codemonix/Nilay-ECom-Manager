@@ -67,6 +67,8 @@ export interface ShopfaApiOrderItem {
   price?: string | number;
   count?: string | number;
   sum_price?: string | number;
+  /** Thumbnail image URL, confirmed present on live order line items -- used by Reporting's shortage report. */
+  thumb?: string | null;
 }
 
 /** One row of the `baskets` array returned by /api/shop/orders and /api/shop/orders/details. */
@@ -87,6 +89,52 @@ export interface ShopfaApiOrder {
   sum_price?: string | number;
   item_price?: string | number;
   items?: ShopfaApiOrderItem[];
+  /**
+   * The admin note ("یادداشت مدیر" in the dashboard). Only present when
+   * explicitly requested via `fields=...,note` -- absent from every
+   * default response, unlike every other field on this type. See
+   * ShopfaClient.getOrderAdminNote for how this was confirmed live.
+   */
+  note?: string;
+}
+
+/**
+ * POST /api/shop/product/list -- confirmed live against the real store
+ * (the OpenAPI export at docs/shopfa-openapi.json has no field-level schema
+ * for this endpoint, so this shape was verified by direct test calls, not
+ * documentation). Two query params matter for Purchasing's Match & Register:
+ * `id` filters to one exact product (what our `productCode` values -- the
+ * "کد کالا" column from xlsx imports -- actually are), and `q` performs a
+ * free-text search across titles, returning multiple candidates. Neither
+ * filter changes the response envelope, only which rows come back in
+ * `items`; a filter that matches nothing still returns HTTP 200 with
+ * `items: []`, `total_count: 0`, and `error: "Not Found"` (`successful`
+ * stays `true` either way -- do not branch on it here). There is no
+ * separate SKU-like field in this response, only `id`. Real titles do end
+ * in "*" (confirmed), same convention documented on shopfaTitleEndsWithAsterisk.
+ */
+export interface ShopfaApiProduct {
+  id: string | number;
+  page_id?: string | number;
+  title: string;
+  /** Thumbnail image URL. */
+  thumb?: string | null;
+  price?: string | number;
+  old_price?: string | number;
+  /** Current stock count. */
+  quantity?: string | number;
+  unit?: string;
+  product_status?: string | number;
+  variant?: boolean;
+  variants?: unknown[];
+}
+
+export interface ShopfaApiProductListResponse extends ShopfaApiCommonResponse {
+  item_count?: number;
+  current_page?: number;
+  q?: string;
+  total_count?: number;
+  items?: ShopfaApiProduct[];
 }
 
 /** One row of the `items` array returned by /api/user/users -- the display name field is `name`, not `username`. */

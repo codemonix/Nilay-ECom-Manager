@@ -20,60 +20,57 @@ import BottomNavigation from "@mui/material/BottomNavigation";
 import BottomNavigationAction from "@mui/material/BottomNavigationAction";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
-import AssignmentIcon from "@mui/icons-material/Assignment";
-import FactCheckIcon from "@mui/icons-material/FactCheck";
-import Inventory2Icon from "@mui/icons-material/Inventory2";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import WarehouseIcon from "@mui/icons-material/Warehouse";
-import BarChartIcon from "@mui/icons-material/BarChart";
-import SettingsIcon from "@mui/icons-material/Settings";
 import DiamondIcon from "@mui/icons-material/Diamond";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
-import PeopleIcon from "@mui/icons-material/People";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
-import ManageSearchIcon from "@mui/icons-material/ManageSearch";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import BuildIcon from "@mui/icons-material/Build";
+import NumbersIcon from "@mui/icons-material/Numbers";
+import TextFieldsIcon from "@mui/icons-material/TextFields";
+import StickyNote2Icon from "@mui/icons-material/StickyNote2";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { UserMenu } from "../features/auth/components/UserMenu";
 import { useAppSelector } from "../app/hooks";
 import { hasMenuAccess, MenuKey } from "@complaint-system/shared";
+import { ADMIN_NAV_ITEMS, PRIMARY_NAV_ITEMS, type NavItem } from "../config/navItems";
 
 const DRAWER_WIDTH = 240;
 const BOTTOM_NAV_HEIGHT = 64;
 const ADMIN_MENU_EXPANDED_STORAGE_KEY = "complaint-system.adminMenuExpanded";
+const PURCHASING_MENU_EXPANDED_STORAGE_KEY = "complaint-system.purchasingMenuExpanded";
+const DEV_TOOLS_MENU_EXPANDED_STORAGE_KEY = "complaint-system.devToolsMenuExpanded";
 
-interface NavItem {
-  key: MenuKey;
-  icon: ReactNode;
-  path?: string;
-}
-
-// Modules with day-to-day operational use get a flat top-level entry.
-const PRIMARY_NAV_ITEMS: NavItem[] = [
-  { key: MenuKey.CASES, icon: <AssignmentIcon />, path: "/cases" },
-  { key: MenuKey.ORDER_CHECK, icon: <FactCheckIcon /> },
-  { key: MenuKey.PACKING, icon: <Inventory2Icon /> },
-  { key: MenuKey.PURCHASING, icon: <ShoppingCartIcon /> },
-  { key: MenuKey.INVENTORY, icon: <WarehouseIcon /> },
-  { key: MenuKey.REPORTING, icon: <BarChartIcon /> },
+// Internal test/debug pages live in their own retractable "Development
+// Tools" group, gated by the single MenuKey.DEV_TOOLS permission -- same
+// pattern as Purchasing's children above. New test pages just get appended
+// here.
+const DEV_TOOLS_CHILD_ITEMS: NavItem[] = [
+  {
+    key: MenuKey.DEV_TOOLS,
+    labelKey: "navigation:devToolsNav.soldQuantity",
+    icon: <NumbersIcon />,
+    path: "/dev-tools/sold-quantity",
+  },
+  {
+    key: MenuKey.DEV_TOOLS,
+    labelKey: "navigation:devToolsNav.titleAsterisk",
+    icon: <TextFieldsIcon />,
+    path: "/dev-tools/title-asterisk",
+  },
+  {
+    key: MenuKey.DEV_TOOLS,
+    labelKey: "navigation:devToolsNav.orderNote",
+    icon: <StickyNote2Icon />,
+    path: "/dev-tools/order-note",
+  },
 ];
 
-// Administrative tools live in their own retractable "Administration" group
-// (see navList below) instead of the flat top-level list -- this is where
-// every future admin-only screen (audit logs, permissions, etc.) belongs,
-// keeping the primary nav from getting crowded as the admin surface grows.
-const ADMIN_NAV_ITEMS: NavItem[] = [
-  { key: MenuKey.SETTINGS, icon: <SettingsIcon />, path: "/settings" },
-  { key: MenuKey.USERS, icon: <PeopleIcon />, path: "/users" },
-  { key: MenuKey.LOGS, icon: <ManageSearchIcon />, path: "/logs" },
-];
-
-// Primary destinations get their own thumb-reachable tab; everything else
-// (including "coming soon" modules and the Administration group) lives
-// behind "More" so the bottom bar never gets crowded as new modules ship.
-const BOTTOM_NAV_PRIMARY_KEYS = ["cases", "settings"];
+// Fallback bottom-tab selection for a user who hasn't customized their
+// quick access menu yet (see UserMenu > "Mobile quick access"). Once a user
+// picks their own set (User.quickAccessMenu), that replaces this default.
+const DEFAULT_QUICK_ACCESS_KEYS: MenuKey[] = [MenuKey.CASES, MenuKey.SETTINGS];
 
 export function MainLayout({ children }: { children: ReactNode }) {
   const { t } = useTranslation(["navigation", "common"]);
@@ -89,11 +86,36 @@ export function MainLayout({ children }: { children: ReactNode }) {
       return false;
     }
   });
+  const [purchasingExpanded, setPurchasingExpanded] = useState(() => {
+    try {
+      return localStorage.getItem(PURCHASING_MENU_EXPANDED_STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
+  const [devToolsExpanded, setDevToolsExpanded] = useState(() => {
+    try {
+      return localStorage.getItem(DEV_TOOLS_MENU_EXPANDED_STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
   const user = useAppSelector((state) => state.auth.user);
   const primaryItems = user ? PRIMARY_NAV_ITEMS.filter((item) => hasMenuAccess(user, item.key)) : [];
   const adminItems = user ? ADMIN_NAV_ITEMS.filter((item) => hasMenuAccess(user, item.key)) : [];
+  const devToolsVisible = user ? hasMenuAccess(user, MenuKey.DEV_TOOLS) : false;
   const visibleNavItems = [...primaryItems, ...adminItems];
+  const quickAccessKeys = (user?.quickAccessMenu?.length ? user.quickAccessMenu : DEFAULT_QUICK_ACCESS_KEYS).filter(
+    (key) => visibleNavItems.some((item) => item.key === key && item.path),
+  );
   const isAdminSectionActive = adminItems.some(
+    (item) => item.path && location.pathname.startsWith(item.path),
+  );
+  const purchasingItem = primaryItems.find((item) => item.children);
+  const isPurchasingSectionActive = (purchasingItem?.children ?? []).some(
+    (item) => item.path && location.pathname.startsWith(item.path),
+  );
+  const isDevToolsSectionActive = DEV_TOOLS_CHILD_ITEMS.some(
     (item) => item.path && location.pathname.startsWith(item.path),
   );
 
@@ -109,11 +131,36 @@ export function MainLayout({ children }: { children: ReactNode }) {
     });
   };
 
+  const togglePurchasingExpanded = () => {
+    setPurchasingExpanded((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(PURCHASING_MENU_EXPANDED_STORAGE_KEY, String(next));
+      } catch {
+        // Per-viewer convenience only; safe to ignore (private browsing, blocked storage, etc.).
+      }
+      return next;
+    });
+  };
+
+  const toggleDevToolsExpanded = () => {
+    setDevToolsExpanded((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(DEV_TOOLS_MENU_EXPANDED_STORAGE_KEY, String(next));
+      } catch {
+        // Per-viewer convenience only; safe to ignore (private browsing, blocked storage, etc.).
+      }
+      return next;
+    });
+  };
+
   const renderNavItem = (item: NavItem, indent = false) => {
     const isActive = Boolean(item.path && location.pathname.startsWith(item.path));
+    const itemKey = item.path ?? item.labelKey ?? item.key;
     const content = (
       <ListItemButton
-        key={item.key}
+        key={itemKey}
         component={item.path ? NavLink : "div"}
         to={item.path}
         disabled={!item.path}
@@ -122,14 +169,14 @@ export function MainLayout({ children }: { children: ReactNode }) {
         sx={{ borderRadius: "10px", mb: 0.5, minHeight: 48, pl: indent ? 3.5 : 2 }}
       >
         <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
-        <ListItemText primary={t(`navigation:modules.${item.key}`)} />
+        <ListItemText primary={t(item.labelKey ?? `navigation:modules.${item.key}`)} />
         {!item.path && (
           <Chip size="small" label={t("navigation:comingSoon")} variant="outlined" sx={{ fontWeight: 500 }} />
         )}
       </ListItemButton>
     );
     return !item.path ? (
-      <Tooltip key={item.key} title={t("navigation:comingSoon")} placement="right">
+      <Tooltip key={itemKey} title={t("navigation:comingSoon")} placement="right">
         <span>{content}</span>
       </Tooltip>
     ) : (
@@ -139,7 +186,39 @@ export function MainLayout({ children }: { children: ReactNode }) {
 
   const navList = (
     <List sx={{ px: 1 }}>
-      {primaryItems.map((item) => renderNavItem(item))}
+      {primaryItems.filter((item) => !item.children).map((item) => renderNavItem(item))}
+
+      {purchasingItem && (
+        <>
+          <ListItemButton onClick={togglePurchasingExpanded} sx={{ borderRadius: "10px", mb: 0.5, minHeight: 48 }}>
+            <ListItemIcon sx={{ minWidth: 36 }}>{purchasingItem.icon}</ListItemIcon>
+            <ListItemText primary={t(`navigation:modules.${purchasingItem.key}`)} />
+            {purchasingExpanded || isPurchasingSectionActive ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          </ListItemButton>
+          <Collapse in={purchasingExpanded || isPurchasingSectionActive} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding sx={{ px: 0 }}>
+              {(purchasingItem.children ?? []).map((item) => renderNavItem(item, true))}
+            </List>
+          </Collapse>
+        </>
+      )}
+
+      {devToolsVisible && (
+        <>
+          <ListItemButton onClick={toggleDevToolsExpanded} sx={{ borderRadius: "10px", mb: 0.5, minHeight: 48 }}>
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              <BuildIcon />
+            </ListItemIcon>
+            <ListItemText primary={t("navigation:modules.devTools")} />
+            {devToolsExpanded || isDevToolsSectionActive ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          </ListItemButton>
+          <Collapse in={devToolsExpanded || isDevToolsSectionActive} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding sx={{ px: 0 }}>
+              {DEV_TOOLS_CHILD_ITEMS.map((item) => renderNavItem(item, true))}
+            </List>
+          </Collapse>
+        </>
+      )}
 
       {adminItems.length > 0 && (
         <>
@@ -160,7 +239,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
     </List>
   );
 
-  const activePrimaryKey = BOTTOM_NAV_PRIMARY_KEYS.find((key) => {
+  const activePrimaryKey = quickAccessKeys.find((key) => {
     const item = visibleNavItems.find((n) => n.key === key);
     return item?.path && location.pathname.startsWith(item.path);
   });
@@ -276,7 +355,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
               if (item?.path) navigate(item.path);
             }}
           >
-            {visibleNavItems.filter((item) => BOTTOM_NAV_PRIMARY_KEYS.includes(item.key)).map((item) => (
+            {visibleNavItems.filter((item) => quickAccessKeys.includes(item.key)).map((item) => (
               <BottomNavigationAction
                 key={item.key}
                 value={item.key}

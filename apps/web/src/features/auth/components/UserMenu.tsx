@@ -10,10 +10,12 @@ import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import LockResetIcon from "@mui/icons-material/LockReset";
 import LogoutIcon from "@mui/icons-material/Logout";
+import AppsIcon from "@mui/icons-material/Apps";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { logout } from "../../../store/authSlice";
 import { ChangePasswordDialog } from "./ChangePasswordDialog";
+import { QuickAccessMenuDialog } from "./QuickAccessMenuDialog";
 
 function initials(name: string): string {
   return name
@@ -30,6 +32,7 @@ export function UserMenu() {
   const user = useAppSelector((state) => state.auth.user);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [quickAccessOpen, setQuickAccessOpen] = useState(false);
 
   if (!user) return null;
 
@@ -65,6 +68,17 @@ export function UserMenu() {
         <MenuItem
           onClick={() => {
             handleClose();
+            setQuickAccessOpen(true);
+          }}
+        >
+          <ListItemIcon>
+            <AppsIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>{t("auth:userMenu.quickAccessMenu")}</ListItemText>
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleClose();
             dispatch(logout());
           }}
         >
@@ -75,6 +89,7 @@ export function UserMenu() {
         </MenuItem>
       </Menu>
       <ChangePasswordDialog open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
+      <QuickAccessMenuDialog open={quickAccessOpen} onClose={() => setQuickAccessOpen(false)} />
     </>
   );
 }

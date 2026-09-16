@@ -127,4 +127,69 @@ export const importedOrderRepository = {
   async count(): Promise<number> {
     return ImportedOrderModel.countDocuments();
   },
+
+  /** Best-effort product lookup by scanning imported order line items -- see ImportedOrdersShopfaClient.getProductByCode. */
+  async findItemByProductCode(
+    productCode: string,
+  ): Promise<{ productCode: string; sku?: string | null; title: string } | null> {
+    const order = await ImportedOrderModel.findOne(
+      { "items.productCode": productCode },
+      { "items.$": 1 },
+    );
+    return order?.items[0] ?? null;
+  },
+
+  /** Best-effort title search across imported order line items, deduped by productCode -- see ImportedOrdersShopfaClient.searchProducts. */
+  async searchItemsByTitle(
+    query: string,
+    limit = 20,
+  ): Promise<Array<{ productCode: string; sku?: string | null; title: string }>> {
+    const q = query.trim();
+    if (!q) return [];
+    const regex = new RegExp(escapeRegex(q), "i");
+    const results = await ImportedOrderModel.aggregate<{ _id: string; sku?: string | null; title: string }>([
+      { $match: { "items.title": regex } },
+      { $unwind: "$items" },
+      { $match: { "items.title": regex } },
+      { $group: { _id: "$items.productCode", sku: { $first: "$items.sku" }, title: { $first: "$items.title" } } },
+      { $limit: limit },
+    ]);
+    return results.map((r) => ({ productCode: r._id, sku: r.sku ?? null, title: r.title }));
+  },
+
+  /**
+   * Line-item quantity for a product code within a purchase-date range,
+   * broken down by order status -- backs
+   * ImportedOrdersShopfaClient.getSoldQuantityBreakdown (Development
+   * Tools' "total sold quantity" check). Grouped in two stages (per order,
+   * then per status) rather than one -- a single order can list the same
+   * product code more than once (e.g. two sizes of the same ring bought
+   * together), and a one-stage `$group` by status with `orderCount: {
+   * $sum: 1 }` would count that one order twice. The two-stage version
+   * sums each order's quantity for this product first, then counts
+   * distinct orders per status.
+   *
+   * Unlike HttpShopfaClient.scanOrdersForSoldQuantity, this filters by
+   * `purchaseDate` (order-creation date), not payment date: the imported
+   * xlsx's "تاریخ پرداخت" column is stored as a raw, unparsed Persian
+   * (Jalali) calendar string on `paymentDate` (see ImportedOrder.ts),
+   * not a Date, so it can't be range-queried without a calendar
+   * conversion this path doesn't do. Only matters when
+   * Settings.dataSource is "imported_file" -- the live API path is the
+   * one that's payment-date-accurate.
+   */
+  async getQuantityByStatus(
+    productCode: string,
+    range: { from: Date; to: Date },
+  ): Promise<Array<{ status: string; quantity: number; orderCount: number }>> {
+    const results = await ImportedOrderModel.aggregate<{ _id: string; quantity: number; orderCount: number }>([
+      { $match: { "items.productCode": productCode, purchaseDate: { $gte: range.from, $lte: range.to } } },
+      { $unwind: "$items" },
+      { $match: { "items.productCode": productCode } },
+      { $group: { _id: { orderId: "$_id", status: "$status" }, quantity: { $sum: "$items.quantity" } } },
+      { $group: { _id: "$_id.status", quantity: { $sum: "$quantity" }, orderCount: { $sum: 1 } } },
+      { $sort: { quantity: -1 } },
+    ]);
+    return results.map((r) => ({ status: r._id, quantity: r.quantity, orderCount: r.orderCount }));
+  },
 };

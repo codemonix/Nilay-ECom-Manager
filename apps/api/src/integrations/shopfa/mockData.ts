@@ -38,6 +38,34 @@ function pseudoRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
+/**
+ * Fixture product catalog for Purchasing's "Match & Register" step
+ * (ShopfaClient.getProductByCode), so it's demoable/testable without live
+ * Shopfa access. Codes are arbitrary but stable across test runs.
+ */
+export const MOCK_PRODUCT_CODES: Array<{
+  code: string;
+  shopfaProductId: string;
+  sku: string;
+  title: string;
+  price: number;
+  availableQuantity: number;
+}> = [
+  ...PRODUCTS.map((product, i) => ({
+    code: `SHF-${1000 + i}`,
+    shopfaProductId: `prod_${1000 + i}`,
+    sku: product.sku,
+    title: product.title,
+    price: 1_000_000 + i * 250_000,
+    availableQuantity: Math.floor(pseudoRandom(i + 1) * 40),
+  })),
+  // A title ending in "*" -- Shopfa's own convention this store uses to flag
+  // something for inventory follow-up. Kept separate from PRODUCTS above so
+  // adding it doesn't shift the pseudo-random product selection MOCK_ORDERS relies on.
+  // Zero stock illustrates the plausible real-world meaning of the "*" flag.
+  { code: "SHF-STAR", shopfaProductId: "prod_star", sku: "RNG-DMD-099", title: "Diamond Eternity Ring*", price: 4_500_000, availableQuantity: 0 },
+];
+
 export const MOCK_ORDERS: ShopfaRawOrder[] = MOCK_CUSTOMERS.flatMap((customer, ci) => {
   const orderCount = Math.min(3, Math.max(1, Math.floor(customer.orders_count / 6) + 1));
   return Array.from({ length: orderCount }).map((_, oi) => {

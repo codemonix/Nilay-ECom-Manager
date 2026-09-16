@@ -1,0 +1,39 @@
+{
+  "title": "دریافت مرسولات",
+  "description": "برای بسته‌هایی که قبلاً به شرکت حمل‌ونقل تحویل داده شده‌اند، آنچه در مقصد رسیده را تأیید کنید.",
+  "tabs": {
+    "awaitingReceipt": "در انتظار دریافت",
+    "received": "دریافت‌شده"
+  },
+  "list": {
+    "empty": "بسته‌ای در این بخش نیست",
+    "noSupplier": "بدون تأمین‌کننده",
+    "itemCount": "{{count}} کالا",
+    "itemCount_other": "{{count}} کالا",
+    "columns": {
+      "packageNumber": "شماره بسته",
+      "supplier": "تأمین‌کننده",
+      "items": "کالاها",
+      "status": "وضعیت",
+      "lastActivity": "آخرین فعالیت"
+    }
+  },
+  "detail": {
+    "notFound": "بسته یافت نشد",
+    "confirmReceived": "تأیید دریافت",
+    "confirmPrompt": "هر کالایی که برایش تعداد جداگانه ثبت نشده باشد، به‌طور کامل دریافت‌شده در نظر گرفته می‌شود. این کار بسته را تکمیل‌شده علامت می‌زند و از این‌جا قابل بازگشت نیست.",
+    "alreadyReceived": "توسط {{name}} در تاریخ {{date}} دریافت شد.",
+    "sections": {
+      "items": "کالاها",
+      "timeline": "تاریخچه"
+    },
+    "itemsEmpty": "کالایی در این بسته نیست",
+    "timelineEmpty": "هنوز فعالیتی ثبت نشده است",
+    "expectedQuantity": "{{count}} مورد انتظار",
+    "expectedQuantity_other": "{{count}} مورد انتظار",
+    "shopfaMatch": "شاپفا: {{title}}",
+    "notMatchedYet": "هنوز با شاپفا تطبیق نشده است",
+    "receivedQuantity": "دریافت‌شده",
+    "saveCount": "ذخیره تعداد"
+  }
+}

@@ -1,0 +1,144 @@
+{
+  "status": {
+    "draft": "Draft",
+    "in_progress": "In Progress",
+    "completed": "Completed"
+  },
+  "packages": {
+    "title": "Packages",
+    "newPackage": "New Package",
+    "tabs": {
+      "all": "All Packages",
+      "draft": "Draft",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "list": {
+      "empty": "No packages found",
+      "noSupplier": "No supplier",
+      "itemCount": "{{count}} item",
+      "itemCount_other": "{{count}} items",
+      "resultsCount": "{{count}} packages",
+      "columns": {
+        "packageNumber": "Package #",
+        "supplier": "Supplier",
+        "items": "Items",
+        "totalQuantity": "Total Qty",
+        "matched": "Matched",
+        "status": "Status",
+        "lastActivity": "Last Activity",
+        "created": "Created"
+      }
+    },
+    "createDialog": {
+      "title": "New Package",
+      "supplierName": "Supplier (optional)"
+    }
+  },
+  "detail": {
+    "notFound": "Package not found",
+    "changeStatus": "Change Status",
+    "sections": {
+      "items": "Items",
+      "timeline": "Timeline",
+      "summary": "Summary",
+      "attachments": "Attachments"
+    },
+    "itemsEmpty": "No items received yet",
+    "itemsColumns": {
+      "description": "Description",
+      "quantity": "Qty",
+      "unitPrice": "Unit Price",
+      "match": "Match",
+      "receivedQuantity": "Received"
+    },
+    "timelineEmpty": "No activity yet",
+    "attachmentsEmpty": "No attachments yet",
+    "summary": {
+      "itemCount": "Items",
+      "createdBy": "Created by",
+      "createdAt": "Created at",
+      "receivedBy": "Received by",
+      "receivedAt": "Received at"
+    },
+    "statusDialog": {
+      "title": "Change Package Status",
+      "noValidTransitions": "This package has no valid next status.",
+      "newStatus": "New Status",
+      "reason": "Reason (optional)"
+    }
+  },
+  "events": {
+    "created": "Package created",
+    "item_received": "Item received",
+    "item_updated": "Item updated",
+    "item_removed": "Item removed",
+    "item_matched": "Item matched to Shopfa product",
+    "item_unmatched": "Item unmatched",
+    "status_changed": "Status changed",
+    "received_quantity_updated": "Received quantity recorded",
+    "attachment_added": "Attachment added",
+    "statusChangeDetail": "{{from}} → {{to}}"
+  },
+  "receiveItems": {
+    "title": "Receive Items",
+    "currentDraft": "Adding to draft package {{packageNumber}}",
+    "viewPackage": "View package",
+    "takePhoto": "Take Photo",
+    "retakePhoto": "Retake Photo",
+    "quantity": "Quantity",
+    "unitPrice": "Unit Price",
+    "description": "Description (optional)",
+    "variantLabel": "Variant (optional)",
+    "variantLabelPlaceholder": "e.g. Size 7",
+    "notes": "Notes (optional)",
+    "addItem": "Add Item",
+    "photoRequired": "A photo is required to add an item.",
+    "itemsSoFar": "{{count}} item received",
+    "itemsSoFar_other": "{{count}} items received",
+    "noItemsYet": "No items received yet",
+    "unnamedItem": "Item",
+    "loadError": "Could not load the current draft package"
+  },
+  "cameraDialog": {
+    "title": "Take a Photo",
+    "capture": "Capture",
+    "useFilePicker": "Choose a photo instead",
+    "error": "Couldn't access the camera. Check your browser's camera permission, or choose a photo instead."
+  },
+  "matchRegister": {
+    "title": "Match & Register",
+    "description": "Link received items to a Shopfa product code so the Inventory module can later reconcile stock.",
+    "empty": "Nothing pending a match",
+    "matched": "Matched",
+    "unmatched": "Unmatched",
+    "matchedTo": "Matched to {{title}} ({{code}})",
+    "unmatch": "Unmatch",
+    "productCode": "Shopfa product code",
+    "search": "Search",
+    "or": "OR",
+    "searchByName": "Search by product name",
+    "searchByNamePlaceholder": "Start typing a product name…",
+    "searchByNameHint": "Type at least 2 characters to search",
+    "noResults": "No matching products found",
+    "confirmPrompt": "Confirm this is the same item and the name is correct before saving the match.",
+    "confirmMatch": "Confirm Match",
+    "availableQuantity": "Available in Shopfa: {{count}}",
+    "availableQuantity_other": "Available in Shopfa: {{count}}",
+    "availableQuantityUnknown": "Shopfa stock quantity unknown",
+    "asteriskFlag": "Title ends with \"*\"",
+    "inventoryPending": "Pending inventory decision",
+    "updateShopfaTo": "Update Shopfa quantity to {{count}}",
+    "updateShopfaTo_other": "Update Shopfa quantity to {{count}}",
+    "updateShopfaBreakdown": "{{before}} in Shopfa + {{added}} received",
+    "updateShopfaUnknown": "Shopfa quantity at match time is unknown",
+    "matchError": "No Shopfa product found for that code"
+  },
+  "overview": {
+    "title": "Purchasing Overview",
+    "itemsPendingMatch": "Items pending match",
+    "itemsPendingInventoryDecision": "Pending inventory decision",
+    "recentActivity": "Recent Activity",
+    "noRecentActivity": "No recent activity"
+  }
+}

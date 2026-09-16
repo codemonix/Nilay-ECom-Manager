@@ -5,6 +5,8 @@ import type { UserDocument } from "../models/User";
 import type { SystemLogDocument } from "../models/SystemLog";
 import type { UserActivityLogDocument } from "../models/UserActivityLog";
 import type { ShopfaTransactionLogDocument } from "../models/ShopfaTransactionLog";
+import type { PackageDocument, PackageItemSubdocument } from "../models/Package";
+import type { PackageEventDocument } from "../models/PackageEvent";
 
 type PopulatedRef = { _id: unknown; name: string; role?: string } | null | undefined;
 
@@ -56,7 +58,8 @@ export function serializeAttachment(attachment: AttachmentDocument) {
   const obj = attachment.toObject();
   return {
     id: String(obj._id),
-    caseId: String(obj.caseId),
+    subjectType: obj.subjectType,
+    subjectId: String(obj.subjectId),
     originalFilename: obj.originalFilename,
     storedFilename: obj.storedFilename,
     mimeType: obj.mimeType,
@@ -76,6 +79,7 @@ export function serializeUser(user: UserDocument) {
     role: obj.role,
     active: obj.active,
     permissions: obj.permissions ?? [],
+    quickAccessMenu: obj.quickAccessMenu ?? [],
   };
 }
 
@@ -103,6 +107,63 @@ export function serializeUserActivityLog(log: UserActivityLogDocument) {
     statusCode: obj.statusCode,
     durationMs: obj.durationMs,
     ip: obj.ip ?? null,
+    createdAt: obj.createdAt,
+  };
+}
+
+function serializePackageItem(item: PackageItemSubdocument) {
+  const obj = item.toObject ? item.toObject() : item;
+  return {
+    id: String(obj._id),
+    photoAttachmentId: obj.photoAttachmentId ? String(obj.photoAttachmentId) : null,
+    description: obj.description,
+    variantLabel: obj.variantLabel ?? null,
+    quantity: obj.quantity,
+    unitPrice: obj.unitPrice,
+    currency: obj.currency,
+    productCode: obj.productCode ?? null,
+    shopfaProductId: obj.shopfaProductId ?? null,
+    sku: obj.sku ?? null,
+    matchedProductTitle: obj.matchedProductTitle ?? null,
+    matchedProductImageUrl: obj.matchedProductImageUrl ?? null,
+    titleEndsWithAsterisk: obj.titleEndsWithAsterisk,
+    inventoryPending: obj.inventoryPending,
+    matchedAt: obj.matchedAt ?? null,
+    matchedBy: obj.matchedBy ? String(obj.matchedBy) : null,
+    matchedAvailableQuantity: obj.matchedAvailableQuantity ?? null,
+    receivedQuantity: obj.receivedQuantity ?? null,
+    loggedAt: obj.loggedAt,
+    loggedBy: obj.loggedBy ? String(obj.loggedBy) : null,
+    notes: obj.notes ?? null,
+  };
+}
+
+export function serializePackage(packageDoc: PackageDocument) {
+  const obj = packageDoc.toObject({ virtuals: false });
+  return {
+    id: String(obj._id),
+    packageNumber: obj.packageNumber,
+    status: obj.status,
+    supplierName: obj.supplierName ?? null,
+    items: packageDoc.items.map(serializePackageItem),
+    createdBy: refToSummary(obj.createdBy as unknown as PopulatedRef),
+    receivedAt: obj.receivedAt ?? null,
+    receivedBy: refToSummary(obj.receivedBy as unknown as PopulatedRef),
+    lastActivityAt: obj.lastActivityAt,
+    createdAt: obj.createdAt,
+    updatedAt: obj.updatedAt,
+  };
+}
+
+export function serializePackageEvent(event: PackageEventDocument) {
+  const obj = event.toObject({ virtuals: false });
+  return {
+    id: String(obj._id),
+    packageId: String(obj.packageId),
+    type: obj.type,
+    actor: refToSummary(obj.actorId as unknown as PopulatedRef),
+    body: obj.body,
+    data: obj.data,
     createdAt: obj.createdAt,
   };
 }

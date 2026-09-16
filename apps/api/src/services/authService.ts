@@ -1,3 +1,4 @@
+import { hasMenuAccess, type MenuKey } from "@complaint-system/shared";
 import { userRepository } from "../repositories/userRepository";
 import { ApiError } from "../utils/ApiError";
 import { comparePassword, hashPassword } from "../utils/password";
@@ -24,4 +25,16 @@ export async function changeOwnPassword(userId: string, currentPassword: string,
 
   user.passwordHash = await hashPassword(newPassword);
   await user.save();
+}
+
+export async function updateOwnQuickAccessMenu(userId: string, quickAccessMenu: MenuKey[]): Promise<UserDocument> {
+  const user = await userRepository.findById(userId);
+  if (!user) throw ApiError.notFound("User not found");
+
+  const hasUnauthorizedKey = quickAccessMenu.some((key) => !hasMenuAccess(user, key));
+  if (hasUnauthorizedKey) throw ApiError.badRequest("Cannot pin a page you don't have access to");
+
+  user.quickAccessMenu = quickAccessMenu;
+  await user.save();
+  return user;
 }

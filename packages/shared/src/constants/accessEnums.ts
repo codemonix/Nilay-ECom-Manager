@@ -10,11 +10,13 @@ export const MenuKey = {
   ORDER_CHECK: "orderCheck",
   PACKING: "packing",
   PURCHASING: "purchasing",
+  RECEIVING: "receiving",
   INVENTORY: "inventory",
   REPORTING: "reporting",
   SETTINGS: "settings",
   USERS: "users",
   LOGS: "logs",
+  DEV_TOOLS: "devTools",
 } as const;
 export type MenuKey = (typeof MenuKey)[keyof typeof MenuKey];
 export const MENU_KEY_VALUES = Object.values(MenuKey);
@@ -27,7 +29,7 @@ export const MENU_KEY_VALUES = Object.values(MenuKey);
 export const DEFAULT_PERMISSIONS_BY_ROLE: Record<StaffRole, MenuKey[]> = {
   [StaffRole.ADMIN]: MENU_KEY_VALUES,
   [StaffRole.CUSTOMER_SERVICE]: [MenuKey.CASES],
-  [StaffRole.WAREHOUSE]: [MenuKey.ORDER_CHECK, MenuKey.PACKING, MenuKey.INVENTORY],
+  [StaffRole.WAREHOUSE]: [MenuKey.ORDER_CHECK, MenuKey.PACKING, MenuKey.INVENTORY, MenuKey.RECEIVING],
   [StaffRole.MANAGER]: [MenuKey.CASES, MenuKey.REPORTING, MenuKey.SETTINGS],
   [StaffRole.PURCHASING]: [MenuKey.PURCHASING],
 };

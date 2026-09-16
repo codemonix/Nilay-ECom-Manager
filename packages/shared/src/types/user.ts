@@ -8,4 +8,5 @@ export interface UserDTO {
   role: StaffRole;
   active: boolean;
   permissions: MenuKey[];
+  quickAccessMenu: MenuKey[];
 }

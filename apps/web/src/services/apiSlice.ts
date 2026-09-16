@@ -57,6 +57,13 @@ export const apiSlice = createApi({
     "UserActivityLogList",
     "ShopfaTransactionLogList",
     "LogSizes",
+    "Package",
+    "PackageList",
+    "PackageEvents",
+    "PackageAttachments",
+    "PurchasingOverview",
+    "OrderPrecheckList",
+    "PackingList",
   ],
   endpoints: () => ({}),
 });

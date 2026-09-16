@@ -1,0 +1,28 @@
+{
+  "title": "Packing",
+  "description": "Tap an item's photo to mark it packed (green frame). Once every item is green you can send the order.",
+  "liveApiRequired": "This page only works with the \"Live API\" data source (see Settings).",
+  "timeFrame": "Time frame",
+  "range": {
+    "7": "1 week",
+    "30": "1 month",
+    "60": "2 months",
+    "180": "6 months"
+  },
+  "apply": "Apply & load",
+  "rangeShown": "Orders created from {{from}} to {{to}}",
+  "loading": "Loading orders…",
+  "loadError": "Could not load orders",
+  "noOrders": "No orders found with status \"Sent to postal service\".",
+  "guestBuyer": "Guest customer",
+  "orderNumberLabel": "Order number",
+  "progress": "Order {{current}} of {{total}}",
+  "packed": "Packed",
+  "previous": "Previous",
+  "next": "Next",
+  "send": "Send",
+  "sendWithTotal": "Send (total {{total}} pcs)",
+  "sendHint": "Every item must be marked packed (green) before you can send.",
+  "sendError": "Could not send the order",
+  "sendSuccess": "Order sent and moved to \"Shipped\"."
+}

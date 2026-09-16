@@ -2,7 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { Types } from "mongoose";
 import { describe, expect, it } from "vitest";
-import { CaseEventType, CaseStatus, DataSource, StaffRole } from "@complaint-system/shared";
+import { AttachmentSubjectType, CaseEventType, CaseStatus, DataSource, StaffRole } from "@complaint-system/shared";
 import { SettingsModel } from "../src/models/Settings";
 import { UserModel } from "../src/models/User";
 import { CaseModel } from "../src/models/Case";
@@ -58,7 +58,7 @@ describe("backup and restore", () => {
     await CaseEventModel.create({ _id: eventId, caseId, type: CaseEventType.CREATED, actorId: userId, body: "Created" });
     await fs.mkdir(UPLOAD_ROOT, { recursive: true });
     await fs.writeFile(path.join(UPLOAD_ROOT, attachmentFilename), attachmentContent);
-    await AttachmentModel.create({ _id: attachmentId, caseId, originalFilename: "proof.txt", storedFilename: attachmentFilename, mimeType: "text/plain", size: attachmentContent.length, path: attachmentFilename, uploadedBy: userId });
+    await AttachmentModel.create({ _id: attachmentId, subjectType: AttachmentSubjectType.CASE, subjectId: caseId, originalFilename: "proof.txt", storedFilename: attachmentFilename, mimeType: "text/plain", size: attachmentContent.length, path: attachmentFilename, uploadedBy: userId });
     await ImportedOrderModel.create({
       _id: orderId,
       externalOrderId: "order-1",
@@ -86,7 +86,7 @@ describe("backup and restore", () => {
 
     expect(comparable(restored)).toEqual(comparable(original));
     expect(await CaseEventModel.exists({ caseId, actorId: userId })).toBeTruthy();
-    expect(await AttachmentModel.exists({ _id: attachmentId, caseId })).toBeTruthy();
+    expect(await AttachmentModel.exists({ _id: attachmentId, subjectType: AttachmentSubjectType.CASE, subjectId: caseId })).toBeTruthy();
     expect(await fs.readFile(path.join(UPLOAD_ROOT, attachmentFilename))).toEqual(attachmentContent);
   });
 

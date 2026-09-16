@@ -1,7 +1,9 @@
+import type { AttachmentSubjectType } from "@complaint-system/shared";
 import { AttachmentModel, type AttachmentDocument } from "../models/Attachment";
 
 export interface CreateAttachmentData {
-  caseId: string;
+  subjectType: AttachmentSubjectType;
+  subjectId: string;
   originalFilename: string;
   storedFilename: string;
   mimeType: string;
@@ -15,7 +17,7 @@ export const attachmentRepository = {
     return AttachmentModel.create(data);
   },
 
-  async findByCaseId(caseId: string): Promise<AttachmentDocument[]> {
-    return AttachmentModel.find({ caseId }).sort({ createdAt: -1 });
+  async findBySubject(subjectType: AttachmentSubjectType, subjectId: string): Promise<AttachmentDocument[]> {
+    return AttachmentModel.find({ subjectType, subjectId }).sort({ createdAt: -1 });
   },
 };

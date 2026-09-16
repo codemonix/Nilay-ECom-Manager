@@ -5,7 +5,7 @@ import { ApiError } from "../utils/ApiError";
 import { serializeUser } from "../utils/serializers";
 import * as authService from "../services/authService";
 import { userRepository } from "../repositories/userRepository";
-import type { LoginInput, ChangePasswordInput } from "../validators/authValidators";
+import type { LoginInput, ChangePasswordInput, UpdateQuickAccessMenuInput } from "../validators/authValidators";
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body as LoginInput;
@@ -23,4 +23,10 @@ export const changePassword = asyncHandler(async (req: Request, res: Response) =
   const { currentPassword, newPassword } = req.body as ChangePasswordInput;
   await authService.changeOwnPassword(req.currentUser!.id, currentPassword, newPassword);
   return sendSuccess(res, { changed: true });
+});
+
+export const updateQuickAccessMenu = asyncHandler(async (req: Request, res: Response) => {
+  const { quickAccessMenu } = req.body as UpdateQuickAccessMenuInput;
+  const user = await authService.updateOwnQuickAccessMenu(req.currentUser!.id, quickAccessMenu);
+  return sendSuccess(res, serializeUser(user));
 });

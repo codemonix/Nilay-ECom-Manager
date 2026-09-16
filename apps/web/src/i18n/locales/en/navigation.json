@@ -5,18 +5,33 @@
     "orderCheck": "Order Pre-Check",
     "packing": "Packing",
     "purchasing": "Purchasing",
+    "receiving": "Receiving",
     "inventory": "Inventory",
     "reporting": "Reporting",
     "settings": "Settings",
     "users": "Users",
-    "logs": "Logs"
+    "logs": "Logs",
+    "devTools": "Development Tools"
+  },
+  "purchasingNav": {
+    "packages": "Packages",
+    "receiveItems": "Receive Items",
+    "matchRegister": "Match & Register",
+    "overview": "Purchasing Overview"
+  },
+  "devToolsNav": {
+    "soldQuantity": "Sold Quantity Check",
+    "titleAsterisk": "Title Asterisk Check",
+    "orderNote": "Order Admin Note"
   },
   "administration": "Administration",
   "comingSoon": "Coming soon",
   "more": "More",
   "breadcrumbs": {
     "cases": "Cases",
-    "caseDetailLabel": "Case"
+    "caseDetailLabel": "Case",
+    "purchasingPackages": "Packages",
+    "receiving": "Receiving"
   },
   "noAccess": {
     "title": "No access",

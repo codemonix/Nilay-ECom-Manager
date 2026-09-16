@@ -1,0 +1,39 @@
+{
+  "title": "Receiving",
+  "description": "Confirm what arrived at the destination for packages already handed to a shipping company.",
+  "tabs": {
+    "awaitingReceipt": "Awaiting Receipt",
+    "received": "Received"
+  },
+  "list": {
+    "empty": "No packages here",
+    "noSupplier": "No supplier",
+    "itemCount": "{{count}} item",
+    "itemCount_other": "{{count}} items",
+    "columns": {
+      "packageNumber": "Package #",
+      "supplier": "Supplier",
+      "items": "Items",
+      "status": "Status",
+      "lastActivity": "Last Activity"
+    }
+  },
+  "detail": {
+    "notFound": "Package not found",
+    "confirmReceived": "Confirm Received",
+    "confirmPrompt": "Any item without an itemized count will be marked as fully received. This will mark the package completed and cannot be undone here.",
+    "alreadyReceived": "Received by {{name}} on {{date}}.",
+    "sections": {
+      "items": "Items",
+      "timeline": "Timeline"
+    },
+    "itemsEmpty": "No items on this package",
+    "timelineEmpty": "No activity yet",
+    "expectedQuantity": "{{count}} expected",
+    "expectedQuantity_other": "{{count}} expected",
+    "shopfaMatch": "Shopfa: {{title}}",
+    "notMatchedYet": "Not matched to Shopfa yet",
+    "receivedQuantity": "Received",
+    "saveCount": "Save count"
+  }
+}

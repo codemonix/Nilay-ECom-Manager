@@ -9,7 +9,13 @@ import type {
   CreateCaseInput,
   ListCasesQuery,
 } from "../validators/caseValidators";
-import type { CaseContactPoint, CasePriority, CaseStatus } from "@complaint-system/shared";
+import {
+  AttachmentSubjectType,
+  CaseEventType,
+  type CaseContactPoint,
+  type CasePriority,
+  type CaseStatus,
+} from "@complaint-system/shared";
 
 export const listCases = asyncHandler(async (req: Request, res: Response) => {
   const query = req.query as unknown as ListCasesQuery;
@@ -98,11 +104,27 @@ export const removeTag = asyncHandler(async (req: Request, res: Response) => {
 
 export const uploadAttachment = asyncHandler(async (req: Request, res: Response) => {
   if (!req.file) throw ApiError.badRequest("No file uploaded");
-  const attachment = await attachmentService.addAttachment(req.params.id as string, req.file, req.currentUser);
+  const caseId = req.params.id as string;
+  const file = req.file;
+  const attachment = await attachmentService.addAttachment(
+    AttachmentSubjectType.CASE,
+    caseId,
+    file,
+    req.currentUser,
+    (att) =>
+      caseService
+        .recordEvent(caseId, CaseEventType.ATTACHMENT_ADDED, req.currentUser, file.originalname, {
+          attachmentId: String(att._id),
+          filename: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+        })
+        .then(() => undefined),
+  );
   return sendCreated(res, serializeAttachment(attachment));
 });
 
 export const listAttachments = asyncHandler(async (req: Request, res: Response) => {
-  const attachments = await attachmentService.listAttachments(req.params.id as string);
+  const attachments = await attachmentService.listAttachments(AttachmentSubjectType.CASE, req.params.id as string);
   return sendSuccess(res, attachments.map(serializeAttachment));
 });
