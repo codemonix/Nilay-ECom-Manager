@@ -1,4 +1,9 @@
-import axios, { type AxiosInstance, type AxiosRequestConfig, type InternalAxiosRequestConfig } from "axios";
+import axios, {
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from "axios";
 import type {
   CustomerSearchResultDTO,
   CustomerSummaryDTO,
@@ -82,6 +87,18 @@ const SOLD_QUANTITY_CACHE_TTL_MS = 10 * 60 * 1000;
 const PAYMENT_DATE_LOOKBACK_BUFFER_DAYS = 45;
 
 /**
+ * Raised from an original 10s (2026-09-18) after ShopfaTransactionLog
+ * showed repeated live "timeout of 10000ms exceeded" failures surfacing as
+ * 502s to staff -- most, but not all, on calls requesting the admin `note`
+ * field (see listOrdersByStatusForShortageReport's doc), on an otherwise
+ * healthy store where the same call typically completes in well under a
+ * second. 25s gives more room before treating a slow-but-alive response as
+ * a failure; postWithRetry below additionally retries once before actually
+ * giving up.
+ */
+const SHOPFA_HTTP_TIMEOUT_MS = 25_000;
+
+/**
  * Real Shopfa HTTP integration, verified directly against the live Nilay
  * Jewelry store (see docs/architecture.md#shopfa-integration and the
  * conventions documented at the top of shopfaApiTypes.ts). Only reachable
@@ -107,7 +124,7 @@ export class HttpShopfaClient implements ShopfaClient {
   private readonly soldQuantityFetches = new Map<SoldQuantityRangeDays, Promise<SoldQuantityIndexEntry>>();
 
   constructor(baseURL: string, apiToken: string) {
-    this.http = axios.create({ baseURL, timeout: 10_000 });
+    this.http = axios.create({ baseURL, timeout: SHOPFA_HTTP_TIMEOUT_MS });
     this.http.interceptors.request.use((config: RequestConfigWithTiming) => {
       config.params = { private_key: apiToken, ...config.params };
       config.shopfaLogStartedAt = Date.now();
@@ -153,6 +170,28 @@ export class HttpShopfaClient implements ShopfaClient {
     });
   }
 
+  /**
+   * Retries a Shopfa call exactly once before giving up. Every call site
+   * below that uses this treats ANY failure (after the retry) as a 502
+   * (ApiError.badGateway) -- so retrying here is scoped to precisely the
+   * failures that would otherwise become that 502, per
+   * SHOPFA_HTTP_TIMEOUT_MS's doc. getOrder does NOT use this: it has a
+   * legitimate non-error outcome (a 4xx that means "order not found") that
+   * must never be retried, so it implements its own narrower retry that
+   * only covers the failure modes that actually fall through to a 502.
+   */
+  private async postWithRetry<T>(url: string, body: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    try {
+      return await this.http.post<T>(url, body, config);
+    } catch (err) {
+      logger.warn("Shopfa API call failed, retrying once", {
+        url,
+        err: axios.isAxiosError(err) ? err.message : String(err),
+      });
+      return this.http.post<T>(url, body, config);
+    }
+  }
+
   async getCustomer(externalCustomerId: string): Promise<CustomerSummaryDTO | null> {
     return this.getCustomerOrderSummary(externalCustomerId);
   }
@@ -182,20 +221,25 @@ export class HttpShopfaClient implements ShopfaClient {
   }
 
   async getOrder(externalOrderId: string): Promise<OrderSummaryDTO | null> {
-    try {
-      const { data } = await this.http.post<ShopfaApiOrderListResponse>(
+    const attempt = () =>
+      this.http.post<ShopfaApiOrderListResponse>(
         "/api/shop/orders/details",
         {},
         { params: { id: externalOrderId } },
       );
-      const raw = extractOrderDetails(data);
-      return raw ? mapApiOrderToSummary(raw) : null;
+
+    let data: ShopfaApiOrderListResponse;
+    try {
+      ({ data } = await attempt());
     } catch (err) {
       // Confirmed live: an unknown id comes back as HTTP 400 with a
       // Shopfa-specific error (e.g. "سبد وجود ندارد" / "basket doesn't
       // exist"), not 404 -- so any 4xx here is treated as "not found"
-      // rather than a hard failure. A 5xx or network-level error (no
-      // response at all) still surfaces as a gateway failure.
+      // rather than a hard failure, and is NOT retried (it's a real,
+      // deterministic answer, not a communication failure -- retrying it
+      // would only waste a round trip). A 5xx or network-level error (no
+      // response at all) is retried once, same as postWithRetry's other
+      // callers, before surfacing as a gateway failure.
       if (axios.isAxiosError(err) && err.response && err.response.status < 500) {
         logger.info("Shopfa getOrder: order not found or rejected", {
           externalOrderId,
@@ -204,14 +248,20 @@ export class HttpShopfaClient implements ShopfaClient {
         });
         return null;
       }
-      logger.error("Shopfa getOrder failed", { externalOrderId, err });
-      throw ApiError.badGateway("Failed to reach Shopfa order service");
+      try {
+        ({ data } = await attempt());
+      } catch (retryErr) {
+        logger.error("Shopfa getOrder failed", { externalOrderId, err: retryErr });
+        throw ApiError.badGateway("Failed to reach Shopfa order service");
+      }
     }
+    const raw = extractOrderDetails(data);
+    return raw ? mapApiOrderToSummary(raw) : null;
   }
 
   async searchCustomer(query: string): Promise<CustomerSearchResultDTO[]> {
     try {
-      const { data } = await this.http.post<ShopfaApiUserListResponse>(
+      const { data } = await this.postWithRetry<ShopfaApiUserListResponse>(
         "/api/user/users",
         {},
         { params: { q: query, limit: 20 } },
@@ -225,7 +275,7 @@ export class HttpShopfaClient implements ShopfaClient {
 
   async searchOrders(query: string): Promise<OrderSummaryDTO[]> {
     try {
-      const { data } = await this.http.post<ShopfaApiOrderListResponse>(
+      const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
         "/api/shop/orders",
         {},
         { params: { search: query, limit: 20 } },
@@ -247,7 +297,7 @@ export class HttpShopfaClient implements ShopfaClient {
    */
   async getProductByCode(code: string): Promise<ShopfaProductLookup | null> {
     try {
-      const { data } = await this.http.post<ShopfaApiProductListResponse>(
+      const { data } = await this.postWithRetry<ShopfaApiProductListResponse>(
         "/api/shop/product/list",
         {},
         { params: { id: code, limit: 1 } },
@@ -263,7 +313,7 @@ export class HttpShopfaClient implements ShopfaClient {
   /** Confirmed live: `q` performs a free-text search (title, among other indexed fields) across the product catalog, for Match & Register's "search by name" flow. */
   async searchProducts(query: string): Promise<ShopfaProductLookup[]> {
     try {
-      const { data } = await this.http.post<ShopfaApiProductListResponse>(
+      const { data } = await this.postWithRetry<ShopfaApiProductListResponse>(
         "/api/shop/product/list",
         {},
         { params: { q: query, limit: 20 } },
@@ -347,7 +397,7 @@ export class HttpShopfaClient implements ShopfaClient {
     const fetchFromSec = rangeFromSec - PAYMENT_DATE_LOOKBACK_BUFFER_DAYS * 24 * 60 * 60;
     try {
       for (let page = 1; ; page += 1) {
-        const { data } = await this.http.post<ShopfaApiOrderListResponse>(
+        const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
           "/api/shop/orders",
           {},
           {
@@ -399,7 +449,7 @@ export class HttpShopfaClient implements ShopfaClient {
    */
   async updateProductTitle(productCode: string, title: string): Promise<ShopfaProductLookup | null> {
     try {
-      await this.http.post("/api/shop/product/update", { id: productCode, title });
+      await this.postWithRetry("/api/shop/product/update", { id: productCode, title });
     } catch (err) {
       logger.error("Shopfa updateProductTitle failed", { productCode, err });
       throw ApiError.badGateway("Failed to reach Shopfa product service");
@@ -416,7 +466,7 @@ export class HttpShopfaClient implements ShopfaClient {
    */
   async getOrderAdminNote(orderNumber: string): Promise<ShopfaOrderAdminNote | null> {
     try {
-      const { data } = await this.http.post<ShopfaApiOrderListResponse>(
+      const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
         "/api/shop/orders",
         {},
         { params: { search: orderNumber, limit: 5, fields: "id,session,note" } },
@@ -442,7 +492,7 @@ export class HttpShopfaClient implements ShopfaClient {
     const existing = await this.getOrderAdminNote(orderNumber);
     if (!existing) return null;
     try {
-      await this.http.post(
+      await this.postWithRetry(
         "/api/shop/orders/update",
         { id: existing.externalOrderId, note },
         { params: { id: existing.externalOrderId } },
@@ -463,11 +513,13 @@ export class HttpShopfaClient implements ShopfaClient {
    *
    * Confirmed live (2026-09-16) that requesting `note` at this client's
    * usual PAGE_SIZE of 500 makes Shopfa itself dramatically slower and
-   * occasionally unresponsive past this.http's 10s timeout (one 500-row
-   * page ranged from 1.5s to a 30s+ stall across repeated identical
-   * calls); every 100-row page tried was consistently fast (well under
-   * 2s). Reads that don't request `note` (getSoldQuantityIndex above)
-   * don't show this and can stay at 500.
+   * occasionally unresponsive past this.http's timeout (see
+   * SHOPFA_HTTP_TIMEOUT_MS) -- one 500-row page ranged from 1.5s to a 30s+
+   * stall across repeated identical calls; every 100-row page tried was
+   * consistently fast (well under 2s), though even that isn't immune to
+   * occasional stalls (hence postWithRetry). Reads that don't request
+   * `note` (getSoldQuantityIndex above) don't show this and can stay at
+   * 500.
    */
   async listOrdersByStatusForShortageReport(
     statusCodes: number[],
@@ -480,7 +532,7 @@ export class HttpShopfaClient implements ShopfaClient {
     try {
       for (const statusCode of statusCodes) {
         for (let page = 1; ; page += 1) {
-          const { data } = await this.http.post<ShopfaApiOrderListResponse>(
+          const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
             "/api/shop/orders",
             {},
             {
@@ -514,7 +566,7 @@ export class HttpShopfaClient implements ShopfaClient {
    * same reason listOrdersByStatusForShortageReport does (see that
    * method's doc and the shopfa-api-testing-fixtures memory: requesting
    * `note` at 500 rows/page made Shopfa itself intermittently stall past
-   * this.http's 10s timeout).
+   * this.http's timeout, see SHOPFA_HTTP_TIMEOUT_MS).
    */
   async listOrdersByStatusForPrecheck(statusCodes: number[]): Promise<ShopfaPrecheckOrder[]> {
     const PAGE_SIZE = 100;
@@ -522,7 +574,7 @@ export class HttpShopfaClient implements ShopfaClient {
     try {
       for (const statusCode of statusCodes) {
         for (let page = 1; ; page += 1) {
-          const { data } = await this.http.post<ShopfaApiOrderListResponse>(
+          const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
             "/api/shop/orders",
             {},
             {
@@ -560,7 +612,7 @@ export class HttpShopfaClient implements ShopfaClient {
     const existing = await this.getOrderAdminNote(orderNumber);
     if (!existing) return null;
     try {
-      await this.http.post(
+      await this.postWithRetry(
         "/api/shop/orders/update",
         { id: existing.externalOrderId, note: update.note, status: update.statusCode },
         { params: { id: existing.externalOrderId } },
@@ -570,7 +622,7 @@ export class HttpShopfaClient implements ShopfaClient {
       throw ApiError.badGateway("Failed to reach Shopfa order service");
     }
     try {
-      const { data } = await this.http.post<ShopfaApiOrderListResponse>(
+      const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
         "/api/shop/orders",
         {},
         { params: { search: orderNumber, limit: 5, fields: "id,session,note,status,status_title" } },
@@ -605,7 +657,7 @@ export class HttpShopfaClient implements ShopfaClient {
     const results: ShopfaPackingOrder[] = [];
     try {
       for (let page = 1; ; page += 1) {
-        const { data } = await this.http.post<ShopfaApiOrderListResponse>(
+        const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
           "/api/shop/orders",
           {},
           {
@@ -642,7 +694,7 @@ export class HttpShopfaClient implements ShopfaClient {
   async updateOrderStatus(orderNumber: string, statusCode: number): Promise<ShopfaOrderStatusUpdateResult | null> {
     let internalId: string;
     try {
-      const { data } = await this.http.post<ShopfaApiOrderListResponse>(
+      const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
         "/api/shop/orders",
         {},
         { params: { search: orderNumber, limit: 5, fields: "id,session" } },
@@ -656,7 +708,7 @@ export class HttpShopfaClient implements ShopfaClient {
     }
 
     try {
-      await this.http.post(
+      await this.postWithRetry(
         "/api/shop/orders/update",
         { id: internalId, status: statusCode },
         { params: { id: internalId } },
@@ -667,7 +719,7 @@ export class HttpShopfaClient implements ShopfaClient {
     }
 
     try {
-      const { data } = await this.http.post<ShopfaApiOrderListResponse>(
+      const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
         "/api/shop/orders",
         {},
         { params: { search: orderNumber, limit: 5, fields: "id,session,status,status_title" } },
@@ -686,7 +738,7 @@ export class HttpShopfaClient implements ShopfaClient {
   }
 
   private async fetchOrdersByUser(userId: string): Promise<ShopfaApiOrder[]> {
-    const { data } = await this.http.post<ShopfaApiOrderListResponse>(
+    const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
       "/api/shop/orders",
       {},
       { params: { user_id: userId, limit: 200, sort: "date", order: "desc" } },
@@ -695,7 +747,7 @@ export class HttpShopfaClient implements ShopfaClient {
   }
 
   private async fetchOrdersByPhone(phone: string): Promise<ShopfaApiOrder[]> {
-    const { data } = await this.http.post<ShopfaApiOrderListResponse>(
+    const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
       "/api/shop/orders",
       {},
       { params: { search: phone, limit: 200, sort: "date", order: "desc" } },

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AppBar from "@mui/material/AppBar";
@@ -6,6 +6,7 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Drawer from "@mui/material/Drawer";
 import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
@@ -16,13 +17,14 @@ import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import Chip from "@mui/material/Chip";
 import Paper from "@mui/material/Paper";
+import IconButton from "@mui/material/IconButton";
 import BottomNavigation from "@mui/material/BottomNavigation";
 import BottomNavigationAction from "@mui/material/BottomNavigationAction";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import DiamondIcon from "@mui/icons-material/Diamond";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
-import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import CloseIcon from "@mui/icons-material/Close";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import BuildIcon from "@mui/icons-material/Build";
@@ -33,11 +35,10 @@ import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { UserMenu } from "../features/auth/components/UserMenu";
 import { useAppSelector } from "../app/hooks";
-import { hasMenuAccess, MenuKey } from "@complaint-system/shared";
-import { ADMIN_NAV_ITEMS, PRIMARY_NAV_ITEMS, type NavItem } from "../config/navItems";
+import { BOTTOM_NAV_HEIGHT, DRAWER_WIDTH } from "./layoutMetrics";
+import { hasAdministrationAccess, hasMenuAccess, MenuKey } from "@complaint-system/shared";
+import { ADMIN_NAV_ITEMS, ADMINISTRATION_GROUP_ITEM, PRIMARY_NAV_ITEMS, type NavItem } from "../config/navItems";
 
-const DRAWER_WIDTH = 240;
-const BOTTOM_NAV_HEIGHT = 64;
 const ADMIN_MENU_EXPANDED_STORAGE_KEY = "complaint-system.adminMenuExpanded";
 const PURCHASING_MENU_EXPANDED_STORAGE_KEY = "complaint-system.purchasingMenuExpanded";
 const DEV_TOOLS_MENU_EXPANDED_STORAGE_KEY = "complaint-system.devToolsMenuExpanded";
@@ -79,6 +80,10 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
   const [moreOpen, setMoreOpen] = useState(false);
+  // Set when a quick-access tab that has no direct destination of its own
+  // (an expandable group like Purchasing) is tapped -- opens a small sheet
+  // listing just that group's own pages instead of navigating.
+  const [quickAccessGroupKey, setQuickAccessGroupKey] = useState<MenuKey | null>(null);
   const [adminExpanded, setAdminExpanded] = useState(() => {
     try {
       return localStorage.getItem(ADMIN_MENU_EXPANDED_STORAGE_KEY) === "true";
@@ -104,10 +109,26 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const primaryItems = user ? PRIMARY_NAV_ITEMS.filter((item) => hasMenuAccess(user, item.key)) : [];
   const adminItems = user ? ADMIN_NAV_ITEMS.filter((item) => hasMenuAccess(user, item.key)) : [];
   const devToolsVisible = user ? hasMenuAccess(user, MenuKey.DEV_TOOLS) : false;
-  const visibleNavItems = [...primaryItems, ...adminItems];
+  const administrationGroupVisible = user ? hasAdministrationAccess(user) : false;
+  // The bottom-nav/quick-access item for Administration lists only the
+  // sub-pages this user actually has (adminItems), not the full
+  // ADMIN_NAV_ITEMS -- same per-item filtering the full nav drawer's
+  // Administration group already applies below.
+  const visibleNavItems = [
+    ...primaryItems,
+    ...adminItems,
+    ...(administrationGroupVisible ? [{ ...ADMINISTRATION_GROUP_ITEM, children: adminItems }] : []),
+  ];
+  // A quick-access tab is valid if it has either a direct destination or
+  // (like Purchasing and Administration) its own sub-pages -- tapping the
+  // latter opens a small sheet of those sub-pages instead of navigating
+  // (see quickAccessGroupItem).
   const quickAccessKeys = (user?.quickAccessMenu?.length ? user.quickAccessMenu : DEFAULT_QUICK_ACCESS_KEYS).filter(
-    (key) => visibleNavItems.some((item) => item.key === key && item.path),
+    (key) => visibleNavItems.some((item) => item.key === key && (item.path || item.children)),
   );
+  const quickAccessGroupItem = quickAccessGroupKey
+    ? (visibleNavItems.find((item) => item.key === quickAccessGroupKey) ?? null)
+    : null;
   const isAdminSectionActive = adminItems.some(
     (item) => item.path && location.pathname.startsWith(item.path),
   );
@@ -118,6 +139,21 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const isDevToolsSectionActive = DEV_TOOLS_CHILD_ITEMS.some(
     (item) => item.path && location.pathname.startsWith(item.path),
   );
+
+  // Auto-expand a group when navigation lands on one of its pages, without
+  // permanently forcing it open -- otherwise a manual collapse (the ^
+  // toggle) would be undone on every render for as long as the user stays
+  // on that page, since the group's "expanded" condition would still be
+  // true from the active-section check alone.
+  useEffect(() => {
+    if (isAdminSectionActive) setAdminExpanded(true);
+  }, [isAdminSectionActive]);
+  useEffect(() => {
+    if (isPurchasingSectionActive) setPurchasingExpanded(true);
+  }, [isPurchasingSectionActive]);
+  useEffect(() => {
+    if (isDevToolsSectionActive) setDevToolsExpanded(true);
+  }, [isDevToolsSectionActive]);
 
   const toggleAdminExpanded = () => {
     setAdminExpanded((prev) => {
@@ -155,7 +191,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
     });
   };
 
-  const renderNavItem = (item: NavItem, indent = false) => {
+  const renderNavItem = (item: NavItem, indent = false, onSelect: () => void = () => setMoreOpen(false)) => {
     const isActive = Boolean(item.path && location.pathname.startsWith(item.path));
     const itemKey = item.path ?? item.labelKey ?? item.key;
     const content = (
@@ -165,7 +201,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
         to={item.path}
         disabled={!item.path}
         selected={isActive}
-        onClick={() => setMoreOpen(false)}
+        onClick={onSelect}
         sx={{ borderRadius: "10px", mb: 0.5, minHeight: 48, pl: indent ? 3.5 : 2 }}
       >
         <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
@@ -193,9 +229,9 @@ export function MainLayout({ children }: { children: ReactNode }) {
           <ListItemButton onClick={togglePurchasingExpanded} sx={{ borderRadius: "10px", mb: 0.5, minHeight: 48 }}>
             <ListItemIcon sx={{ minWidth: 36 }}>{purchasingItem.icon}</ListItemIcon>
             <ListItemText primary={t(`navigation:modules.${purchasingItem.key}`)} />
-            {purchasingExpanded || isPurchasingSectionActive ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            {purchasingExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
           </ListItemButton>
-          <Collapse in={purchasingExpanded || isPurchasingSectionActive} timeout="auto" unmountOnExit>
+          <Collapse in={purchasingExpanded} timeout="auto" unmountOnExit>
             <List component="div" disablePadding sx={{ px: 0 }}>
               {(purchasingItem.children ?? []).map((item) => renderNavItem(item, true))}
             </List>
@@ -210,9 +246,9 @@ export function MainLayout({ children }: { children: ReactNode }) {
               <BuildIcon />
             </ListItemIcon>
             <ListItemText primary={t("navigation:modules.devTools")} />
-            {devToolsExpanded || isDevToolsSectionActive ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            {devToolsExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
           </ListItemButton>
-          <Collapse in={devToolsExpanded || isDevToolsSectionActive} timeout="auto" unmountOnExit>
+          <Collapse in={devToolsExpanded} timeout="auto" unmountOnExit>
             <List component="div" disablePadding sx={{ px: 0 }}>
               {DEV_TOOLS_CHILD_ITEMS.map((item) => renderNavItem(item, true))}
             </List>
@@ -223,13 +259,11 @@ export function MainLayout({ children }: { children: ReactNode }) {
       {adminItems.length > 0 && (
         <>
           <ListItemButton onClick={toggleAdminExpanded} sx={{ borderRadius: "10px", mb: 0.5, minHeight: 48 }}>
-            <ListItemIcon sx={{ minWidth: 36 }}>
-              <AdminPanelSettingsIcon />
-            </ListItemIcon>
-            <ListItemText primary={t("navigation:administration")} />
-            {adminExpanded || isAdminSectionActive ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            <ListItemIcon sx={{ minWidth: 36 }}>{ADMINISTRATION_GROUP_ITEM.icon}</ListItemIcon>
+            <ListItemText primary={t(`navigation:modules.${MenuKey.ADMINISTRATION}`)} />
+            {adminExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
           </ListItemButton>
-          <Collapse in={adminExpanded || isAdminSectionActive} timeout="auto" unmountOnExit>
+          <Collapse in={adminExpanded} timeout="auto" unmountOnExit>
             <List component="div" disablePadding sx={{ px: 0 }}>
               {adminItems.map((item) => renderNavItem(item, true))}
             </List>
@@ -241,8 +275,44 @@ export function MainLayout({ children }: { children: ReactNode }) {
 
   const activePrimaryKey = quickAccessKeys.find((key) => {
     const item = visibleNavItems.find((n) => n.key === key);
-    return item?.path && location.pathname.startsWith(item.path);
+    if (!item) return false;
+    if (item.path) return location.pathname.startsWith(item.path);
+    return (item.children ?? []).some((child) => child.path && location.pathname.startsWith(child.path));
   });
+
+  // MUI's temporary Drawer defaults to zIndex.drawer (1200), same tier as --
+  // and painted before -- the fixed AppBar (drawer + 1) and BottomNavigation
+  // bar (drawer + 2) below, so without this override the bottom nav bar
+  // renders on top of a bottom sheet's lower portion, covering its last
+  // item(s) and swallowing taps meant for them. Shared by the "More" sheet
+  // and the per-group quick-access sheet (e.g. Purchasing) below.
+  const mobileSheetSx = {
+    zIndex: (t: typeof theme) => t.zIndex.drawer + 3,
+    [`& .MuiDrawer-paper`]: {
+      zIndex: (t: typeof theme) => t.zIndex.drawer + 3,
+      borderRadius: "20px 20px 0 0",
+      maxHeight: "80vh",
+      display: "flex",
+      flexDirection: "column",
+    },
+  };
+
+  const renderSheetHeader = (onClose: () => void) => (
+    <>
+      <Box sx={{ position: "relative", display: "flex", justifyContent: "center", pt: 1.5, flexShrink: 0 }}>
+        <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: "action.disabled" }} />
+        <IconButton
+          onClick={onClose}
+          aria-label={t("common:actions.close")}
+          size="small"
+          sx={{ position: "absolute", right: 4, top: 4 }}
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Box>
+      <Divider sx={{ mb: 1, flexShrink: 0 }} />
+    </>
+  );
 
   return (
     <Box
@@ -302,13 +372,38 @@ export function MainLayout({ children }: { children: ReactNode }) {
           open={moreOpen}
           onClose={() => setMoreOpen(false)}
           ModalProps={{ keepMounted: true }}
-          sx={{ [`& .MuiDrawer-paper`]: { borderRadius: "20px 20px 0 0", pb: "env(safe-area-inset-bottom)" } }}
+          sx={mobileSheetSx}
         >
-          <Box sx={{ display: "flex", justifyContent: "center", pt: 1.5 }}>
-            <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: "action.disabled" }} />
+          {renderSheetHeader(() => setMoreOpen(false))}
+          <Box sx={{ overflowY: "auto", pb: "env(safe-area-inset-bottom)" }}>{navList}</Box>
+        </Drawer>
+      )}
+
+      {!isDesktop && (
+        <Drawer
+          anchor="bottom"
+          open={Boolean(quickAccessGroupItem)}
+          onClose={() => setQuickAccessGroupKey(null)}
+          ModalProps={{ keepMounted: true }}
+          sx={mobileSheetSx}
+        >
+          {renderSheetHeader(() => setQuickAccessGroupKey(null))}
+          <Box sx={{ overflowY: "auto", pb: "env(safe-area-inset-bottom)" }}>
+            {quickAccessGroupItem && (
+              <List sx={{ px: 1 }}>
+                <ListItem sx={{ px: 2, py: 0.5 }}>
+                  <ListItemIcon sx={{ minWidth: 36 }}>{quickAccessGroupItem.icon}</ListItemIcon>
+                  <ListItemText
+                    primary={t(`navigation:modules.${quickAccessGroupItem.key}`)}
+                    primaryTypographyProps={{ fontWeight: 600 }}
+                  />
+                </ListItem>
+                {(quickAccessGroupItem.children ?? []).map((child) =>
+                  renderNavItem(child, false, () => setQuickAccessGroupKey(null)),
+                )}
+              </List>
+            )}
           </Box>
-          <Divider sx={{ mb: 1 }} />
-          {navList}
         </Drawer>
       )}
 
@@ -345,14 +440,21 @@ export function MainLayout({ children }: { children: ReactNode }) {
         >
           <BottomNavigation
             showLabels
-            value={activePrimaryKey ?? (moreOpen ? "more" : false)}
+            value={quickAccessGroupItem ? quickAccessGroupItem.key : (activePrimaryKey ?? (moreOpen ? "more" : false))}
             onChange={(_e, value) => {
               if (value === "more") {
                 setMoreOpen(true);
                 return;
               }
               const item = visibleNavItems.find((n) => n.key === value);
-              if (item?.path) navigate(item.path);
+              if (!item) return;
+              // A quick-access group (e.g. Purchasing) has no page of its
+              // own -- open a sheet of its sub-pages instead of navigating.
+              if (item.children) {
+                setQuickAccessGroupKey(item.key);
+                return;
+              }
+              if (item.path) navigate(item.path);
             }}
           >
             {visibleNavItems.filter((item) => quickAccessKeys.includes(item.key)).map((item) => (

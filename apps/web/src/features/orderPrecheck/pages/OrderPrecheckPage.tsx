@@ -30,6 +30,7 @@ import {
   type OrderPrecheckOrderDTO,
 } from "../types";
 import { OrderPrecheckItemCard } from "../components/OrderPrecheckItemCard";
+import { FixedActionBar } from "../../../components/FixedActionBar";
 import { useGetSettingsQuery } from "../../settings/api/settingsApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 import { formatDateTime } from "../../../utils/localeFormat";
@@ -288,29 +289,7 @@ export function OrderPrecheckPage() {
               {t("decideAllHint")}
             </Typography>
           )}
-
-          {/*
-            Sticky rather than plain end-of-page flow: on mobile these are the
-            most-used controls (an order can have many item cards to scroll
-            through), so they stay reachable without scrolling all the way
-            down, and stay clear of MainLayout's fixed bottom navigation bar
-            (64px tall + safe-area) instead of ending up hidden behind it.
-            Static on desktop, which has a side drawer instead of a bottom
-            bar and more vertical room to begin with.
-          */}
-          <Stack
-            direction="row"
-            spacing={1.5}
-            sx={{
-              position: { xs: "sticky", md: "static" },
-              bottom: { xs: "calc(64px + env(safe-area-inset-bottom) + 8px)", md: "auto" },
-              zIndex: 1,
-              bgcolor: "background.paper",
-              borderRadius: "14px",
-              boxShadow: { xs: 4, md: 0 },
-              p: { xs: 1.5, md: 0 },
-            }}
-          >
+          <FixedActionBar>
             <Button
               fullWidth
               variant="outlined"
@@ -336,7 +315,7 @@ export function OrderPrecheckPage() {
             >
               {t("next")}
             </Button>
-          </Stack>
+          </FixedActionBar>
         </>
       )}
     </Stack>

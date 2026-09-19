@@ -8,7 +8,7 @@ import Avatar from "@mui/material/Avatar";
 import CircularProgress from "@mui/material/CircularProgress";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import { useTranslation } from "react-i18next";
-import { CameraCaptureDialog } from "./dialogs/CameraCaptureDialog";
+import { CameraCaptureDialog } from "../../../components/CameraCaptureDialog";
 
 export interface ItemCaptureValues {
   photo: File;
@@ -191,6 +191,7 @@ export function ItemCaptureStep({ onSubmit, isSubmitting }: ItemCaptureStepProps
         onClose={() => setCameraDialogOpen(false)}
         onCapture={handleCapture}
         onUseFilePicker={useFilePicker}
+        fileNamePrefix="receiving-photo"
       />
     </Paper>
   );

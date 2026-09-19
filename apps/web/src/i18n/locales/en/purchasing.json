@@ -100,12 +100,6 @@
     "unnamedItem": "Item",
     "loadError": "Could not load the current draft package"
   },
-  "cameraDialog": {
-    "title": "Take a Photo",
-    "capture": "Capture",
-    "useFilePicker": "Choose a photo instead",
-    "error": "Couldn't access the camera. Check your browser's camera permission, or choose a photo instead."
-  },
   "matchRegister": {
     "title": "Match & Register",
     "description": "Link received items to a Shopfa product code so the Inventory module can later reconcile stock.",

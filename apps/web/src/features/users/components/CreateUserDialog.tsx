@@ -14,7 +14,12 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Checkbox from "@mui/material/Checkbox";
 import Typography from "@mui/material/Typography";
 import { useTranslation } from "react-i18next";
-import { DEFAULT_PERMISSIONS_BY_ROLE, MENU_KEY_VALUES, STAFF_ROLE_VALUES, StaffRole } from "@complaint-system/shared";
+import {
+  ASSIGNABLE_MENU_KEY_VALUES,
+  DEFAULT_PERMISSIONS_BY_ROLE,
+  STAFF_ROLE_VALUES,
+  StaffRole,
+} from "@complaint-system/shared";
 import { useCreateUserMutation } from "../api/usersApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 
@@ -129,7 +134,7 @@ export function CreateUserDialog({ open, onClose }: CreateUserDialogProps) {
               <Alert severity="info">{t("users:permissions.adminNotice")}</Alert>
             ) : (
               <FormGroup>
-                {MENU_KEY_VALUES.map((key) => (
+                {ASSIGNABLE_MENU_KEY_VALUES.map((key) => (
                   <FormControlLabel
                     key={key}
                     control={<Checkbox checked={form.permissions.includes(key)} onChange={() => togglePermission(key)} />}

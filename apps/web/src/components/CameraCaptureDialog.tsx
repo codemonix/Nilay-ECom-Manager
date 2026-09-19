@@ -17,17 +17,28 @@ interface CameraCaptureDialogProps {
   onCapture: (file: File) => void;
   /** Lets the caller fall back to a plain OS file picker (e.g. no webcam, permission denied). */
   onUseFilePicker: () => void;
+  /** Prefix for the captured file's name (e.g. "receiving-photo", "packing-photo"). Defaults to a generic name. */
+  fileNamePrefix?: string;
 }
 
 /**
  * Live in-browser camera capture via getUserMedia, used as the primary
  * capture flow for laptops/desktops where a hidden <input capture> input
  * only opens a plain file picker (no webcam option) -- see
- * ItemCaptureStep.tsx for the reasoning. Falls back to onUseFilePicker when
- * getUserMedia is unavailable or access is denied/fails.
+ * ItemCaptureStep.tsx (Purchasing's Receive Items step, the original user
+ * of this component) for the reasoning. Falls back to onUseFilePicker when
+ * getUserMedia is unavailable or access is denied/fails. Shared across
+ * features (Purchasing's receive-item capture, Packing's confirmation
+ * photo) rather than living under one feature folder.
  */
-export function CameraCaptureDialog({ open, onClose, onCapture, onUseFilePicker }: CameraCaptureDialogProps) {
-  const { t } = useTranslation("purchasing");
+export function CameraCaptureDialog({
+  open,
+  onClose,
+  onCapture,
+  onUseFilePicker,
+  fileNamePrefix = "photo",
+}: CameraCaptureDialogProps) {
+  const { t } = useTranslation("common");
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [status, setStatus] = useState<"starting" | "ready" | "error">("starting");
@@ -76,7 +87,7 @@ export function CameraCaptureDialog({ open, onClose, onCapture, onUseFilePicker 
     canvas.toBlob(
       (blob) => {
         if (!blob) return;
-        onCapture(new File([blob], `receiving-photo-${Date.now()}.jpg`, { type: "image/jpeg" }));
+        onCapture(new File([blob], `${fileNamePrefix}-${Date.now()}.jpg`, { type: "image/jpeg" }));
       },
       "image/jpeg",
       0.92,
@@ -122,7 +133,7 @@ export function CameraCaptureDialog({ open, onClose, onCapture, onUseFilePicker 
       </DialogContent>
       <DialogActions>
         <Button onClick={onUseFilePicker}>{t("cameraDialog.useFilePicker")}</Button>
-        <Button onClick={onClose}>{t("actions.cancel", { ns: "common" })}</Button>
+        <Button onClick={onClose}>{t("actions.cancel")}</Button>
         <Button
           onClick={handleCapture}
           variant="contained"

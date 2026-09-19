@@ -8,7 +8,7 @@ const envSchema = z.object({
   LOG_LEVEL: z.string().default("info"),
 
   JWT_SECRET: z.string().min(16, "JWT_SECRET is required and must be at least 16 characters"),
-  JWT_EXPIRES_IN: z.string().default("8h"),
+  JWT_EXPIRES_IN: z.string().default("7d"),
 
   SHOPFA_API_BASE_URL: z.string().default(""),
   SHOPFA_API_TOKEN: z.string().default(""),

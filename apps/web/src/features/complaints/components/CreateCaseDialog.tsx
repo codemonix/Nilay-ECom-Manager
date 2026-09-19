@@ -120,12 +120,26 @@ export function CreateCaseDialog({ open, onClose }: CreateCaseDialogProps) {
   };
   const isValid = !Object.values(errors).some(Boolean);
 
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
+
+  const isDirty =
+    tagInput.length > 0 ||
+    JSON.stringify(form) !== JSON.stringify(buildInitialState(currentUser?.id ?? ""));
+
   const handleClose = () => {
+    setConfirmDiscardOpen(false);
     setForm(buildInitialState(currentUser?.id ?? ""));
     setTagInput("");
     setTouched(false);
     setManualOpen(false);
     onClose();
+  };
+
+  /** Backdrop click, Escape and Cancel all land here so a half-filled form is never discarded silently. */
+  const requestClose = () => {
+    if (isLoading) return;
+    if (isDirty) setConfirmDiscardOpen(true);
+    else handleClose();
   };
 
   const handleMatchChange = (matchedOrder: MatchedCustomerOrder | null) => {
@@ -198,7 +212,12 @@ export function CreateCaseDialog({ open, onClose }: CreateCaseDialogProps) {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={requestClose}
+      maxWidth="sm"
+      fullWidth
+    >
       <DialogTitle>{t("form.title")}</DialogTitle>
       <DialogContent>
         <Stack spacing={2.5} sx={{ mt: 1 }}>
@@ -220,7 +239,6 @@ export function CreateCaseDialog({ open, onClose }: CreateCaseDialogProps) {
           {form.matchedOrder && form.matchedOrder.items.length > 0 && (
             <Autocomplete
               multiple
-              disableCloseOnSelect
               options={form.matchedOrder.items}
               value={form.selectedItems}
               onChange={(_e, newValue) => setForm((prev) => ({ ...prev, selectedItems: newValue }))}
@@ -419,7 +437,7 @@ export function CreateCaseDialog({ open, onClose }: CreateCaseDialogProps) {
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose} disabled={isLoading}>
+        <Button onClick={requestClose} disabled={isLoading}>
           {t("actions.cancel", { ns: "common" })}
         </Button>
         <Button
@@ -431,6 +449,20 @@ export function CreateCaseDialog({ open, onClose }: CreateCaseDialogProps) {
           {isLoading ? t("form.submitting") : t("form.submit")}
         </Button>
       </DialogActions>
+      <Dialog open={confirmDiscardOpen} onClose={() => setConfirmDiscardOpen(false)}>
+        <DialogTitle>{t("form.discard.title")}</DialogTitle>
+        <DialogContent>
+          <Typography>{t("form.discard.message")}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDiscardOpen(false)} autoFocus>
+            {t("form.discard.keepEditing")}
+          </Button>
+          <Button onClick={handleClose} color="error">
+            {t("form.discard.confirm")}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 }

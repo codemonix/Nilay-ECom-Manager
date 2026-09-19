@@ -51,6 +51,8 @@ export const PACKAGE_EVENT_TYPE_VALUES = Object.values(PackageEventType);
 export const AttachmentSubjectType = {
   CASE: "case",
   PACKAGE: "package",
+  /** A Packing history record (see types/packing.ts's PackingRecordDTO) -- the confirmation photo taken of a package right before it's sent. */
+  PACKING_RECORD: "packing_record",
 } as const;
 export type AttachmentSubjectType = (typeof AttachmentSubjectType)[keyof typeof AttachmentSubjectType];
 export const ATTACHMENT_SUBJECT_TYPE_VALUES = Object.values(AttachmentSubjectType);

@@ -12,7 +12,7 @@ import FormGroup from "@mui/material/FormGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Checkbox from "@mui/material/Checkbox";
 import { useTranslation } from "react-i18next";
-import { MENU_KEY_VALUES, StaffRole, type UserDTO } from "@complaint-system/shared";
+import { ASSIGNABLE_MENU_KEY_VALUES, StaffRole, type UserDTO } from "@complaint-system/shared";
 import { useUpdateUserMutation } from "../api/usersApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 
@@ -61,7 +61,7 @@ export function EditPermissionsDialog({ user, onClose }: EditPermissionsDialogPr
                 {t("users:permissions.helper")}
               </Typography>
               <FormGroup>
-                {MENU_KEY_VALUES.map((key) => (
+                {ASSIGNABLE_MENU_KEY_VALUES.map((key) => (
                   <FormControlLabel
                     key={key}
                     control={<Checkbox checked={selected.includes(key)} onChange={() => togglePermission(key)} />}

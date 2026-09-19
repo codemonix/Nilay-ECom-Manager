@@ -75,6 +75,12 @@
     "empty": "No cases match your filters"
   },
   "form": {
+    "discard": {
+      "title": "Discard this case?",
+      "message": "The information you entered will be lost.",
+      "keepEditing": "Keep editing",
+      "confirm": "Discard"
+    },
     "title": "Create Case",
     "customer": "Customer",
     "customerHelp": "Search by customer name, phone, or order number — shows the matching order(s)",

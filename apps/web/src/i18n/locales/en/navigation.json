@@ -11,7 +11,8 @@
     "settings": "Settings",
     "users": "Users",
     "logs": "Logs",
-    "devTools": "Development Tools"
+    "devTools": "Development Tools",
+    "administration": "Administration"
   },
   "purchasingNav": {
     "packages": "Packages",
@@ -24,7 +25,6 @@
     "titleAsterisk": "Title Asterisk Check",
     "orderNote": "Order Admin Note"
   },
-  "administration": "Administration",
   "comingSoon": "Coming soon",
   "more": "More",
   "breadcrumbs": {

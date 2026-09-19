@@ -11,10 +11,10 @@ import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useTranslation } from "react-i18next";
-import { hasMenuAccess, type MenuKey } from "@complaint-system/shared";
+import { hasAdministrationAccess, hasMenuAccess, MenuKey } from "@complaint-system/shared";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { setCurrentUser } from "../../../store/authSlice";
-import { ADMIN_NAV_ITEMS, PRIMARY_NAV_ITEMS } from "../../../config/navItems";
+import { ADMINISTRATION_GROUP_ITEM, PRIMARY_NAV_ITEMS } from "../../../config/navItems";
 import { useUpdateQuickAccessMenuMutation } from "../api/authApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 
@@ -32,8 +32,20 @@ export function QuickAccessMenuDialog({ open, onClose }: QuickAccessMenuDialogPr
   const [updateQuickAccessMenu, { isLoading, error, reset }] = useUpdateQuickAccessMenuMutation();
   const [selected, setSelected] = useState<MenuKey[]>([]);
 
+  // A candidate is either a direct destination or an expandable group (e.g.
+  // Purchasing, Administration) -- picking a group pins it as a tab that
+  // opens a small sheet of its own sub-pages instead of navigating straight
+  // to one (see MainLayout's quickAccessGroupItem). Administration is
+  // offered as that single group tile rather than as its three separate
+  // pages (Settings/Users/Logs), so picking it costs one of the four slots
+  // instead of up to three.
   const candidateItems = useMemo(
-    () => [...PRIMARY_NAV_ITEMS, ...ADMIN_NAV_ITEMS].filter((item) => item.path && user && hasMenuAccess(user, item.key)),
+    () =>
+      [...PRIMARY_NAV_ITEMS, ADMINISTRATION_GROUP_ITEM].filter((item) => {
+        if (!item.path && !item.children) return false;
+        if (!user) return false;
+        return item.key === MenuKey.ADMINISTRATION ? hasAdministrationAccess(user) : hasMenuAccess(user, item.key);
+      }),
     [user],
   );
 
@@ -84,7 +96,18 @@ export function QuickAccessMenuDialog({ open, onClose }: QuickAccessMenuDialogPr
                   disabled={!selected.includes(item.key) && selected.length >= MAX_QUICK_ACCESS_ITEMS}
                 />
               }
-              label={t(item.labelKey ?? `navigation:modules.${item.key}`)}
+              label={
+                item.children ? (
+                  <>
+                    {t(item.labelKey ?? `navigation:modules.${item.key}`)}{" "}
+                    <Typography component="span" variant="caption" color="text.secondary">
+                      {t("auth:quickAccess.groupSuffix")}
+                    </Typography>
+                  </>
+                ) : (
+                  t(item.labelKey ?? `navigation:modules.${item.key}`)
+                )
+              }
             />
           ))}
         </FormGroup>

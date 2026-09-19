@@ -8,6 +8,7 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 import SettingsIcon from "@mui/icons-material/Settings";
 import PeopleIcon from "@mui/icons-material/People";
 import ManageSearchIcon from "@mui/icons-material/ManageSearch";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import LinkIcon from "@mui/icons-material/Link";
 import AllInboxIcon from "@mui/icons-material/AllInbox";
@@ -74,3 +75,15 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { key: MenuKey.USERS, icon: <PeopleIcon />, path: "/users" },
   { key: MenuKey.LOGS, icon: <ManageSearchIcon />, path: "/logs" },
 ];
+
+// Lets the whole Administration section be pinned as ONE mobile
+// quick-access tab (like Purchasing) instead of three separate ones --
+// tapping it opens a sheet of just the pages in ADMIN_NAV_ITEMS the user
+// actually has. MenuKey.ADMINISTRATION is synthetic (see accessEnums.ts):
+// whether a user may pick this is governed by hasAdministrationAccess, not
+// hasMenuAccess, since it isn't itself a real stored permission.
+export const ADMINISTRATION_GROUP_ITEM: NavItem = {
+  key: MenuKey.ADMINISTRATION,
+  icon: <AdminPanelSettingsIcon />,
+  children: ADMIN_NAV_ITEMS,
+};

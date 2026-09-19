@@ -38,6 +38,41 @@ export interface SendPackedOrderResultDTO {
   orderNumber: string;
   statusCode: number;
   statusTitle: string;
+  packingRecordId: string;
+  photoUrl: string | null;
+}
+
+/**
+ * A locally-kept record of one order Packing has sent, independent of
+ * Shopfa -- live-API orders are never persisted locally otherwise, so this
+ * is the only place packing history (including the confirmation photo) can
+ * be browsed after the fact. `items` is a denormalized snapshot taken at
+ * send time, not a live reference to the order.
+ */
+export interface PackingRecordItemDTO {
+  productCode: string;
+  title: string;
+  quantity: number;
+}
+
+export interface PackingRecordDTO {
+  id: string;
+  externalOrderId: string;
+  orderNumber: string;
+  buyerName: string | null;
+  items: PackingRecordItemDTO[];
+  statusCodeAfterSend: number;
+  statusTitleAfterSend: string;
+  sentByName: string | null;
+  sentAtISO: string;
+  /** Null when staff sent the order without taking a confirmation photo (the explicit "Confirm" override on the warning dialog). */
+  photoUrl: string | null;
+}
+
+export interface PackingRecordListQuery {
+  page: number;
+  pageSize: number;
+  search?: string;
 }
 
 /** "ارسال شده به سرویس پستی" (sent to postal service) -- the only status Packing's queue shows. */

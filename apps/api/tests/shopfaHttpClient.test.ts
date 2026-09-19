@@ -38,7 +38,7 @@ describe("HttpShopfaClient (real Shopfa REST API, verified against the live stor
 
   it("creates the axios instance with the configured base URL and no static auth header", () => {
     new HttpShopfaClient("https://www.example-shop.com", "abc123token");
-    expect(create).toHaveBeenCalledWith({ baseURL: "https://www.example-shop.com", timeout: 10_000 });
+    expect(create).toHaveBeenCalledWith({ baseURL: "https://www.example-shop.com", timeout: 25_000 });
   });
 
   it("registers a request interceptor that injects `private_key` as a query param -- Shopfa reads auth from the query string, not an Authorization header (a header-based token is silently ignored)", () => {
@@ -205,17 +205,48 @@ describe("HttpShopfaClient (real Shopfa REST API, verified against the live stor
     expect(await client.getOrder("missing")).toBeNull();
   });
 
-  it("wraps a 5xx or network-level failure in a 502 ApiError instead of returning null", async () => {
-    const err = Object.assign(new Error("Internal Server Error"), { isAxiosError: true, response: { status: 500 } });
+  it("does NOT retry a legitimate 'not found' 4xx -- it's a real answer, not a communication failure, so a second call would just waste a round trip", async () => {
+    const err = Object.assign(new Error("Request failed"), { isAxiosError: true, response: { status: 400 } });
     post.mockRejectedValueOnce(err);
     const client = new HttpShopfaClient("https://www.example-shop.com", "token");
-    await expect(client.getOrder("x")).rejects.toMatchObject({ statusCode: 502 });
+    expect(await client.getOrder("missing")).toBeNull();
+    expect(post).toHaveBeenCalledTimes(1);
   });
 
-  it("wraps unexpected failures in a 502 ApiError", async () => {
-    post.mockRejectedValueOnce(new Error("ECONNRESET"));
+  it("wraps a 5xx or network-level failure in a 502 ApiError instead of returning null, after retrying once", async () => {
+    const err = Object.assign(new Error("Internal Server Error"), { isAxiosError: true, response: { status: 500 } });
+    post.mockRejectedValueOnce(err).mockRejectedValueOnce(err);
+    const client = new HttpShopfaClient("https://www.example-shop.com", "token");
+    await expect(client.getOrder("x")).rejects.toMatchObject({ statusCode: 502 });
+    expect(post).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries a 5xx once and succeeds instead of failing outright, when the retry gets a good response", async () => {
+    const err = Object.assign(new Error("Internal Server Error"), { isAxiosError: true, response: { status: 500 } });
+    post.mockRejectedValueOnce(err).mockResolvedValueOnce({
+      data: { baskets: [{ id: 4242, session: "9876543210", date: 1_725_500_000, status: 5 }] },
+    });
+    const client = new HttpShopfaClient("https://www.example-shop.com", "token");
+    const order = await client.getOrder("4242");
+    expect(order?.orderNumber).toBe("9876543210");
+    expect(post).toHaveBeenCalledTimes(2);
+  });
+
+  it("wraps unexpected failures in a 502 ApiError after retrying once", async () => {
+    post.mockRejectedValueOnce(new Error("ECONNRESET")).mockRejectedValueOnce(new Error("ECONNRESET"));
     const client = new HttpShopfaClient("https://www.example-shop.com", "token");
     await expect(client.searchOrders("x")).rejects.toMatchObject({ statusCode: 502 });
+    expect(post).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries once and succeeds instead of failing outright, when the retry gets a good response (the general postWithRetry path, not getOrder's special one)", async () => {
+    post
+      .mockRejectedValueOnce(new Error("timeout of 25000ms exceeded"))
+      .mockResolvedValueOnce({ data: { successful: true, baskets: [{ id: 77, date: 1_725_000_000, status: 1 }] } });
+    const client = new HttpShopfaClient("https://www.example-shop.com", "token");
+    const results = await client.searchOrders("x");
+    expect(results).toHaveLength(1);
+    expect(post).toHaveBeenCalledTimes(2);
   });
 
   it("searches orders via POST /api/shop/orders with a `search` filter", async () => {

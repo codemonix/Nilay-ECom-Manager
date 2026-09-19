@@ -54,5 +54,11 @@
   },
   "itemPhoto": {
     "quantityBadge": "Qty {{count}}"
+  },
+  "cameraDialog": {
+    "title": "Take a Photo",
+    "capture": "Capture",
+    "useFilePicker": "Choose a photo instead",
+    "error": "Couldn't access the camera. Check your browser's camera permission, or choose a photo instead."
   }
 }

@@ -19,6 +19,7 @@ import { OrderAdminNotePage } from "../features/devTools/pages/OrderAdminNotePag
 import { ShortageReportPage } from "../features/reporting/pages/ShortageReportPage";
 import { OrderPrecheckPage } from "../features/orderPrecheck/pages/OrderPrecheckPage";
 import { PackingPage } from "../features/packing/pages/PackingPage";
+import { PackingHistoryPage } from "../features/packing/pages/PackingHistoryPage";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { NoAccessPage } from "../pages/NoAccessPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
@@ -177,6 +178,14 @@ export function AppRoutes() {
                   element={
                     <RequirePermission menuKey={MenuKey.PACKING}>
                       <PackingPage />
+                    </RequirePermission>
+                  }
+                />
+                <Route
+                  path="/packing/history"
+                  element={
+                    <RequirePermission menuKey={MenuKey.PACKING}>
+                      <PackingHistoryPage />
                     </RequirePermission>
                   }
                 />

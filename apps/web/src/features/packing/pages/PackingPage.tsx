@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import { DataSource } from "@complaint-system/shared";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -9,6 +10,7 @@ import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import LinearProgress from "@mui/material/LinearProgress";
 import Chip from "@mui/material/Chip";
+import Divider from "@mui/material/Divider";
 import Box from "@mui/material/Box";
 import Collapse from "@mui/material/Collapse";
 import ListItemButton from "@mui/material/ListItemButton";
@@ -19,14 +21,21 @@ import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import HistoryIcon from "@mui/icons-material/History";
 import { useTranslation } from "react-i18next";
 import { useLazyListPackingOrdersQuery, useSendPackedOrderMutation } from "../api/packingApi";
 import { DEFAULT_PACKING_RANGE_DAYS, PACKING_RANGE_DAYS_VALUES, type PackingOrderDTO, type PackingRangeDays } from "../types";
 import { PackingItemTile } from "../components/PackingItemTile";
+import { ConfirmSendDialog } from "../components/ConfirmSendDialog";
+import { CameraCaptureDialog } from "../../../components/CameraCaptureDialog";
+import { FixedActionBar } from "../../../components/FixedActionBar";
 import { useGetSettingsQuery } from "../../settings/api/settingsApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 import { formatDateTime } from "../../../utils/localeFormat";
 import { useActiveLanguage } from "../../../i18n/useActiveLanguage";
+
+const hasCameraApi = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
 
 /**
  * Packing: a mobile/tablet-first, one-order-at-a-time screen for warehouse
@@ -36,8 +45,13 @@ import { useActiveLanguage } from "../../../i18n/useActiveLanguage";
  * session -- unlike Order Precheck, nothing is persisted to the admin note,
  * so leaving and coming back to an order resets its tiles. Once every item
  * is packed, Send moves the order to "ارسال شده" and advances to the next
- * one. Live-API only, same as Order Precheck and Reporting's shortage
- * report.
+ * one. A confirmation photo can be taken any time before sending (the
+ * camera button below the order header); if Send is tapped without one,
+ * ConfirmSendDialog offers to take it right there or send anyway. Every
+ * send is also recorded locally (packingService.markOrderPacked) so its
+ * history and photo can be browsed later, since Shopfa itself keeps none
+ * -- see PackingHistoryPage. Live-API only, same as Order Precheck and
+ * Reporting's shortage report.
  */
 export function PackingPage() {
   const { t } = useTranslation("packing");
@@ -54,8 +68,22 @@ export function PackingPage() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendSuccessMessage, setSendSuccessMessage] = useState<string | null>(null);
 
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
+  const [confirmSendDialogOpen, setConfirmSendDialogOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [fetchOrders, { isFetching, error }] = useLazyListPackingOrdersQuery();
   const [sendPackedOrder, { isLoading: isSending }] = useSendPackedOrderMutation();
+
+  const clearPhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  };
 
   const loadOrders = async (selectedDays: PackingRangeDays) => {
     if (!isLiveApi) return;
@@ -66,6 +94,7 @@ export function PackingPage() {
     setRangeShown(result ? { fromISO: result.rangeFromISO, toISO: result.rangeToISO } : null);
     setCurrentIndex(0);
     setPackedCodes(new Set());
+    clearPhoto();
   };
 
   useEffect(() => {
@@ -93,42 +122,119 @@ export function PackingPage() {
   const goToIndex = (index: number) => {
     setCurrentIndex(index);
     setPackedCodes(new Set());
+    clearPhoto();
   };
 
-  const handleSend = async () => {
-    if (!currentOrder || !allPacked) return;
+  const openCameraCapture = () => {
+    if (hasCameraApi) {
+      setCameraDialogOpen(true);
+    } else {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const applyPhoto = (file: File) => {
+    setPhotoFile(file);
+    setPhotoPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+  };
+
+  const handlePhotoCaptured = (file: File) => {
+    applyPhoto(file);
+    setCameraDialogOpen(false);
+  };
+
+  const handleFilePickerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) applyPhoto(file);
+    event.target.value = "";
+  };
+
+  const useFilePickerFallback = () => {
+    setCameraDialogOpen(false);
+    fileInputRef.current?.click();
+  };
+
+  const performSend = async () => {
+    if (!currentOrder) return;
     const orderNumber = currentOrder.orderNumber;
     setSendError(null);
     setSendSuccessMessage(null);
     try {
-      await sendPackedOrder({ orderNumber }).unwrap();
+      await sendPackedOrder({
+        orderNumber,
+        externalOrderId: currentOrder.externalOrderId,
+        buyerName: currentOrder.buyerName,
+        items: currentOrder.items.map((item) => ({
+          productCode: item.productCode,
+          title: item.title,
+          quantity: item.quantity,
+        })),
+        photo: photoFile ?? undefined,
+      }).unwrap();
       setSendSuccessMessage(t("sendSuccess"));
+      setConfirmSendDialogOpen(false);
       setOrders((prev) => (prev ? prev.filter((order) => order.orderNumber !== orderNumber) : prev));
       setPackedCodes(new Set());
+      clearPhoto();
       setCurrentIndex((idx) => Math.max(0, Math.min(idx, (orders?.length ?? 1) - 2)));
     } catch (err) {
       setSendError(getApiErrorMessage(err) ?? t("sendError"));
     }
   };
 
+  const handleSendClick = () => {
+    if (!currentOrder || !allPacked) return;
+    if (photoFile) {
+      void performSend();
+    } else {
+      setConfirmSendDialogOpen(true);
+    }
+  };
+
   return (
     <Stack spacing={2}>
-      <Typography variant="h1">{t("title")}</Typography>
-      <Typography variant="body2" color="text.secondary">
-        {t("description")}
-      </Typography>
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={1}>
+        <Stack spacing={0.5}>
+          <Typography variant="h1">{t("title")}</Typography>
+        </Stack>
+        <Button component={RouterLink} to="/packing/history" startIcon={<HistoryIcon />} size="small">
+          {t("historyLink")}
+        </Button>
+      </Stack>
 
       {!isLiveApi && <Alert severity="warning">{t("liveApiRequired")}</Alert>}
 
       <Card variant="outlined" sx={{ borderRadius: "14px" }}>
-        <CardContent>
-          <ListItemButton onClick={() => setFilterOpen((prev) => !prev)} sx={{ borderRadius: "10px", px: 0 }}>
-            <ListItemText primary={t("timeFrame")} secondary={t(`range.${days}`)} />
+        <CardContent sx={{ py: 1.25, "&:last-child": { pb: 1.25 } }}>
+          <ListItemButton
+            dense
+            onClick={() => setFilterOpen((prev) => !prev)}
+            sx={{ borderRadius: "10px", px: 0.5, py: 0.25 }}
+          >
+            <ListItemText
+              primary={`${t("timeFrame")}: ${t(`range.${days}`)}`}
+              secondary={
+                rangeShown && !isFetching
+                  ? t("rangeShown", {
+                      from: formatDateTime(rangeShown.fromISO, language),
+                      to: formatDateTime(rangeShown.toISO, language),
+                    })
+                  : undefined
+              }
+              slotProps={{ primary: { variant: "body2", fontWeight: 600 }, secondary: { variant: "caption" } }}
+              sx={{ my: 0 }}
+            />
             {filterOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
           </ListItemButton>
           <Collapse in={filterOpen}>
-            <Stack spacing={1.5} sx={{ pt: 1 }}>
-              <FormControl size="small" sx={{ maxWidth: 260 }}>
+            <Stack spacing={1.5} sx={{ pt: 1.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                {t("description")}
+              </Typography>
+              <FormControl fullWidth>
                 <InputLabel id="packing-range-label">{t("timeFrame")}</InputLabel>
                 <Select
                   labelId="packing-range-label"
@@ -146,28 +252,38 @@ export function PackingPage() {
               </FormControl>
               <Button
                 variant="contained"
+                size="large"
+                fullWidth
                 onClick={() => {
                   setFilterOpen(false);
                   void loadOrders(days);
                 }}
                 disabled={!isLiveApi || isFetching}
-                sx={{ alignSelf: "flex-start" }}
               >
                 {t("apply")}
               </Button>
             </Stack>
           </Collapse>
+          {currentOrder && (
+            <>
+              <Divider sx={{ my: 1 }} />
+              <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
+                <Stack spacing={0} sx={{ minWidth: 0 }}>
+                  <Typography variant="subtitle1" noWrap>
+                    {currentOrder.buyerName || t("guestBuyer")}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" noWrap>
+                    {t("orderNumberLabel")}: {currentOrder.orderNumber}
+                    {currentOrder.orderDateISO ? ` · ${formatDateTime(currentOrder.orderDateISO, language)}` : ""}
+                  </Typography>
+                </Stack>
+                <Chip size="small" label={t("progress", { current: currentIndex + 1, total: orders?.length ?? 0 })} />
+              </Stack>
+              
+            </>
+          )}
         </CardContent>
       </Card>
-
-      {rangeShown && !isFetching && (
-        <Typography variant="caption" color="text.secondary">
-          {t("rangeShown", {
-            from: formatDateTime(rangeShown.fromISO, language),
-            to: formatDateTime(rangeShown.toISO, language),
-          })}
-        </Typography>
-      )}
 
       {isFetching && (
         <Box>
@@ -186,21 +302,6 @@ export function PackingPage() {
 
       {currentOrder && (
         <>
-          <Card sx={{ borderRadius: "14px" }}>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={1}>
-                <Stack spacing={0.25}>
-                  <Typography variant="subtitle1">{currentOrder.buyerName || t("guestBuyer")}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {t("orderNumberLabel")}: {currentOrder.orderNumber}
-                    {currentOrder.orderDateISO ? ` · ${formatDateTime(currentOrder.orderDateISO, language)}` : ""}
-                  </Typography>
-                </Stack>
-                <Chip label={t("progress", { current: currentIndex + 1, total: orders?.length ?? 0 })} />
-              </Stack>
-            </CardContent>
-          </Card>
-
           <Box
             sx={{
               display: "grid",
@@ -218,32 +319,59 @@ export function PackingPage() {
             ))}
           </Box>
 
+          <Card variant="outlined" sx={{ borderRadius: "14px" }}>
+            <CardContent sx={{ py: 1, "&:last-child": { pb: 1 } }}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box
+                  onClick={openCameraCapture}
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: "10px",
+                    overflow: "hidden",
+                    bgcolor: "action.hover",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    cursor: "pointer",
+                  }}
+                >
+                  {photoPreviewUrl ? (
+                    <Box
+                      component="img"
+                      src={photoPreviewUrl}
+                      alt={t("photoAlt")}
+                      sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <PhotoCameraIcon color="action" />
+                  )}
+                </Box>
+                <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
+                  {t("photoSectionTitle")}
+                </Typography>
+                <Button variant="outlined" size="small" startIcon={<PhotoCameraIcon />} onClick={openCameraCapture}>
+                  {photoFile ? t("retakePhoto") : t("takePhoto")}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFilePickerChange}
+                />
+              </Stack>
+            </CardContent>
+          </Card>
+
           {!allPacked && (
             <Typography variant="caption" color="text.secondary">
               {t("sendHint")}
             </Typography>
           )}
-
-          {/*
-            Sticky rather than plain end-of-page flow, same fix already
-            applied to Order Precheck's action bar: an order with several
-            item tiles can push these controls well below the fold on a
-            phone, and this keeps them reachable while staying clear of
-            MainLayout's fixed bottom navigation bar (64px + safe-area).
-          */}
-          <Stack
-            direction="row"
-            spacing={1.5}
-            sx={{
-              position: { xs: "sticky", md: "static" },
-              bottom: { xs: "calc(64px + env(safe-area-inset-bottom) + 8px)", md: "auto" },
-              zIndex: 1,
-              bgcolor: "background.paper",
-              borderRadius: "14px",
-              boxShadow: { xs: 4, md: 0 },
-              p: { xs: 1.5, md: 0 },
-            }}
-          >
+          <FixedActionBar>
             <Button fullWidth variant="outlined" disabled={currentIndex === 0} onClick={() => goToIndex(currentIndex - 1)}>
               {t("previous")}
             </Button>
@@ -252,7 +380,7 @@ export function PackingPage() {
               variant="contained"
               color="success"
               disabled={!allPacked || isSending}
-              onClick={handleSend}
+              onClick={handleSendClick}
               startIcon={isSending ? <CircularProgress size={14} /> : undefined}
             >
               {t("sendWithTotal", { total: totalQuantity })}
@@ -265,9 +393,26 @@ export function PackingPage() {
             >
               {t("next")}
             </Button>
-          </Stack>
+          </FixedActionBar>
         </>
       )}
+
+      <CameraCaptureDialog
+        open={cameraDialogOpen}
+        onClose={() => setCameraDialogOpen(false)}
+        onCapture={handlePhotoCaptured}
+        onUseFilePicker={useFilePickerFallback}
+        fileNamePrefix="packing-photo"
+      />
+
+      <ConfirmSendDialog
+        open={confirmSendDialogOpen}
+        photoPreviewUrl={photoPreviewUrl}
+        isSending={isSending}
+        onCancel={() => setConfirmSendDialogOpen(false)}
+        onTakePicture={openCameraCapture}
+        onConfirm={() => void performSend()}
+      />
     </Stack>
   );
 }

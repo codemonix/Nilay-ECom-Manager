@@ -45,3 +45,10 @@ export async function listAttachments(
 ): Promise<AttachmentDocument[]> {
   return attachmentRepository.findBySubject(subjectType, subjectId);
 }
+
+export async function listAttachmentsBySubjectIds(
+  subjectType: AttachmentSubjectType,
+  subjectIds: string[],
+): Promise<AttachmentDocument[]> {
+  return attachmentRepository.findBySubjectIds(subjectType, subjectIds);
+}
