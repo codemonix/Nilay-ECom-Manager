@@ -19,6 +19,16 @@ export interface ListPackingRecordsParams {
 }
 
 export const packingRecordRepository = {
+  /** Newest first, so callers wanting "the latest record per order" can keep the first they see. Chunked so a page of thousands of order numbers stays a reasonable query. */
+  async findByOrderNumbers(orderNumbers: string[]): Promise<PackingRecordDocument[]> {
+    const CHUNK = 1000;
+    const found: PackingRecordDocument[] = [];
+    for (let i = 0; i < orderNumbers.length; i += CHUNK) {
+      found.push(...(await PackingRecordModel.find({ orderNumber: { $in: orderNumbers.slice(i, i + CHUNK) } })));
+    }
+    return found.sort((a, b) => b.sentAt.getTime() - a.sentAt.getTime());
+  },
+
   async create(data: CreatePackingRecordData): Promise<PackingRecordDocument> {
     return PackingRecordModel.create(data);
   },

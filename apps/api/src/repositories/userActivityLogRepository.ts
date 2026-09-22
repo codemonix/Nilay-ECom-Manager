@@ -1,4 +1,6 @@
 import { UserActivityLogModel, type UserActivityLogDocument } from "../models/UserActivityLog";
+import type { CollectionStats } from "../utils/collectionStats";
+import { getCollectionStats } from "../utils/collectionStats";
 import { escapeRegex } from "../utils/regex";
 
 export interface CreateUserActivityLogData {
@@ -40,6 +42,10 @@ function buildFilter(params: ListUserActivityLogsParams): Record<string, unknown
 export const userActivityLogRepository = {
   async create(data: CreateUserActivityLogData): Promise<void> {
     await UserActivityLogModel.create(data);
+  },
+
+  async getStats(): Promise<CollectionStats> {
+    return getCollectionStats(UserActivityLogModel);
   },
 
   async list(params: ListUserActivityLogsParams): Promise<{ items: UserActivityLogDocument[]; total: number }> {

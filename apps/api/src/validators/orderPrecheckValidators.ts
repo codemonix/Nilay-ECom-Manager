@@ -38,5 +38,6 @@ export const saveOrderPrecheckSchema = z.object({
       }),
     )
     .min(1, "At least one item's availability must be provided"),
+  confirmStatusChanges: z.boolean().optional(),
 });
 export type SaveOrderPrecheckInput = z.infer<typeof saveOrderPrecheckSchema>;

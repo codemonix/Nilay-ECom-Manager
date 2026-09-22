@@ -9,6 +9,7 @@ export const MenuKey = {
   CASES: "cases",
   ORDER_CHECK: "orderCheck",
   PACKING: "packing",
+  ORDERS_BY_STATUS: "ordersByStatus",
   PURCHASING: "purchasing",
   RECEIVING: "receiving",
   INVENTORY: "inventory",
@@ -27,25 +28,62 @@ export const MenuKey = {
   // (see ASSIGNABLE_MENU_KEY_VALUES) -- granting or revoking it would do
   // nothing.
   ADMINISTRATION: "administration",
+  // Synthetic grouping key for the "Orders" master menu (Order Pre-Check,
+  // Packing, Orders by status) -- like ADMINISTRATION, never stored in a
+  // user's permissions; whether a user sees the menu is derived from the
+  // three real keys (see hasOrdersMenuAccess).
+  ORDERS: "orders",
 } as const;
 export type MenuKey = (typeof MenuKey)[keyof typeof MenuKey];
 export const MENU_KEY_VALUES = Object.values(MenuKey);
 
-/** MENU_KEY_VALUES minus the synthetic keys that don't represent a real,
- * independently-grantable permission (see MenuKey.ADMINISTRATION) -- the
- * list an admin can actually toggle per user on the Users page. */
-export const ASSIGNABLE_MENU_KEY_VALUES = MENU_KEY_VALUES.filter((key) => key !== MenuKey.ADMINISTRATION);
+/**
+ * Every individual report under the "Reports" menu. Each is its own
+ * permission, stored in a user's `permissions` array alongside the MenuKey
+ * values (see PermissionKey), so an admin can grant e.g. the customer
+ * report without the shortage report. Adding a report = add a key here,
+ * gate its API route with requireReportAccess and its web route with
+ * RequireReportAccess, and give it a nav entry.
+ */
+export const ReportKey = {
+  SHORTAGE: "report:shortage",
+  CUSTOMER: "report:customer",
+  ITEM_SALES: "report:itemSales",
+  CATEGORY_TRENDS: "report:categoryTrends",
+} as const;
+export type ReportKey = (typeof ReportKey)[keyof typeof ReportKey];
+export const REPORT_KEY_VALUES = Object.values(ReportKey);
+
+/** Anything that can appear in a user's `permissions` array. */
+export type PermissionKey = MenuKey | ReportKey;
+export const PERMISSION_KEY_VALUES: PermissionKey[] = [...MENU_KEY_VALUES, ...REPORT_KEY_VALUES];
+
+/** MENU_KEY_VALUES minus the keys that aren't independently-grantable
+ * menu permissions -- the synthetic MenuKey.ADMINISTRATION (see above), and
+ * MenuKey.REPORTING, whose visibility is now derived from holding at least
+ * one ReportKey (see hasReportsMenuAccess). Report keys are offered
+ * separately (REPORT_KEY_VALUES) -- this is the plain-menu half of the list
+ * an admin toggles per user on the Users page. */
+export const ASSIGNABLE_MENU_KEY_VALUES = MENU_KEY_VALUES.filter(
+  (key) => key !== MenuKey.ADMINISTRATION && key !== MenuKey.REPORTING && key !== MenuKey.ORDERS,
+);
 
 /**
  * Starting permission set applied when a new user is created, before an
  * admin fine-tunes it on the Users page. Admins are not affected by this
  * table -- they always have access to every menu item (see hasMenuAccess).
  */
-export const DEFAULT_PERMISSIONS_BY_ROLE: Record<StaffRole, MenuKey[]> = {
-  [StaffRole.ADMIN]: ASSIGNABLE_MENU_KEY_VALUES,
+export const DEFAULT_PERMISSIONS_BY_ROLE: Record<StaffRole, PermissionKey[]> = {
+  [StaffRole.ADMIN]: [...ASSIGNABLE_MENU_KEY_VALUES, ...REPORT_KEY_VALUES],
   [StaffRole.CUSTOMER_SERVICE]: [MenuKey.CASES],
-  [StaffRole.WAREHOUSE]: [MenuKey.ORDER_CHECK, MenuKey.PACKING, MenuKey.INVENTORY, MenuKey.RECEIVING],
-  [StaffRole.MANAGER]: [MenuKey.CASES, MenuKey.REPORTING, MenuKey.SETTINGS],
+  [StaffRole.WAREHOUSE]: [
+    MenuKey.ORDER_CHECK,
+    MenuKey.PACKING,
+    MenuKey.ORDERS_BY_STATUS,
+    MenuKey.INVENTORY,
+    MenuKey.RECEIVING,
+  ],
+  [StaffRole.MANAGER]: [MenuKey.CASES, ...REPORT_KEY_VALUES, MenuKey.SETTINGS],
   [StaffRole.PURCHASING]: [MenuKey.PURCHASING],
 };
 
@@ -72,4 +110,34 @@ export function hasAdministrationAccess(user: { role: string; permissions?: stri
   return (
     hasMenuAccess(user, MenuKey.SETTINGS) || hasMenuAccess(user, MenuKey.USERS) || hasMenuAccess(user, MenuKey.LOGS)
   );
+}
+
+/** Whether the user may see the synthetic "Orders" master menu -- true iff they can open at least one of the pages it groups (Order Pre-Check, Packing, Orders by status). */
+export function hasOrdersMenuAccess(user: { role: string; permissions?: string[] }): boolean {
+  return (
+    hasMenuAccess(user, MenuKey.ORDER_CHECK) ||
+    hasMenuAccess(user, MenuKey.PACKING) ||
+    hasMenuAccess(user, MenuKey.ORDERS_BY_STATUS)
+  );
+}
+
+/**
+ * Whether the user may open one specific report. Admins always may. A user
+ * who still carries the legacy all-reports grant (MenuKey.REPORTING, from
+ * before reports had individual keys) and has not yet been given any
+ * individual report key keeps access to every report until an admin
+ * assigns specific ones -- so existing managers don't silently lose the
+ * shortage report when this permission model was introduced.
+ */
+export function hasReportAccess(user: { role: string; permissions?: string[] }, key: ReportKey): boolean {
+  if (user.role === StaffRole.ADMIN) return true;
+  const permissions = user.permissions ?? [];
+  if (permissions.includes(key)) return true;
+  const holdsAnyReportKey = REPORT_KEY_VALUES.some((reportKey) => permissions.includes(reportKey));
+  return !holdsAnyReportKey && permissions.includes(MenuKey.REPORTING);
+}
+
+/** Whether the "Reports" menu should show for this user -- true iff they can open at least one report. */
+export function hasReportsMenuAccess(user: { role: string; permissions?: string[] }): boolean {
+  return REPORT_KEY_VALUES.some((key) => hasReportAccess(user, key));
 }

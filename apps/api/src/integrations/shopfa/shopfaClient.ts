@@ -4,6 +4,7 @@ import axios, {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from "axios";
+import { SOLD_ORDER_STATUS_TITLES } from "@complaint-system/shared";
 import type {
   CustomerSearchResultDTO,
   CustomerSummaryDTO,
@@ -11,29 +12,41 @@ import type {
   SoldQuantityRangeDays,
 } from "@complaint-system/shared";
 import type {
+  ShopfaCategory,
   ShopfaClient,
+  ShopfaCustomerReportOrder,
+  ShopfaCustomerReportScan,
+  ShopfaItemSalesEntry,
+  ShopfaSoldItemDayRow,
   ShopfaDateRange,
   ShopfaOrderAdminNote,
+  ShopfaCustomerOrderRef,
   ShopfaOrderDateWindow,
   ShopfaOrderPrecheckUpdate,
   ShopfaOrderPrecheckUpdateResult,
   ShopfaOrderStatusUpdateResult,
   ShopfaPackingOrder,
+  ShopfaOrderDetails,
   ShopfaPrecheckOrder,
   ShopfaProductLookup,
   ShopfaShortageReportOrder,
   ShopfaSoldQuantityResult,
+  ShopfaStatusOrder,
   ShopfaSoldQuantityStatusRow,
 } from "./shopfaTypes";
 import type {
   ShopfaApiOrder,
   ShopfaApiOrderListResponse,
+  ShopfaApiPageListResponse,
   ShopfaApiProductListResponse,
   ShopfaApiUserListResponse,
 } from "./shopfaApiTypes";
 import {
   extractOrderDetails,
+  mapApiOrderToCustomerReportOrder,
+  mapApiOrderToCustomerOrderRef,
   mapApiOrderToPackingOrder,
+  mapApiOrderToStatusOrder,
   mapApiOrderToPrecheckOrder,
   mapApiOrderToShortageReportOrder,
   mapApiOrderToSummary,
@@ -86,6 +99,25 @@ const SOLD_QUANTITY_CACHE_TTL_MS = 10 * 60 * 1000;
  */
 const PAYMENT_DATE_LOOKBACK_BUFFER_DAYS = 45;
 
+/** How long Reporting's item-sales order scan and category product lists stay cached -- same reasoning as SOLD_QUANTITY_CACHE_TTL_MS. */
+const REPORT_CACHE_TTL_MS = 10 * 60 * 1000;
+
+/** Customer report safety cap: 20 pages x 100 orders. A search this broad ("سعید") is almost certainly not one customer, and Shopfa pages slowly. */
+const CUSTOMER_REPORT_MAX_PAGES = 20;
+
+/** Shopfa's product-module page (category) type -- `/api/system/pages` also lists blog/static pages, which aren't product categories. */
+const SHOPFA_PRODUCT_PAGE_MODULE = 2102;
+
+/** Shopfa's business day is Iran time, a fixed UTC+03:30 since DST was abolished in 2022 -- returns the store-local YYYY-MM-DD of a unix-seconds timestamp. */
+function storeLocalDay(unixSeconds: number): string {
+  return new Date((unixSeconds + 3.5 * 3600) * 1000).toISOString().slice(0, 10);
+}
+
+interface TimedCacheEntry<T> {
+  fetchedAt: number;
+  value: T;
+}
+
 /**
  * Raised from an original 10s (2026-09-18) after ShopfaTransactionLog
  * showed repeated live "timeout of 10000ms exceeded" failures surfacing as
@@ -97,6 +129,9 @@ const PAYMENT_DATE_LOOKBACK_BUFFER_DAYS = 45;
  * giving up.
  */
 const SHOPFA_HTTP_TIMEOUT_MS = 25_000;
+
+/** Shipping method names almost never change; an hour avoids a lookup on every Packing reload. */
+const SHIPPING_TITLES_CACHE_TTL_MS = 60 * 60 * 1000;
 
 /**
  * Real Shopfa HTTP integration, verified directly against the live Nilay
@@ -122,6 +157,11 @@ export class HttpShopfaClient implements ShopfaClient {
   private readonly soldQuantityCache = new Map<SoldQuantityRangeDays, SoldQuantityIndexEntry>();
   /** Tracks an in-flight scan per bucket so concurrent requests for the same (or a differently-coded but same-bucket) product await one fetch instead of triggering duplicate live scans. */
   private readonly soldQuantityFetches = new Map<SoldQuantityRangeDays, Promise<SoldQuantityIndexEntry>>();
+
+  /** Item-sales order scans keyed by "fromSec:toSec" -- see listSoldItemsForReport. */
+  private readonly itemSalesCache = new Map<string, TimedCacheEntry<ShopfaSoldItemDayRow[]>>();
+  private readonly itemSalesFetches = new Map<string, Promise<ShopfaSoldItemDayRow[]>>();
+  private readonly categoryProductsCache = new Map<string, TimedCacheEntry<string[]>>();
 
   constructor(baseURL: string, apiToken: string) {
     this.http = axios.create({ baseURL, timeout: SHOPFA_HTTP_TIMEOUT_MS });
@@ -443,6 +483,199 @@ export class HttpShopfaClient implements ShopfaClient {
   }
 
   /**
+   * Confirmed live (2026-09-20): `search` on /api/shop/orders matches buyer
+   * name/family/mobile by substring, returning exactly the matching orders
+   * (100 per page max). Windowed client-side by effective date, with the
+   * server-side lower bound padded for late payments -- see
+   * PAYMENT_DATE_LOOKBACK_BUFFER_DAYS.
+   */
+  async listOrdersForCustomerReport(query: string, range: ShopfaOrderDateWindow): Promise<ShopfaCustomerReportScan> {
+    const PAGE_SIZE = 100;
+    const rangeFromSec = Math.floor(range.from.getTime() / 1000);
+    const rangeToSec = Math.floor(range.to.getTime() / 1000);
+    const fetchFromSec = rangeFromSec - PAYMENT_DATE_LOOKBACK_BUFFER_DAYS * 24 * 60 * 60;
+    const orders: ShopfaCustomerReportOrder[] = [];
+    let truncated = false;
+    try {
+      for (let page = 1; ; page += 1) {
+        const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
+          "/api/shop/orders",
+          {},
+          { params: { search: query, from: fetchFromSec, to: rangeToSec, limit: PAGE_SIZE, page } },
+        );
+        const baskets = readOrderBaskets(data);
+        for (const basket of baskets) {
+          const paymentDateSec = Number(basket.payment_date) || 0;
+          const effectiveDateSec = paymentDateSec > 0 ? paymentDateSec : Number(basket.date) || 0;
+          if (effectiveDateSec < rangeFromSec || effectiveDateSec > rangeToSec) continue;
+          orders.push(mapApiOrderToCustomerReportOrder(basket));
+        }
+        if (baskets.length < PAGE_SIZE) break;
+        if (page >= CUSTOMER_REPORT_MAX_PAGES) {
+          truncated = true;
+          break;
+        }
+      }
+    } catch (err) {
+      logger.error("Shopfa listOrdersForCustomerReport failed", { query, err });
+      throw ApiError.badGateway("Failed to reach Shopfa order service");
+    }
+    return { orders, truncated };
+  }
+
+  /**
+   * Same scan/windowing rules as scanOrdersForSoldQuantity (500/page,
+   * padded lower bound, payment-date-first effective date), but keeps only
+   * SOLD_ORDER_STATUS_TITLES orders. The scan is stored as per-product,
+   * per-day rows (see listSoldItemsByDay) and this method folds them into
+   * per-product totals. Cached per exact window (callers pass day-aligned
+   * bounds so repeat runs hit), with concurrent identical requests sharing
+   * one scan.
+   */
+  async listSoldItemsForReport(range: ShopfaOrderDateWindow): Promise<ShopfaItemSalesEntry[]> {
+    const rows = await this.listSoldItemsByDay(range);
+    const byProduct = new Map<string, ShopfaItemSalesEntry>();
+    for (const row of rows) {
+      const entry = byProduct.get(row.productId);
+      if (entry) {
+        entry.quantity += row.quantity;
+        entry.revenue += row.revenue;
+        entry.orderCount += row.orderCount;
+      } else {
+        byProduct.set(row.productId, {
+          productId: row.productId,
+          title: row.title,
+          imageUrl: row.imageUrl,
+          quantity: row.quantity,
+          revenue: row.revenue,
+          orderCount: row.orderCount,
+        });
+      }
+    }
+    return Array.from(byProduct.values());
+  }
+
+  async listSoldItemsByDay(range: ShopfaOrderDateWindow): Promise<ShopfaSoldItemDayRow[]> {
+    const rangeFromSec = Math.floor(range.from.getTime() / 1000);
+    const rangeToSec = Math.floor(range.to.getTime() / 1000);
+    const key = `${rangeFromSec}:${rangeToSec}`;
+    const cached = this.itemSalesCache.get(key);
+    if (cached && Date.now() - cached.fetchedAt < REPORT_CACHE_TTL_MS) return cached.value;
+    const pending = this.itemSalesFetches.get(key);
+    if (pending) return pending;
+
+    const fetchPromise = this.scanSoldItems(rangeFromSec, rangeToSec).then((value) => {
+      this.itemSalesCache.set(key, { fetchedAt: Date.now(), value });
+      return value;
+    });
+    this.itemSalesFetches.set(key, fetchPromise);
+    try {
+      return await fetchPromise;
+    } finally {
+      this.itemSalesFetches.delete(key);
+    }
+  }
+
+  /** One row per (product, store-local day). An order has a single effective date, so summing `orderCount` across days still counts each order once. */
+  private async scanSoldItems(rangeFromSec: number, rangeToSec: number): Promise<ShopfaSoldItemDayRow[]> {
+    const PAGE_SIZE = 500;
+    const fetchFromSec = rangeFromSec - PAYMENT_DATE_LOOKBACK_BUFFER_DAYS * 24 * 60 * 60;
+    const rows = new Map<string, ShopfaSoldItemDayRow>();
+    try {
+      for (let page = 1; ; page += 1) {
+        const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
+          "/api/shop/orders",
+          {},
+          { params: { from: fetchFromSec, to: rangeToSec, limit: PAGE_SIZE, page, sort: "date", order: "desc" } },
+        );
+        const baskets = readOrderBaskets(data);
+        for (const basket of baskets) {
+          if (!SOLD_ORDER_STATUS_TITLES.includes(basket.status_title ?? "")) continue;
+          const paymentDateSec = Number(basket.payment_date) || 0;
+          const effectiveDateSec = paymentDateSec > 0 ? paymentDateSec : Number(basket.date) || 0;
+          if (effectiveDateSec < rangeFromSec || effectiveDateSec > rangeToSec) continue;
+          const day = storeLocalDay(effectiveDateSec);
+          const countedProducts = new Set<string>();
+          for (const item of basket.items ?? []) {
+            const quantity = Number(item.count) || 0;
+            if (quantity <= 0) continue;
+            const productId = String(item.product_id);
+            const rowKey = `${productId}|${day}`;
+            let row = rows.get(rowKey);
+            if (!row) {
+              row = {
+                productId,
+                day,
+                title: item.title ?? productId,
+                imageUrl: item.thumb ?? null,
+                quantity: 0,
+                revenue: 0,
+                orderCount: 0,
+              };
+              rows.set(rowKey, row);
+            }
+            row.quantity += quantity;
+            row.revenue += Number(item.sum_price) || (Number(item.price) || 0) * quantity;
+            // The same product can appear on two lines of one order (two sizes) -- count the order once.
+            if (!countedProducts.has(productId)) {
+              countedProducts.add(productId);
+              row.orderCount += 1;
+            }
+          }
+        }
+        if (baskets.length < PAGE_SIZE) break;
+      }
+    } catch (err) {
+      logger.error("Shopfa order scan for item-sales report failed", { err });
+      throw ApiError.badGateway("Failed to reach Shopfa order service");
+    }
+    return Array.from(rows.values());
+  }
+
+  async listShopCategories(): Promise<ShopfaCategory[]> {
+    try {
+      const { data } = await this.postWithRetry<ShopfaApiPageListResponse>(
+        "/api/system/pages",
+        {},
+        { params: { limit: 500 } },
+      );
+      return (data.items ?? [])
+        .filter((page) => Number(page.module) === SHOPFA_PRODUCT_PAGE_MODULE && page.title?.trim())
+        .map((page) => ({ id: String(page.id), title: page.title.trim(), parentId: String(page.parent ?? 0),
+          order: Number(page.order) || 0,
+        }));
+    } catch (err) {
+      logger.error("Shopfa listShopCategories failed", { err });
+      throw ApiError.badGateway("Failed to reach Shopfa product service");
+    }
+  }
+
+  async listProductIdsInCategory(categoryId: string): Promise<string[]> {
+    const cached = this.categoryProductsCache.get(categoryId);
+    if (cached && Date.now() - cached.fetchedAt < REPORT_CACHE_TTL_MS) return cached.value;
+
+    const PAGE_SIZE = 100;
+    const ids: string[] = [];
+    try {
+      for (let page = 1; ; page += 1) {
+        const { data } = await this.postWithRetry<ShopfaApiProductListResponse>(
+          "/api/shop/product/list",
+          {},
+          { params: { page_id: categoryId, limit: PAGE_SIZE, page } },
+        );
+        const items = readProductItems(data);
+        ids.push(...items.map((product) => String(product.id)));
+        if (items.length < PAGE_SIZE) break;
+      }
+    } catch (err) {
+      logger.error("Shopfa listProductIdsInCategory failed", { categoryId, err });
+      throw ApiError.badGateway("Failed to reach Shopfa product service");
+    }
+    this.categoryProductsCache.set(categoryId, { fetchedAt: Date.now(), value: ids });
+    return ids;
+  }
+
+  /**
    * See the ShopfaClient interface doc: a minimal `{id, title}` body is
    * enough, and re-fetching afterward is what actually confirms the write
    * landed, since the update call's own response can't be trusted.
@@ -583,8 +816,8 @@ export class HttpShopfaClient implements ShopfaClient {
                 limit: PAGE_SIZE,
                 page,
                 sort: "date",
-                order: "desc",
-                fields: "id,session,note,date,status,status_title,name,family",
+                order: "asc",
+                fields: "id,session,note,date,payment_date,status,status_title,name,family,mobile",
               },
             },
           );
@@ -649,11 +882,13 @@ export class HttpShopfaClient implements ShopfaClient {
    */
   async listOrdersByStatusForPacking(
     statusCode: number,
-    range: ShopfaOrderDateWindow,
+    range: ShopfaOrderDateWindow | null,
   ): Promise<ShopfaPackingOrder[]> {
     const PAGE_SIZE = 500;
-    const fromSec = Math.floor(range.from.getTime() / 1000);
-    const toSec = Math.floor(range.to.getTime() / 1000);
+    // `from`/`to` only act on the creation date when sent together with `sort: "date"` (confirmed live 2026-09-21; without a sort they filter by last-updated date), so every windowed call below sets it. A null range means no window at all.
+    const windowParams = range
+      ? { from: Math.floor(range.from.getTime() / 1000), to: Math.floor(range.to.getTime() / 1000) }
+      : {};
     const results: ShopfaPackingOrder[] = [];
     try {
       for (let page = 1; ; page += 1) {
@@ -663,13 +898,12 @@ export class HttpShopfaClient implements ShopfaClient {
           {
             params: {
               status: statusCode,
-              from: fromSec,
-              to: toSec,
+              ...windowParams,
               limit: PAGE_SIZE,
               page,
               sort: "date",
-              order: "desc",
-              fields: "id,session,date,status,status_title,name,family",
+              order: "asc",
+              fields: "id,session,date,payment_date,status,status_title,name,family,mobile,post_method,post_method_title",
             },
           },
         );
@@ -681,7 +915,46 @@ export class HttpShopfaClient implements ShopfaClient {
       logger.error("Shopfa listOrdersByStatusForPacking failed", { statusCode, err });
       throw ApiError.badGateway("Failed to reach Shopfa order service");
     }
+    await this.fillShippingMethodNames(results);
     return results;
+  }
+
+  /**
+   * Some orders come back with only a shipping method id and an empty
+   * `post_method_title` (e.g. 4514). Shopfa's method list (`get_method`,
+   * confirmed live to return a `{ title: { <id>: <name> } }` map of every
+   * method regardless of the `id` param) has the names, so they're filled in
+   * here. Falls back to "#<id>" only if the list can't be fetched or lacks
+   * the id -- the queue itself must still load.
+   */
+  private async fillShippingMethodNames(
+    orders: { shippingMethod: string | null; shippingMethodId: string | null }[],
+  ): Promise<void> {
+    const unnamed = orders.filter((order) => !order.shippingMethod && order.shippingMethodId);
+    if (unnamed.length === 0) return;
+    const titles = await this.getShippingMethodTitles();
+    for (const order of unnamed) {
+      order.shippingMethod = titles[order.shippingMethodId as string] ?? `#${order.shippingMethodId}`;
+    }
+  }
+
+  private shippingTitlesCache: { fetchedAt: number; titles: Record<string, string> } | null = null;
+
+  private async getShippingMethodTitles(): Promise<Record<string, string>> {
+    const cached = this.shippingTitlesCache;
+    if (cached && Date.now() - cached.fetchedAt < SHIPPING_TITLES_CACHE_TTL_MS) return cached.titles;
+    try {
+      const { data } = await this.postWithRetry<{ title?: Record<string, string> }>(
+        "/api/shop/cart/shipping/list/get_method",
+        {},
+      );
+      const titles = data.title ?? {};
+      this.shippingTitlesCache = { fetchedAt: Date.now(), titles };
+      return titles;
+    } catch (err) {
+      logger.warn("Shopfa shipping method names could not be fetched; showing ids instead", { err });
+      return cached?.titles ?? {};
+    }
   }
 
   /**
@@ -735,6 +1008,148 @@ export class HttpShopfaClient implements ShopfaClient {
       logger.error("Shopfa updateOrderStatus re-fetch failed", { orderNumber, err });
       throw ApiError.badGateway("Failed to reach Shopfa order service");
     }
+  }
+
+  async getOrderDetailsByNumber(orderNumber: string): Promise<ShopfaOrderDetails | null> {
+    try {
+      const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
+        "/api/shop/orders",
+        {},
+        { params: { search: orderNumber, limit: 5, fields: "id,session,note,date,payment_date,status,status_title,name,family,mobile" } },
+      );
+      const raw = (data.baskets ?? []).find((b) => String(b.session) === orderNumber);
+      if (!raw) return null;
+      return {
+        ...mapApiOrderToPrecheckOrder(raw, Number(raw.status)),
+        paymentDate: raw.payment_date ? new Date(Number(raw.payment_date) * 1000) : null,
+      };
+    } catch (err) {
+      logger.error("Shopfa getOrderDetailsByNumber failed", { orderNumber, err });
+      throw ApiError.badGateway("Failed to reach Shopfa order service");
+    }
+  }
+
+  /** See the ShopfaClient interface doc. */
+  async listOrdersByStatuses(statusCodes: number[], range: ShopfaOrderDateWindow | null): Promise<ShopfaStatusOrder[]> {
+    const PAGE_SIZE = 500;
+    // Deliberately NO `sort`: without one, `from`/`to` filter by the order's last-updated date (confirmed live 2026-09-21), which is exactly what the Status Check page wants (see the interface doc). A null range means no window at all.
+    const windowParams = range
+      ? { from: Math.floor(range.from.getTime() / 1000), to: Math.floor(range.to.getTime() / 1000) }
+      : {};
+    const results: ShopfaStatusOrder[] = [];
+    try {
+      for (const statusCode of statusCodes) {
+        for (let page = 1; ; page += 1) {
+          const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
+            "/api/shop/orders",
+            {},
+            {
+              params: {
+                status: statusCode,
+                ...windowParams,
+                limit: PAGE_SIZE,
+                page,
+                fields: "id,session,date,payment_date,update,status,status_title,name,family,mobile,post_method,post_method_title",
+              },
+            },
+          );
+          const baskets = data.baskets ?? [];
+          results.push(...baskets.map((raw) => mapApiOrderToStatusOrder(raw, statusCode)));
+          if (baskets.length < PAGE_SIZE) break;
+        }
+      }
+    } catch (err) {
+      logger.error("Shopfa listOrdersByStatuses failed", { statusCodes, err });
+      throw ApiError.badGateway("Failed to reach Shopfa order service");
+    }
+    await this.fillShippingMethodNames(results);
+    return results;
+  }
+
+  /** See the ShopfaClient interface doc. Never throws: a failed count only means the UI can't show the "of TOTAL" hint. */
+  async countOrdersInStatus(statusCode: number): Promise<number | null> {
+    try {
+      const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
+        "/api/shop/orders",
+        {},
+        { params: { status: statusCode, limit: 1, fields: "id" } },
+      );
+      return typeof data.total_count === "number" ? data.total_count : null;
+    } catch (err) {
+      logger.warn("Shopfa countOrdersInStatus failed", { statusCode, err });
+      return null;
+    }
+  }
+
+  /** See the ShopfaClient interface doc. */
+  async findOrdersByCustomerQuery(query: string): Promise<ShopfaCustomerOrderRef[]> {
+    const PAGE_SIZE = 100;
+    const MAX_PAGES = 5;
+    const results: ShopfaCustomerOrderRef[] = [];
+    try {
+      for (let page = 1; page <= MAX_PAGES; page += 1) {
+        const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
+          "/api/shop/orders",
+          {},
+          {
+            params: {
+              search: query,
+              limit: PAGE_SIZE,
+              page,
+              sort: "date",
+              order: "desc",
+              fields: "id,session,status,status_title,name,family,mobile",
+            },
+          },
+        );
+        const baskets = data.baskets ?? [];
+        results.push(...baskets.map((raw) => mapApiOrderToCustomerOrderRef(raw, Number(raw.status))));
+        if (baskets.length < PAGE_SIZE) break;
+      }
+    } catch (err) {
+      logger.error("Shopfa findOrdersByCustomerQuery failed", { query, err });
+      throw ApiError.badGateway("Failed to reach Shopfa order service");
+    }
+    return results;
+  }
+
+  /** See the ShopfaClient interface doc: one scan per status code, bounded by `range` (creation date), no `note` requested so it can page at 500. */
+  async listOrdersByStatusesForCustomerLookup(
+    statusCodes: number[],
+    range: ShopfaOrderDateWindow | null,
+  ): Promise<ShopfaCustomerOrderRef[]> {
+    const PAGE_SIZE = 500;
+    // `from`/`to` only act on the creation date when sent together with `sort: "date"` (confirmed live 2026-09-21; without a sort they filter by last-updated date), so every windowed call below sets it. A null range means no window at all.
+    const windowParams = range
+      ? { from: Math.floor(range.from.getTime() / 1000), to: Math.floor(range.to.getTime() / 1000) }
+      : {};
+    const results: ShopfaCustomerOrderRef[] = [];
+    try {
+      for (const statusCode of statusCodes) {
+        for (let page = 1; ; page += 1) {
+          const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
+            "/api/shop/orders",
+            {},
+            {
+              params: {
+                status: statusCode,
+                ...windowParams,
+                limit: PAGE_SIZE,
+                page,
+                fields: "id,session,status,status_title,name,family,mobile",
+              },
+            },
+          );
+          const baskets = data.baskets ?? [];
+          results.push(...baskets.map((raw) => mapApiOrderToCustomerOrderRef(raw, statusCode)));
+          if (baskets.length < PAGE_SIZE) break;
+        }
+      }
+    } catch (err) {
+      logger.error("Shopfa listOrdersByStatusesForCustomerLookup failed", { statusCodes, err });
+      throw ApiError.badGateway("Failed to reach Shopfa order service");
+    }
+    return results;
   }
 
   private async fetchOrdersByUser(userId: string): Promise<ShopfaApiOrder[]> {

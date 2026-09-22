@@ -9,17 +9,14 @@ import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
-import FormGroup from "@mui/material/FormGroup";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Checkbox from "@mui/material/Checkbox";
 import Typography from "@mui/material/Typography";
 import { useTranslation } from "react-i18next";
 import {
-  ASSIGNABLE_MENU_KEY_VALUES,
   DEFAULT_PERMISSIONS_BY_ROLE,
   STAFF_ROLE_VALUES,
   StaffRole,
 } from "@complaint-system/shared";
+import { PermissionsChecklist } from "./PermissionsChecklist";
 import { useCreateUserMutation } from "../api/usersApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 
@@ -133,15 +130,7 @@ export function CreateUserDialog({ open, onClose }: CreateUserDialogProps) {
             {isAdminRole ? (
               <Alert severity="info">{t("users:permissions.adminNotice")}</Alert>
             ) : (
-              <FormGroup>
-                {ASSIGNABLE_MENU_KEY_VALUES.map((key) => (
-                  <FormControlLabel
-                    key={key}
-                    control={<Checkbox checked={form.permissions.includes(key)} onChange={() => togglePermission(key)} />}
-                    label={t(`navigation:modules.${key}`)}
-                  />
-                ))}
-              </FormGroup>
+              <PermissionsChecklist selected={form.permissions} onToggle={togglePermission} />
             )}
           </Stack>
 

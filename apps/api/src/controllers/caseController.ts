@@ -16,6 +16,7 @@ import {
   type CasePriority,
   type CaseStatus,
 } from "@complaint-system/shared";
+import * as caseOrderSyncService from "../services/caseOrderSyncService";
 
 export const listCases = asyncHandler(async (req: Request, res: Response) => {
   const query = req.query as unknown as ListCasesQuery;
@@ -31,6 +32,7 @@ export const listCases = asyncHandler(async (req: Request, res: Response) => {
 export const createCase = asyncHandler(async (req: Request, res: Response) => {
   const input = req.body as CreateCaseInput;
   const { case: caseDoc } = await caseService.createCase(input, req.currentUser);
+  await Promise.all(caseDoc.relatedOrders.map((o) => caseOrderSyncService.markOrderFollowedUp(o.orderNumber)));
   return sendCreated(res, serializeCase(caseDoc));
 });
 
@@ -47,6 +49,9 @@ export const getTimeline = asyncHandler(async (req: Request, res: Response) => {
 export const addNoteEvent = asyncHandler(async (req: Request, res: Response) => {
   const { body, visibility } = req.body as { body: string; visibility: "internal" | "customer" };
   const { case: caseDoc } = await caseService.addNote(req.params.id as string, body, visibility, req.currentUser);
+  for (const order of caseDoc.relatedOrders) {
+    await caseOrderSyncService.appendNoteToOrderAdminNote(order.orderNumber, caseDoc.caseNumber, body);
+  }
   return sendCreated(res, serializeCase(caseDoc));
 });
 
@@ -81,6 +86,7 @@ export const assignCase = asyncHandler(async (req: Request, res: Response) => {
 export const linkOrder = asyncHandler(async (req: Request, res: Response) => {
   const order = req.body as { externalOrderId: string; orderNumber: string };
   const { case: caseDoc } = await caseService.linkOrder(req.params.id as string, order, req.currentUser);
+  await caseOrderSyncService.markOrderFollowedUp(order.orderNumber);
   return sendSuccess(res, serializeCase(caseDoc));
 });
 

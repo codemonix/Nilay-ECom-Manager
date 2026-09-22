@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { hasMenuAccess, type MenuKey } from "@complaint-system/shared";
+import { hasMenuAccess, hasReportAccess, hasReportsMenuAccess, type MenuKey, type ReportKey } from "@complaint-system/shared";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError } from "../utils/ApiError";
 import { UserModel } from "../models/User";
@@ -56,4 +56,20 @@ export function requirePermission(key: MenuKey) {
     if (!hasMenuAccess(req.currentUser, key)) throw ApiError.forbidden();
     next();
   };
+}
+
+/** Gates one specific report (see ReportKey) -- admins always pass, everyone else needs that exact report key (or the legacy all-reports grant, see hasReportAccess). */
+export function requireReportAccess(key: ReportKey) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.currentUser) throw ApiError.unauthorized();
+    if (!hasReportAccess(req.currentUser, key)) throw ApiError.forbidden();
+    next();
+  };
+}
+
+/** Passes for anyone who can open at least one report -- for endpoints shared across reports, such as the order details page linked from several of them. */
+export function requireAnyReportAccess(req: Request, _res: Response, next: NextFunction) {
+  if (!req.currentUser) throw ApiError.unauthorized();
+  if (!hasReportsMenuAccess(req.currentUser)) throw ApiError.forbidden();
+  next();
 }

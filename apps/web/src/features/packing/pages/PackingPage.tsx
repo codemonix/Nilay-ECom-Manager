@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { DataSource } from "@complaint-system/shared";
 import Stack from "@mui/material/Stack";
@@ -11,6 +11,13 @@ import CircularProgress from "@mui/material/CircularProgress";
 import LinearProgress from "@mui/material/LinearProgress";
 import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import TextField from "@mui/material/TextField";
+import InputAdornment from "@mui/material/InputAdornment";
+import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/material/Box";
 import Collapse from "@mui/material/Collapse";
 import ListItemButton from "@mui/material/ListItemButton";
@@ -24,34 +31,44 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import HistoryIcon from "@mui/icons-material/History";
 import { useTranslation } from "react-i18next";
-import { useLazyListPackingOrdersQuery, useSendPackedOrderMutation } from "../api/packingApi";
+import { useLazyListPackingOrdersQuery, useSendPackedOrdersMutation } from "../api/packingApi";
 import { DEFAULT_PACKING_RANGE_DAYS, PACKING_RANGE_DAYS_VALUES, type PackingOrderDTO, type PackingRangeDays } from "../types";
 import { PackingItemTile } from "../components/PackingItemTile";
 import { ConfirmSendDialog } from "../components/ConfirmSendDialog";
+import { FinishCustomerDialog } from "../components/FinishCustomerDialog";
+import CloseIcon from "@mui/icons-material/Close";
 import { CameraCaptureDialog } from "../../../components/CameraCaptureDialog";
 import { FixedActionBar } from "../../../components/FixedActionBar";
 import { useGetSettingsQuery } from "../../settings/api/settingsApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
+import { UpstreamErrorAlert } from "../../../components/UpstreamErrorAlert";
 import { formatDateTime } from "../../../utils/localeFormat";
+import { matchesOrderSearch, normalizeSearchQuery } from "../../../utils/orderSearch";
 import { useActiveLanguage } from "../../../i18n/useActiveLanguage";
+
+interface GroupPhoto {
+  id: string;
+  file: File;
+  url: string;
+}
 
 const hasCameraApi = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
 
 /**
- * Packing: a mobile/tablet-first, one-order-at-a-time screen for warehouse
- * staff physically boxing orders that are "ارسال شده به سرویس پستی". Every
- * item is a large picture-only tile (see PackingItemTile) tapped to toggle
- * between unpacked (orange frame) and packed (green frame) for this
- * session -- unlike Order Precheck, nothing is persisted to the admin note,
- * so leaving and coming back to an order resets its tiles. Once every item
- * is packed, Send moves the order to "ارسال شده" and advances to the next
- * one. A confirmation photo can be taken any time before sending (the
- * camera button below the order header); if Send is tapped without one,
- * ConfirmSendDialog offers to take it right there or send anyway. Every
- * send is also recorded locally (packingService.markOrderPacked) so its
- * history and photo can be browsed later, since Shopfa itself keeps none
- * -- see PackingHistoryPage. Live-API only, same as Order Precheck and
- * Reporting's shortage report.
+ * Packing: a mobile/tablet-first screen for warehouse staff physically
+ * boxing orders that are "ارسال شده به سرویس پستی". Orders of one customer
+ * are grouped and packed as one unit: every item is a large picture-only
+ * tile (see PackingItemTile) tapped to toggle unpacked (orange) / packed
+ * (green), and marks are kept across a customer's orders (nothing is
+ * persisted to Shopfa until Send). The customer's final picture(s) -- one or
+ * several, shared by all their orders -- are taken from the strip at the
+ * bottom. Send is enabled once every item of every order of the customer is
+ * green and saves the whole group ("ارسال شده" + a local history record per
+ * order, see packingService.markOrdersPacked); without a picture it first
+ * asks whether to take one or "save and continue". Moving to another
+ * customer while the current one is fully green but unsaved is blocked
+ * (FinishCustomerDialog). Live-API only, like Order Precheck and Reporting's
+ * shortage report.
  */
 export function PackingPage() {
   const { t } = useTranslation("packing");
@@ -62,39 +79,55 @@ export function PackingPage() {
   const [days, setDays] = useState<PackingRangeDays>(DEFAULT_PACKING_RANGE_DAYS);
   const [filterOpen, setFilterOpen] = useState(false);
   const [orders, setOrders] = useState<PackingOrderDTO[] | null>(null);
-  const [rangeShown, setRangeShown] = useState<{ fromISO: string; toISO: string } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [pendingLookupFailed, setPendingLookupFailed] = useState(false);
+  const [rangeShown, setRangeShown] = useState<{ fromISO: string | null; toISO: string | null; total: number | null } | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [packedCodes, setPackedCodes] = useState<Set<string>>(new Set());
+  /** `${orderNumber}:${productCode}` of every item marked green -- kept across navigation so a customer's progress isn't lost when moving between their orders. */
+  const [packedKeys, setPackedKeys] = useState<Set<string>>(new Set());
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendSuccessMessage, setSendSuccessMessage] = useState<string | null>(null);
 
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  /** Confirmation photos per customer group (a customer's orders share their photos); several per group. */
+  const [photosByGroup, setPhotosByGroup] = useState<Record<string, GroupPhoto[]>>({});
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
   const [confirmSendDialogOpen, setConfirmSendDialogOpen] = useState(false);
+  const [finishCustomerDialogOpen, setFinishCustomerDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /** The time frame last sent to the API, so Retry re-runs that request rather than an unapplied dropdown change. */
+  const appliedDaysRef = useRef<PackingRangeDays>(DEFAULT_PACKING_RANGE_DAYS);
 
   const [fetchOrders, { isFetching, error }] = useLazyListPackingOrdersQuery();
-  const [sendPackedOrder, { isLoading: isSending }] = useSendPackedOrderMutation();
+  const [sendPackedOrders, { isLoading: isSending }] = useSendPackedOrdersMutation();
 
-  const clearPhoto = () => {
-    setPhotoFile(null);
-    setPhotoPreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return null;
+  const revokePhotos = (photos: GroupPhoto[]) => photos.forEach((photo) => URL.revokeObjectURL(photo.url));
+
+  const clearGroupPhotos = (groupKey: string) => {
+    setPhotosByGroup((prev) => {
+      revokePhotos(prev[groupKey] ?? []);
+      const rest = { ...prev };
+      delete rest[groupKey];
+      return rest;
     });
   };
 
   const loadOrders = async (selectedDays: PackingRangeDays) => {
     if (!isLiveApi) return;
+    appliedDaysRef.current = selectedDays;
     setSendError(null);
     setSendSuccessMessage(null);
     const result = await fetchOrders({ days: selectedDays }).unwrap().catch(() => null);
     setOrders(result?.orders ?? null);
-    setRangeShown(result ? { fromISO: result.rangeFromISO, toISO: result.rangeToISO } : null);
+    setPendingLookupFailed(result?.pendingLookupFailed ?? false);
+    setRangeShown(
+      result ? { fromISO: result.rangeFromISO, toISO: result.rangeToISO, total: result.statusTotal } : null,
+    );
     setCurrentIndex(0);
-    setPackedCodes(new Set());
-    clearPhoto();
+    setPackedKeys(new Set());
+    setPhotosByGroup((prev) => {
+      Object.values(prev).forEach(revokePhotos);
+      return {};
+    });
   };
 
   useEffect(() => {
@@ -106,23 +139,82 @@ export function PackingPage() {
     setDays(Number(e.target.value) as PackingRangeDays);
   };
 
-  const currentOrder = orders?.[currentIndex] ?? null;
-  const totalQuantity = currentOrder ? currentOrder.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
-  const allPacked = currentOrder ? currentOrder.items.every((item) => packedCodes.has(item.productCode)) : false;
+  const normalizedQuery = normalizeSearchQuery(searchQuery);
+  const visibleOrders = useMemo(
+    () => (orders ?? []).filter((order) => matchesOrderSearch(order, normalizedQuery)),
+    [orders, normalizedQuery],
+  );
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [normalizedQuery]);
 
-  const toggleItemPacked = (productCode: string) => {
-    setPackedCodes((prev) => {
+  const currentOrder = visibleOrders[currentIndex] ?? null;
+
+  // Orders of one customer are contiguous in the queue, so a customer's first order is wherever the group key changes.
+  const customerStartIndexes = useMemo(
+    () =>
+      visibleOrders.flatMap((order, index) =>
+        index === 0 || order.customerGroupKey !== visibleOrders[index - 1]?.customerGroupKey ? [index] : [],
+      ),
+    [visibleOrders],
+  );
+  const customerPosition = customerStartIndexes.filter((start) => start <= currentIndex).length - 1;
+  const customerGroup = currentOrder
+    ? (orders ?? []).filter((order) => order.customerGroupKey === currentOrder.customerGroupKey)
+    : [];
+  const shippingCounts = customerGroup.reduce<Record<string, number>>((acc, order) => {
+    const method = order.shippingMethod ?? t("shippingUnknown");
+    acc[method] = (acc[method] ?? 0) + 1;
+    return acc;
+  }, {});
+  const pendingOrders = currentOrder?.pendingOrders ?? [];
+  const pendingDetails = Object.entries(
+    pendingOrders.reduce<Record<string, number>>((acc, order) => {
+      acc[order.statusTitle] = (acc[order.statusTitle] ?? 0) + 1;
+      return acc;
+    }, {}),
+  )
+    .map(([status, count]) => `${status} × ${count}`)
+    .join("، ");
+  const itemKey = (orderNumber: string, productCode: string) => `${orderNumber}:${productCode}`;
+  const groupTotalQuantity = customerGroup.reduce(
+    (sum, order) => sum + order.items.reduce((orderSum, item) => orderSum + item.quantity, 0),
+    0,
+  );
+  /** Every item of every order of the current customer is green. */
+  const groupComplete =
+    customerGroup.length > 0 &&
+    customerGroup.every((order) => order.items.every((item) => packedKeys.has(itemKey(order.orderNumber, item.productCode))));
+  const currentGroupKey = currentOrder?.customerGroupKey ?? null;
+  const groupPhotos = currentGroupKey ? (photosByGroup[currentGroupKey] ?? []) : [];
+
+  const toggleItemPacked = (orderNumber: string, productCode: string) => {
+    setPackedKeys((prev) => {
       const next = new Set(prev);
-      if (next.has(productCode)) next.delete(productCode);
-      else next.add(productCode);
+      const key = itemKey(orderNumber, productCode);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
 
-  const goToIndex = (index: number) => {
+  /**
+   * Every move between orders goes through here: leaving a customer whose
+   * orders are all fully green (but not yet saved) is blocked, so a finished
+   * box is never left behind without its final picture and save.
+   */
+  const navigateTo = (index: number) => {
+    const target = visibleOrders[index];
+    if (currentOrder && target && target.customerGroupKey !== currentOrder.customerGroupKey && groupComplete) {
+      setFinishCustomerDialogOpen(true);
+      return;
+    }
     setCurrentIndex(index);
-    setPackedCodes(new Set());
-    clearPhoto();
+  };
+
+  const goToCustomer = (offset: -1 | 1) => {
+    const target = customerStartIndexes[customerPosition + offset];
+    if (target !== undefined) navigateTo(target);
   };
 
   const openCameraCapture = () => {
@@ -134,10 +226,17 @@ export function PackingPage() {
   };
 
   const applyPhoto = (file: File) => {
-    setPhotoFile(file);
-    setPhotoPreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return URL.createObjectURL(file);
+    if (!currentGroupKey) return;
+    const photo: GroupPhoto = { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, file, url: URL.createObjectURL(file) };
+    setPhotosByGroup((prev) => ({ ...prev, [currentGroupKey]: [...(prev[currentGroupKey] ?? []), photo] }));
+  };
+
+  const removePhoto = (photoId: string) => {
+    if (!currentGroupKey) return;
+    setPhotosByGroup((prev) => {
+      const list = prev[currentGroupKey] ?? [];
+      revokePhotos(list.filter((photo) => photo.id === photoId));
+      return { ...prev, [currentGroupKey]: list.filter((photo) => photo.id !== photoId) };
     });
   };
 
@@ -158,36 +257,39 @@ export function PackingPage() {
   };
 
   const performSend = async () => {
-    if (!currentOrder) return;
-    const orderNumber = currentOrder.orderNumber;
+    if (!currentOrder || customerGroup.length === 0) return;
+    const groupKey = currentOrder.customerGroupKey;
+    const groupStart = customerStartIndexes[customerPosition] ?? 0;
     setSendError(null);
     setSendSuccessMessage(null);
     try {
-      await sendPackedOrder({
-        orderNumber,
-        externalOrderId: currentOrder.externalOrderId,
-        buyerName: currentOrder.buyerName,
-        items: currentOrder.items.map((item) => ({
-          productCode: item.productCode,
-          title: item.title,
-          quantity: item.quantity,
+      const result = await sendPackedOrders({
+        orders: customerGroup.map((order) => ({
+          orderNumber: order.orderNumber,
+          externalOrderId: order.externalOrderId,
+          buyerName: order.buyerName,
+          items: order.items.map((item) => ({ productCode: item.productCode, title: item.title, quantity: item.quantity })),
         })),
-        photo: photoFile ?? undefined,
+        photos: groupPhotos.map((photo) => photo.file),
       }).unwrap();
-      setSendSuccessMessage(t("sendSuccess"));
+
+      const sentNumbers = new Set(result.sent.map((order) => order.orderNumber));
+      const sentVisibleCount = visibleOrders.filter((order) => sentNumbers.has(order.orderNumber)).length;
+      setOrders((prev) => (prev ? prev.filter((order) => !sentNumbers.has(order.orderNumber)) : prev));
+      setPackedKeys((prev) => new Set([...prev].filter((key) => !sentNumbers.has(key.slice(0, key.indexOf(":"))))));
       setConfirmSendDialogOpen(false);
-      setOrders((prev) => (prev ? prev.filter((order) => order.orderNumber !== orderNumber) : prev));
-      setPackedCodes(new Set());
-      clearPhoto();
-      setCurrentIndex((idx) => Math.max(0, Math.min(idx, (orders?.length ?? 1) - 2)));
+      if (result.sent.length > 0) setSendSuccessMessage(t("sendGroupSuccess", { count: result.sent.length }));
+      if (result.failed.length === 0) clearGroupPhotos(groupKey);
+      else setSendError(t("sendGroupError", { orders: result.failed.map((order) => order.orderNumber).join("، ") }));
+      setCurrentIndex(Math.max(0, Math.min(groupStart, visibleOrders.length - sentVisibleCount - 1)));
     } catch (err) {
       setSendError(getApiErrorMessage(err) ?? t("sendError"));
     }
   };
 
   const handleSendClick = () => {
-    if (!currentOrder || !allPacked) return;
-    if (photoFile) {
+    if (!groupComplete) return;
+    if (groupPhotos.length > 0) {
       void performSend();
     } else {
       setConfirmSendDialogOpen(true);
@@ -218,10 +320,17 @@ export function PackingPage() {
               primary={`${t("timeFrame")}: ${t(`range.${days}`)}`}
               secondary={
                 rangeShown && !isFetching
-                  ? t("rangeShown", {
-                      from: formatDateTime(rangeShown.fromISO, language),
-                      to: formatDateTime(rangeShown.toISO, language),
-                    })
+                  ? [
+                      rangeShown.fromISO && rangeShown.toISO
+                        ? t("rangeShown", {
+                            from: formatDateTime(rangeShown.fromISO, language),
+                            to: formatDateTime(rangeShown.toISO, language),
+                          })
+                        : t("rangeAll"),
+                      rangeShown.total !== null ? t("ordersCount", { shown: orders?.length ?? 0, total: rangeShown.total }) : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")
                   : undefined
               }
               slotProps={{ primary: { variant: "body2", fontWeight: 600 }, secondary: { variant: "caption" } }}
@@ -264,22 +373,114 @@ export function PackingPage() {
               </Button>
             </Stack>
           </Collapse>
+          {orders && orders.length > 0 && (
+            <>
+              <TextField
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t("search")}
+                fullWidth
+                sx={{ mt: 1 }}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+              {normalizedQuery && (
+                <Typography variant="caption" color="text.secondary">
+                  {t("searchResults", { count: visibleOrders.length })}
+                </Typography>
+              )}
+            </>
+          )}
           {currentOrder && (
             <>
               <Divider sx={{ my: 1 }} />
               <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
                 <Stack spacing={0} sx={{ minWidth: 0 }}>
-                  <Typography variant="subtitle1" noWrap>
-                    {currentOrder.buyerName || t("guestBuyer")}
-                  </Typography>
+                  <Stack direction="row" alignItems="center" spacing={0.5} sx={{ minWidth: 0 }}>
+                    <Tooltip title={t("previousCustomer")}>
+                      <span>
+                        <IconButton
+                          size="small"
+                          aria-label={t("previousCustomer")}
+                          disabled={customerPosition <= 0}
+                          onClick={() => goToCustomer(-1)}
+                        >
+                          <ArrowUpwardIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                    <Tooltip title={t("nextCustomer")}>
+                      <span>
+                        <IconButton
+                          size="small"
+                          aria-label={t("nextCustomer")}
+                          disabled={customerPosition >= customerStartIndexes.length - 1}
+                          onClick={() => goToCustomer(1)}
+                        >
+                          <ArrowDownwardIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                    <Typography variant="subtitle1" noWrap>
+                      {currentOrder.buyerName || t("guestBuyer")}
+                    </Typography>
+                  </Stack>
                   <Typography variant="caption" color="text.secondary" noWrap>
                     {t("orderNumberLabel")}: {currentOrder.orderNumber}
                     {currentOrder.orderDateISO ? ` · ${formatDateTime(currentOrder.orderDateISO, language)}` : ""}
+                    {currentOrder.buyerMobile ? ` · ${currentOrder.buyerMobile}` : ""}
                   </Typography>
                 </Stack>
-                <Chip size="small" label={t("progress", { current: currentIndex + 1, total: orders?.length ?? 0 })} />
+                <Stack alignItems="flex-end" spacing={0.5}>
+                  <Chip size="small" label={t("progress", { current: currentIndex + 1, total: visibleOrders.length })} />
+                  {customerGroup.length > 1 && (
+                    <Chip
+                      size="small"
+                      color="info"
+                      label={t("customerOrders", {
+                        index: customerGroup.indexOf(currentOrder) + 1,
+                        total: customerGroup.length,
+                      })}
+                    />
+                  )}
+                </Stack>
               </Stack>
               
+              <Stack spacing={0.75} sx={{ mt: 1 }}>
+                <Stack direction="row" gap={0.75} flexWrap="wrap" alignItems="center">
+                  <Typography variant="caption" color="text.secondary">
+                    {customerGroup.length > 1 ? t("shippingGroupLabel") : t("shippingLabel")}:
+                  </Typography>
+                  {Object.entries(shippingCounts).map(([method, count]) => (
+                    <Chip
+                      key={method}
+                      size="small"
+                      variant="outlined"
+                      label={customerGroup.length > 1 ? `${method} × ${count}` : method}
+                    />
+                  ))}
+                </Stack>
+                {pendingOrders.length > 0 && (
+                  <Alert severity="warning" sx={{ py: 0 }}>
+                    {t("pendingOrdersWarning", { count: pendingOrders.length, details: pendingDetails })}
+                    <Typography variant="caption" component="div" color="text.secondary">
+                      {pendingOrders.map((order) => order.orderNumber).join("، ")}
+                    </Typography>
+                  </Alert>
+                )}
+                {pendingLookupFailed && (
+                  <Typography variant="caption" color="warning.main">
+                    {t("pendingLookupFailed")}
+                  </Typography>
+                )}
+              </Stack>
             </>
           )}
         </CardContent>
@@ -294,11 +495,21 @@ export function PackingPage() {
         </Box>
       )}
 
-      {error && <Alert severity="error">{getApiErrorMessage(error) ?? t("loadError")}</Alert>}
+      {error && (
+        <UpstreamErrorAlert
+          error={error}
+          fallbackMessage={t("loadError")}
+          isRetrying={isFetching}
+          onRetry={() => void loadOrders(appliedDaysRef.current)}
+        />
+      )}
       {sendSuccessMessage && !sendError && <Alert severity="success">{sendSuccessMessage}</Alert>}
       {sendError && <Alert severity="error">{sendError}</Alert>}
 
       {orders && orders.length === 0 && !isFetching && <Alert severity="info">{t("noOrders")}</Alert>}
+      {orders && orders.length > 0 && visibleOrders.length === 0 && (
+        <Alert severity="info">{t("noSearchMatches")}</Alert>
+      )}
 
       {currentOrder && (
         <>
@@ -313,83 +524,96 @@ export function PackingPage() {
               <PackingItemTile
                 key={item.productCode}
                 item={item}
-                packed={packedCodes.has(item.productCode)}
-                onToggle={() => toggleItemPacked(item.productCode)}
+                packed={packedKeys.has(itemKey(currentOrder.orderNumber, item.productCode))}
+                onToggle={() => toggleItemPacked(currentOrder.orderNumber, item.productCode)}
               />
             ))}
           </Box>
 
           <Card variant="outlined" sx={{ borderRadius: "14px" }}>
             <CardContent sx={{ py: 1, "&:last-child": { pb: 1 } }}>
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box
-                  onClick={openCameraCapture}
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: "10px",
-                    overflow: "hidden",
-                    bgcolor: "action.hover",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    cursor: "pointer",
-                  }}
-                >
-                  {photoPreviewUrl ? (
-                    <Box
-                      component="img"
-                      src={photoPreviewUrl}
-                      alt={t("photoAlt")}
-                      sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  ) : (
-                    <PhotoCameraIcon color="action" />
-                  )}
-                </Box>
-                <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
-                  {t("photoSectionTitle")}
-                </Typography>
-                <Button variant="outlined" size="small" startIcon={<PhotoCameraIcon />} onClick={openCameraCapture}>
-                  {photoFile ? t("retakePhoto") : t("takePhoto")}
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  hidden
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleFilePickerChange}
-                />
+              <Stack spacing={1}>
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
+                    {t("photoSectionTitle")}
+                  </Typography>
+                  <Button variant="outlined" size="small" startIcon={<PhotoCameraIcon />} onClick={openCameraCapture}>
+                    {groupPhotos.length > 0 ? t("addPhoto") : t("takePhoto")}
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFilePickerChange}
+                  />
+                </Stack>
+                {customerGroup.length > 1 && (
+                  <Typography variant="caption" color="text.secondary">
+                    {t("photosHint")}
+                  </Typography>
+                )}
+                {groupPhotos.length > 0 && (
+                  <Stack direction="row" gap={1} flexWrap="wrap">
+                    {groupPhotos.map((photo) => (
+                      <Box key={photo.id} sx={{ position: "relative", width: 64, height: 64 }}>
+                        <Box
+                          component="img"
+                          src={photo.url}
+                          alt={t("photoAlt")}
+                          sx={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px", bgcolor: "action.hover" }}
+                        />
+                        <IconButton
+                          size="small"
+                          aria-label={t("removePhoto")}
+                          onClick={() => removePhoto(photo.id)}
+                          sx={{
+                            position: "absolute",
+                            top: -8,
+                            insetInlineEnd: -8,
+                            p: 0.25,
+                            bgcolor: "background.paper",
+                            boxShadow: 1,
+                            "&:hover": { bgcolor: "background.paper" },
+                          }}
+                        >
+                          <CloseIcon sx={{ fontSize: 14 }} />
+                        </IconButton>
+                      </Box>
+                    ))}
+                  </Stack>
+                )}
               </Stack>
             </CardContent>
           </Card>
 
-          {!allPacked && (
+          {!groupComplete && (
             <Typography variant="caption" color="text.secondary">
-              {t("sendHint")}
+              {customerGroup.length > 1 ? t("sendGroupHint") : t("sendHint")}
             </Typography>
           )}
           <FixedActionBar>
-            <Button fullWidth variant="outlined" disabled={currentIndex === 0} onClick={() => goToIndex(currentIndex - 1)}>
+            <Button fullWidth variant="outlined" disabled={currentIndex === 0} onClick={() => navigateTo(currentIndex - 1)}>
               {t("previous")}
             </Button>
             <Button
               fullWidth
               variant="contained"
               color="success"
-              disabled={!allPacked || isSending}
+              disabled={!groupComplete || isSending}
               onClick={handleSendClick}
               startIcon={isSending ? <CircularProgress size={14} /> : undefined}
             >
-              {t("sendWithTotal", { total: totalQuantity })}
+              {customerGroup.length > 1
+                ? t("sendGroupWithTotal", { orders: customerGroup.length, total: groupTotalQuantity })
+                : t("sendWithTotal", { total: groupTotalQuantity })}
             </Button>
             <Button
               fullWidth
               variant="outlined"
-              disabled={!orders || currentIndex >= orders.length - 1}
-              onClick={() => goToIndex(currentIndex + 1)}
+              disabled={currentIndex >= visibleOrders.length - 1}
+              onClick={() => navigateTo(currentIndex + 1)}
             >
               {t("next")}
             </Button>
@@ -405,9 +629,18 @@ export function PackingPage() {
         fileNamePrefix="packing-photo"
       />
 
+      <FinishCustomerDialog
+        open={finishCustomerDialogOpen}
+        onClose={() => setFinishCustomerDialogOpen(false)}
+        onTakePicture={() => {
+          setFinishCustomerDialogOpen(false);
+          openCameraCapture();
+        }}
+      />
+
       <ConfirmSendDialog
         open={confirmSendDialogOpen}
-        photoPreviewUrl={photoPreviewUrl}
+        photoPreviewUrls={groupPhotos.map((photo) => photo.url)}
         isSending={isSending}
         onCancel={() => setConfirmSendDialogOpen(false)}
         onTakePicture={openCameraCapture}

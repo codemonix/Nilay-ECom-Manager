@@ -60,5 +60,19 @@
     "capture": "Capture",
     "useFilePicker": "Choose a photo instead",
     "error": "Couldn't access the camera. Check your browser's camera permission, or choose a photo instead."
+  },
+  "upstreamError": {
+    "retry": "Retry now",
+    "retrying": "Retrying…",
+    "autoRetryIn": "Retrying automatically in {{count}} s.",
+    "autoRetryStopped": "Automatic retries stopped — press Retry when you're ready.",
+    "upstream": {
+      "title": "Can't reach the store right now",
+      "body": "The store (Shopfa) isn't responding. This is usually temporary and your data is safe."
+    },
+    "network": {
+      "title": "Can't reach the server",
+      "body": "Check your internet connection. This is usually temporary."
+    }
   }
 }

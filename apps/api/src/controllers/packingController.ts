@@ -5,8 +5,7 @@ import * as packingService from "../services/packingService";
 import type {
   ListPackingHistoryQuery,
   ListPackingQuery,
-  OrderNumberParam,
-  SendPackedOrderInput,
+  SendPackedOrdersInput,
 } from "../validators/packingValidators";
 
 export const listOrders = asyncHandler(async (req: Request, res: Response) => {
@@ -15,15 +14,10 @@ export const listOrders = asyncHandler(async (req: Request, res: Response) => {
   return sendSuccess(res, result);
 });
 
-export const sendOrder = asyncHandler(async (req: Request, res: Response) => {
-  const { orderNumber } = req.params as unknown as OrderNumberParam;
-  const { externalOrderId, buyerName, items } = req.body as SendPackedOrderInput;
-  const result = await packingService.markOrderPacked(
-    orderNumber,
-    { externalOrderId, buyerName, items },
-    req.file,
-    req.currentUser,
-  );
+export const sendOrders = asyncHandler(async (req: Request, res: Response) => {
+  const { orders } = req.body as SendPackedOrdersInput;
+  const photos = (req.files as Express.Multer.File[] | undefined) ?? [];
+  const result = await packingService.markOrdersPacked(orders, photos, req.currentUser);
   return sendSuccess(res, result);
 });
 

@@ -36,12 +36,21 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { UserMenu } from "../features/auth/components/UserMenu";
 import { useAppSelector } from "../app/hooks";
 import { BOTTOM_NAV_HEIGHT, DRAWER_WIDTH } from "./layoutMetrics";
-import { hasAdministrationAccess, hasMenuAccess, MenuKey } from "@complaint-system/shared";
-import { ADMIN_NAV_ITEMS, ADMINISTRATION_GROUP_ITEM, PRIMARY_NAV_ITEMS, type NavItem } from "../config/navItems";
+import { hasAdministrationAccess, hasMenuAccess, hasReportAccess, MenuKey } from "@complaint-system/shared";
+import {
+  ADMIN_NAV_ITEMS,
+  ADMINISTRATION_GROUP_ITEM,
+  ORDERS_GROUP_ITEM,
+  PRIMARY_NAV_ITEMS,
+  REPORTS_GROUP_ITEM,
+  type NavItem,
+} from "../config/navItems";
 
 const ADMIN_MENU_EXPANDED_STORAGE_KEY = "complaint-system.adminMenuExpanded";
 const PURCHASING_MENU_EXPANDED_STORAGE_KEY = "complaint-system.purchasingMenuExpanded";
 const DEV_TOOLS_MENU_EXPANDED_STORAGE_KEY = "complaint-system.devToolsMenuExpanded";
+const REPORTS_MENU_EXPANDED_STORAGE_KEY = "complaint-system.reportsMenuExpanded";
+const ORDERS_MENU_EXPANDED_STORAGE_KEY = "complaint-system.ordersMenuExpanded";
 
 // Internal test/debug pages live in their own retractable "Development
 // Tools" group, gated by the single MenuKey.DEV_TOOLS permission -- same
@@ -105,9 +114,29 @@ export function MainLayout({ children }: { children: ReactNode }) {
       return false;
     }
   });
+  const [ordersExpanded, setOrdersExpanded] = useState(() => {
+    try {
+      return localStorage.getItem(ORDERS_MENU_EXPANDED_STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
+  const [reportsExpanded, setReportsExpanded] = useState(() => {
+    try {
+      return localStorage.getItem(REPORTS_MENU_EXPANDED_STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
   const user = useAppSelector((state) => state.auth.user);
   const primaryItems = user ? PRIMARY_NAV_ITEMS.filter((item) => hasMenuAccess(user, item.key)) : [];
   const adminItems = user ? ADMIN_NAV_ITEMS.filter((item) => hasMenuAccess(user, item.key)) : [];
+  const ordersItems = user
+    ? (ORDERS_GROUP_ITEM.children ?? []).filter((item) => hasMenuAccess(user, item.key))
+    : [];
+  const reportItems = user
+    ? (REPORTS_GROUP_ITEM.children ?? []).filter((item) => item.reportKey && hasReportAccess(user, item.reportKey))
+    : [];
   const devToolsVisible = user ? hasMenuAccess(user, MenuKey.DEV_TOOLS) : false;
   const administrationGroupVisible = user ? hasAdministrationAccess(user) : false;
   // The bottom-nav/quick-access item for Administration lists only the
@@ -116,6 +145,10 @@ export function MainLayout({ children }: { children: ReactNode }) {
   // Administration group already applies below.
   const visibleNavItems = [
     ...primaryItems,
+    // The Orders group, plus its pages individually so a quick-access pin saved before they moved under it still resolves.
+    ...(ordersItems.length > 0 ? [{ ...ORDERS_GROUP_ITEM, children: ordersItems }] : []),
+    ...ordersItems,
+    ...(reportItems.length > 0 ? [{ ...REPORTS_GROUP_ITEM, children: reportItems }] : []),
     ...adminItems,
     ...(administrationGroupVisible ? [{ ...ADMINISTRATION_GROUP_ITEM, children: adminItems }] : []),
   ];
@@ -136,6 +169,8 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const isPurchasingSectionActive = (purchasingItem?.children ?? []).some(
     (item) => item.path && location.pathname.startsWith(item.path),
   );
+  const isOrdersSectionActive = ordersItems.some((item) => item.path && location.pathname.startsWith(item.path));
+  const isReportsSectionActive = reportItems.some((item) => item.path && location.pathname.startsWith(item.path));
   const isDevToolsSectionActive = DEV_TOOLS_CHILD_ITEMS.some(
     (item) => item.path && location.pathname.startsWith(item.path),
   );
@@ -151,6 +186,12 @@ export function MainLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isPurchasingSectionActive) setPurchasingExpanded(true);
   }, [isPurchasingSectionActive]);
+  useEffect(() => {
+    if (isOrdersSectionActive) setOrdersExpanded(true);
+  }, [isOrdersSectionActive]);
+  useEffect(() => {
+    if (isReportsSectionActive) setReportsExpanded(true);
+  }, [isReportsSectionActive]);
   useEffect(() => {
     if (isDevToolsSectionActive) setDevToolsExpanded(true);
   }, [isDevToolsSectionActive]);
@@ -172,6 +213,30 @@ export function MainLayout({ children }: { children: ReactNode }) {
       const next = !prev;
       try {
         localStorage.setItem(PURCHASING_MENU_EXPANDED_STORAGE_KEY, String(next));
+      } catch {
+        // Per-viewer convenience only; safe to ignore (private browsing, blocked storage, etc.).
+      }
+      return next;
+    });
+  };
+
+  const toggleOrdersExpanded = () => {
+    setOrdersExpanded((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(ORDERS_MENU_EXPANDED_STORAGE_KEY, String(next));
+      } catch {
+        // Per-viewer convenience only; safe to ignore (private browsing, blocked storage, etc.).
+      }
+      return next;
+    });
+  };
+
+  const toggleReportsExpanded = () => {
+    setReportsExpanded((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(REPORTS_MENU_EXPANDED_STORAGE_KEY, String(next));
       } catch {
         // Per-viewer convenience only; safe to ignore (private browsing, blocked storage, etc.).
       }
@@ -224,6 +289,21 @@ export function MainLayout({ children }: { children: ReactNode }) {
     <List sx={{ px: 1 }}>
       {primaryItems.filter((item) => !item.children).map((item) => renderNavItem(item))}
 
+      {ordersItems.length > 0 && (
+        <>
+          <ListItemButton onClick={toggleOrdersExpanded} sx={{ borderRadius: "10px", mb: 0.5, minHeight: 48 }}>
+            <ListItemIcon sx={{ minWidth: 36 }}>{ORDERS_GROUP_ITEM.icon}</ListItemIcon>
+            <ListItemText primary={t(`navigation:modules.${MenuKey.ORDERS}`)} />
+            {ordersExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          </ListItemButton>
+          <Collapse in={ordersExpanded} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding sx={{ px: 0 }}>
+              {ordersItems.map((item) => renderNavItem(item, true))}
+            </List>
+          </Collapse>
+        </>
+      )}
+
       {purchasingItem && (
         <>
           <ListItemButton onClick={togglePurchasingExpanded} sx={{ borderRadius: "10px", mb: 0.5, minHeight: 48 }}>
@@ -234,6 +314,21 @@ export function MainLayout({ children }: { children: ReactNode }) {
           <Collapse in={purchasingExpanded} timeout="auto" unmountOnExit>
             <List component="div" disablePadding sx={{ px: 0 }}>
               {(purchasingItem.children ?? []).map((item) => renderNavItem(item, true))}
+            </List>
+          </Collapse>
+        </>
+      )}
+
+      {reportItems.length > 0 && (
+        <>
+          <ListItemButton onClick={toggleReportsExpanded} sx={{ borderRadius: "10px", mb: 0.5, minHeight: 48 }}>
+            <ListItemIcon sx={{ minWidth: 36 }}>{REPORTS_GROUP_ITEM.icon}</ListItemIcon>
+            <ListItemText primary={t(`navigation:modules.${MenuKey.REPORTING}`)} />
+            {reportsExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          </ListItemButton>
+          <Collapse in={reportsExpanded} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding sx={{ px: 0 }}>
+              {reportItems.map((item) => renderNavItem(item, true))}
             </List>
           </Collapse>
         </>

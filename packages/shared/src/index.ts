@@ -30,11 +30,18 @@ export { DataSource, DATA_SOURCE_VALUES } from "./constants/settingsEnums";
 export {
   MenuKey,
   MENU_KEY_VALUES,
+  ReportKey,
+  REPORT_KEY_VALUES,
+  PERMISSION_KEY_VALUES,
   ASSIGNABLE_MENU_KEY_VALUES,
   DEFAULT_PERMISSIONS_BY_ROLE,
   hasMenuAccess,
   hasAdministrationAccess,
+  hasOrdersMenuAccess,
+  hasReportAccess,
+  hasReportsMenuAccess,
 } from "./constants/accessEnums";
+export type { PermissionKey } from "./constants/accessEnums";
 
 export {
   PackageStatus,
@@ -124,12 +131,29 @@ export type {
   UnresolvedShortageNoteDTO,
   ShortageReportResultDTO,
   ShortageReportRangeDays,
+  ReportingOrderItemDTO,
+  ReportingOrderDetailsDTO,
+  CustomerReportOrderDTO,
+  CustomerReportCustomerDTO,
+  CustomerReportResultDTO,
+  ItemSalesRowDTO,
+  ItemSalesResultDTO,
+  ItemSalesCategoryDTO,
+  ItemSalesProductSearchResultDTO,
+  CategoryTrendBucketDTO,
+  CategoryTrendSeriesDTO,
+  CategoryTrendResultDTO,
+  CategoryTrendMonths,
 } from "./types/reporting";
 export {
   SHOPFA_ORDER_STATUS_OPTIONS,
   DEFAULT_SHORTAGE_REPORT_STATUS_CODES,
   SHORTAGE_REPORT_RANGE_DAYS_VALUES,
   DEFAULT_SHORTAGE_REPORT_RANGE_DAYS,
+  SOLD_ORDER_STATUS_TITLES,
+  CATEGORY_TREND_WINDOWS,
+  CATEGORY_TREND_COLOR_SLOTS,
+  DEFAULT_CATEGORY_TREND_MONTHS,
 } from "./types/reporting";
 export { SOLD_QUANTITY_RANGE_DAYS_VALUES } from "./types/devTools";
 
@@ -140,26 +164,40 @@ export type {
   SaveOrderPrecheckItemInput,
   SaveOrderPrecheckRequestDTO,
   SaveOrderPrecheckResultDTO,
+  OrderPrecheckRelatedOrderDTO,
 } from "./types/orderPrecheck";
 export {
   ORDER_PRECHECK_DEFAULT_STATUS_CODES,
   ORDER_PRECHECK_ALL_AVAILABLE_STATUS_CODE,
   ORDER_PRECHECK_SOME_UNAVAILABLE_STATUS_CODE,
+  ORDER_PRECHECK_ACCOUNTING_CONFIRMED_STATUS_CODE,
+  ORDER_PRECHECK_CUSTOMER_PENDING_STATUS_CODES,
 } from "./types/orderPrecheck";
+
+export type {
+  StatusOrderDTO,
+  StatusOrderCountDTO,
+  OrdersByStatusResultDTO,
+  OrdersByStatusRangeDays,
+} from "./types/ordersByStatus";
+export { ORDERS_BY_STATUS_RANGE_DAYS_VALUES, DEFAULT_ORDERS_BY_STATUS_RANGE_DAYS } from "./types/ordersByStatus";
 
 export type {
   PackingItemDTO,
   PackingOrderDTO,
   PackingListResultDTO,
   SendPackedOrderResultDTO,
+  SendPackedOrdersResultDTO,
   PackingRangeDays,
   PackingRecordItemDTO,
+  PackingPendingOrderDTO,
   PackingRecordDTO,
   PackingRecordListQuery,
 } from "./types/packing";
 export {
   PACKING_SOURCE_STATUS_CODE,
   PACKING_SENT_STATUS_CODE,
+  PACKING_CUSTOMER_PENDING_STATUS_CODES,
   PACKING_RANGE_DAYS_VALUES,
   DEFAULT_PACKING_RANGE_DAYS,
 } from "./types/packing";

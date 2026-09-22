@@ -7,6 +7,7 @@ import type {
   ToggleTitleAsteriskResultDTO,
   UpdateOrderAdminNoteResultDTO,
 } from "@complaint-system/shared";
+import { SOLD_ORDER_STATUS_TITLES } from "@complaint-system/shared";
 import { getShopfaClient } from "../integrations/shopfa";
 import { shopfaTitleEndsWithAsterisk } from "../integrations/shopfa/shopfaTitle";
 import { env } from "../config/env";
@@ -35,14 +36,7 @@ const SHOPFA_ADMIN_BASE_URL = env.SHOPFA_API_BASE_URL.replace(/^https?:\/\/www\.
  * `status_title`); a plain-Persian-yeh spelling ("پرداخت تایید شده") would
  * silently fail to match any order.
  */
-const SOLD_STATUSES = [
-  "ارسال شده",
-  "پردازش انبار",
-  "تایید حسابداری",
-  "ارسال شده به سرویس پستی",
-  "پرداخت تائيد شده",
-  "اعلام پرداخت",
-];
+const SOLD_STATUSES = SOLD_ORDER_STATUS_TITLES;
 
 /** Free-text search by name, delegated to the active Shopfa client (live API or imported-order data, per Settings.dataSource) -- for Development Tools' "search by name and pick" flow. */
 export async function searchItems(query: string): Promise<SoldItemSearchResultDTO[]> {

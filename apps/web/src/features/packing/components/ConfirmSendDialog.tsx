@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 
 interface ConfirmSendDialogProps {
   open: boolean;
-  photoPreviewUrl: string | null;
+  photoPreviewUrls: string[];
   isSending: boolean;
   onCancel: () => void;
   onTakePicture: () => void;
@@ -32,14 +32,13 @@ interface ConfirmSendDialogProps {
  */
 export function ConfirmSendDialog({
   open,
-  photoPreviewUrl,
+  photoPreviewUrls,
   isSending,
   onCancel,
   onTakePicture,
   onConfirm,
 }: ConfirmSendDialogProps) {
   const { t } = useTranslation("packing");
-  const { t: tCommon } = useTranslation("common");
 
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
@@ -47,31 +46,33 @@ export function ConfirmSendDialog({
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 0.5 }}>
           <Alert severity="warning">{t("confirmSendMessage")}</Alert>
-          {photoPreviewUrl && (
-            <Box
-              component="img"
-              src={photoPreviewUrl}
-              alt={t("photoAlt")}
-              sx={{ width: "100%", maxHeight: 240, objectFit: "contain", borderRadius: "12px", bgcolor: "action.hover" }}
-            />
+          {photoPreviewUrls.length > 0 && (
+            <Stack direction="row" gap={1} flexWrap="wrap">
+              {photoPreviewUrls.map((url) => (
+                <Box
+                  key={url}
+                  component="img"
+                  src={url}
+                  alt={t("photoAlt")}
+                  sx={{ width: 96, height: 96, objectFit: "cover", borderRadius: "10px", bgcolor: "action.hover" }}
+                />
+              ))}
+            </Stack>
           )}
         </Stack>
       </DialogContent>
       <DialogActions sx={{ flexWrap: "wrap", gap: 1 }}>
-        <Button onClick={onCancel} disabled={isSending}>
-          {tCommon("actions.cancel")}
-        </Button>
         <Button onClick={onTakePicture} startIcon={<PhotoCameraIcon />} disabled={isSending}>
           {t("confirmSendTakePicture")}
         </Button>
         <Button
           onClick={onConfirm}
           variant="contained"
-          color={photoPreviewUrl ? "primary" : "warning"}
+          color={photoPreviewUrls.length > 0 ? "primary" : "warning"}
           disabled={isSending}
           startIcon={isSending ? <CircularProgress size={14} color="inherit" /> : undefined}
         >
-          {photoPreviewUrl ? t("confirmSendConfirmWithPhoto") : t("confirmSendConfirmWithoutPhoto")}
+          {photoPreviewUrls.length > 0 ? t("confirmSendConfirmWithPhoto") : t("confirmSendConfirmWithoutPhoto")}
         </Button>
       </DialogActions>
     </Dialog>

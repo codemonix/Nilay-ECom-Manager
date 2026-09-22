@@ -259,4 +259,37 @@ describe("HttpShopfaClient (real Shopfa REST API, verified against the live stor
     expect(results).toHaveLength(1);
     expect(results[0]?.externalOrderId).toBe("77");
   });
+
+  it("fills in a shipping method name from Shopfa's method list when the order has only the method id (e.g. 4514), and caches that list", async () => {
+    const order = (id: number, title?: string) => ({
+      id, session: String(id), date: 1_725_000_000, status: 13, status_title: "x", mobile: "0912",
+      post_method: 4514, ...(title !== undefined ? { post_method_title: title } : {}),
+    });
+    post
+      .mockResolvedValueOnce({ data: { baskets: [order(1, ""), order(2, "ارسال تیپاکس")] } })
+      .mockResolvedValueOnce({ data: { title: { "0": "- انتخاب", "4514": "ارسال با تیپاکس" } } })
+      .mockResolvedValueOnce({ data: { baskets: [order(3, "")] } });
+    const client = new HttpShopfaClient("https://www.example-shop.com", "token");
+    const window = { from: new Date(0), to: new Date() };
+
+    const first = await client.listOrdersByStatusForPacking(13, window);
+    expect(first.map((o) => o.shippingMethod)).toEqual(["ارسال با تیپاکس", "ارسال تیپاکس"]);
+    expect(post).toHaveBeenCalledWith("/api/shop/cart/shipping/list/get_method", {}, undefined);
+
+    const second = await client.listOrdersByStatusForPacking(13, window);
+    expect(second[0]?.shippingMethod).toBe("ارسال با تیپاکس");
+    expect(post).toHaveBeenCalledTimes(3); // no second method-list call: cached
+  });
+
+  it("falls back to the method id only when the method list can't be fetched, without failing the queue", async () => {
+    post
+      .mockResolvedValueOnce({
+        data: { baskets: [{ id: 1, session: "1", date: 1_725_000_000, status: 13, post_method: 4514, post_method_title: "" }] },
+      })
+      .mockRejectedValueOnce(new Error("timeout"))
+      .mockRejectedValueOnce(new Error("timeout"));
+    const client = new HttpShopfaClient("https://www.example-shop.com", "token");
+    const orders = await client.listOrdersByStatusForPacking(13, { from: new Date(0), to: new Date() });
+    expect(orders[0]?.shippingMethod).toBe("#4514");
+  });
 });

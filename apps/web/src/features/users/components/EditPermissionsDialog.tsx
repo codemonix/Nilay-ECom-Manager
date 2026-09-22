@@ -8,11 +8,9 @@ import Stack from "@mui/material/Stack";
 import Alert from "@mui/material/Alert";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
-import FormGroup from "@mui/material/FormGroup";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Checkbox from "@mui/material/Checkbox";
 import { useTranslation } from "react-i18next";
-import { ASSIGNABLE_MENU_KEY_VALUES, StaffRole, type UserDTO } from "@complaint-system/shared";
+import { MenuKey, REPORT_KEY_VALUES, StaffRole, type UserDTO } from "@complaint-system/shared";
+import { PermissionsChecklist } from "./PermissionsChecklist";
 import { useUpdateUserMutation } from "../api/usersApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 
@@ -28,7 +26,15 @@ export function EditPermissionsDialog({ user, onClose }: EditPermissionsDialogPr
   const isAdmin = user?.role === StaffRole.ADMIN;
 
   useEffect(() => {
-    if (user) setSelected(user.permissions);
+    if (!user) return;
+    // Legacy all-reports grant (see hasReportAccess): show it as every
+    // individual report checked, so saving migrates the user to explicit keys.
+    const hasIndividualReportKey = REPORT_KEY_VALUES.some((key) => user.permissions.includes(key));
+    if (user.permissions.includes(MenuKey.REPORTING) && !hasIndividualReportKey) {
+      setSelected([...user.permissions.filter((key) => key !== MenuKey.REPORTING), ...REPORT_KEY_VALUES]);
+    } else {
+      setSelected(user.permissions);
+    }
   }, [user]);
 
   const togglePermission = (key: string) =>
@@ -60,15 +66,7 @@ export function EditPermissionsDialog({ user, onClose }: EditPermissionsDialogPr
               <Typography variant="body2" color="text.secondary">
                 {t("users:permissions.helper")}
               </Typography>
-              <FormGroup>
-                {ASSIGNABLE_MENU_KEY_VALUES.map((key) => (
-                  <FormControlLabel
-                    key={key}
-                    control={<Checkbox checked={selected.includes(key)} onChange={() => togglePermission(key)} />}
-                    label={t(`navigation:modules.${key}`)}
-                  />
-                ))}
-              </FormGroup>
+              <PermissionsChecklist selected={selected} onToggle={togglePermission} />
             </>
           )}
 

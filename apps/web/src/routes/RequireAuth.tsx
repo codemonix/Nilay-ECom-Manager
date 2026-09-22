@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { hasMenuAccess, type MenuKey } from "@complaint-system/shared";
+import { hasMenuAccess, hasReportAccess, type MenuKey, type ReportKey } from "@complaint-system/shared";
 import { useAppSelector } from "../app/hooks";
 
 export function RequireAuth({ children }: { children: ReactNode }) {
@@ -17,6 +17,15 @@ export function RequirePermission({ menuKey, children }: { menuKey: MenuKey; chi
   const user = useAppSelector((state) => state.auth.user);
 
   if (!user || !hasMenuAccess(user, menuKey)) {
+    return <Navigate to="/no-access" replace />;
+  }
+  return <>{children}</>;
+}
+
+export function RequireReportAccess({ reportKey, children }: { reportKey: ReportKey; children: ReactNode }) {
+  const user = useAppSelector((state) => state.auth.user);
+
+  if (!user || !hasReportAccess(user, reportKey)) {
     return <Navigate to="/no-access" replace />;
   }
   return <>{children}</>;

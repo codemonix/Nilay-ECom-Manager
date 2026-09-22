@@ -5,6 +5,7 @@ import {
 } from "../repositories/shopfaTransactionLogRepository";
 import { serializeShopfaTransactionLog } from "../utils/serializers";
 import { logger } from "../config/logger";
+import { redactor } from "../config/redactor";
 
 /**
  * Called fire-and-forget from the axios interceptors in
@@ -13,7 +14,12 @@ import { logger } from "../config/logger";
  */
 export async function record(data: CreateShopfaTransactionLogData): Promise<void> {
   try {
-    await shopfaTransactionLogRepository.create(data);
+    await shopfaTransactionLogRepository.create({
+      ...data,
+      endpoint: redactor.scrubString(data.endpoint),
+      requestParams: redactor.redact(data.requestParams),
+      errorMessage: data.errorMessage ? redactor.scrubString(data.errorMessage) : data.errorMessage,
+    });
   } catch (err) {
     logger.error("Failed to record Shopfa transaction log", { err });
   }

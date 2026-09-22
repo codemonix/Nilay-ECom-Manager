@@ -11,9 +11,8 @@ import type { SettingsDocument } from "../models/Settings";
 import { ApiError } from "../utils/ApiError";
 import { testShopfaConnection as pingShopfa } from "../integrations/shopfa/shopfaConnectionTest";
 import { applyLogLevel } from "../config/logger";
-import { getCollectionStats } from "../utils/collectionStats";
-import { UserActivityLogModel } from "../models/UserActivityLog";
-import { ShopfaTransactionLogModel } from "../models/ShopfaTransactionLog";
+import { userActivityLogRepository } from "../repositories/userActivityLogRepository";
+import { shopfaTransactionLogRepository } from "../repositories/shopfaTransactionLogRepository";
 
 /** After `.populate("lastImport.importedBy", "name")`, importedBy is either null or a populated User doc. */
 type PopulatedImportedBy = { _id: unknown; name?: string } | null;
@@ -75,8 +74,8 @@ export async function setSystemLogLevel(systemLogLevel: SystemLogLevel): Promise
  */
 export async function getLogSizes(): Promise<LogSizesDTO> {
   const [userActivity, shopfaTransactions] = await Promise.all([
-    getCollectionStats(UserActivityLogModel),
-    getCollectionStats(ShopfaTransactionLogModel),
+    userActivityLogRepository.getStats(),
+    shopfaTransactionLogRepository.getStats(),
   ]);
   return { userActivity, shopfaTransactions };
 }

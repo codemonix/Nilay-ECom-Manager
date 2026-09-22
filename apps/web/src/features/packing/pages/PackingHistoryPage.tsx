@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useListPackingHistoryQuery } from "../api/packingApi";
 import type { PackingRecordDTO } from "../types";
 import { ItemPhoto } from "../../../components/ItemPhoto";
+import { resolveUploadUrl } from "../../../utils/attachments";
 import { EmptyState } from "../../../components/EmptyState";
 import { getApiErrorMessage } from "../../../utils/apiError";
 import { formatDateTime } from "../../../utils/localeFormat";
@@ -31,8 +32,12 @@ function PackingHistoryCard({ record, language }: { record: PackingRecordDTO; la
     <Card variant="outlined" sx={{ borderRadius: "14px" }}>
       <CardContent>
         <Stack direction="row" spacing={2} alignItems="flex-start">
-          {record.photoUrl ? (
-            <ItemPhoto src={record.photoUrl} alt={t("photoAlt")} size={88} />
+          {record.photoUrls.length > 0 ? (
+            <Stack direction="row" gap={0.75} flexWrap="wrap" sx={{ width: 88 * 1.6, flexShrink: 0 }}>
+              {record.photoUrls.map((url) => (
+                <ItemPhoto key={url} src={resolveUploadUrl(url)} alt={t("photoAlt")} size={record.photoUrls.length > 1 ? 64 : 88} />
+              ))}
+            </Stack>
           ) : (
             <Stack
               alignItems="center"

@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { MenuKey, StaffRole } from "@complaint-system/shared";
+import { PERMISSION_KEY_VALUES, StaffRole, type PermissionKey } from "@complaint-system/shared";
 
-const permissionsSchema = z.array(z.nativeEnum(MenuKey));
+const permissionsSchema = z.array(z.enum(PERMISSION_KEY_VALUES as [PermissionKey, ...PermissionKey[]]));
 
 export const createUserSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),

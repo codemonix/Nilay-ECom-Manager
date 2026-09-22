@@ -11,10 +11,10 @@ import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useTranslation } from "react-i18next";
-import { hasAdministrationAccess, hasMenuAccess, MenuKey } from "@complaint-system/shared";
+import { hasAdministrationAccess, hasMenuAccess, hasOrdersMenuAccess, hasReportsMenuAccess, MenuKey } from "@complaint-system/shared";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { setCurrentUser } from "../../../store/authSlice";
-import { ADMINISTRATION_GROUP_ITEM, PRIMARY_NAV_ITEMS } from "../../../config/navItems";
+import { ADMINISTRATION_GROUP_ITEM, ORDERS_GROUP_ITEM, PRIMARY_NAV_ITEMS, REPORTS_GROUP_ITEM } from "../../../config/navItems";
 import { useUpdateQuickAccessMenuMutation } from "../api/authApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 
@@ -41,10 +41,13 @@ export function QuickAccessMenuDialog({ open, onClose }: QuickAccessMenuDialogPr
   // instead of up to three.
   const candidateItems = useMemo(
     () =>
-      [...PRIMARY_NAV_ITEMS, ADMINISTRATION_GROUP_ITEM].filter((item) => {
+      [...PRIMARY_NAV_ITEMS, ORDERS_GROUP_ITEM, REPORTS_GROUP_ITEM, ADMINISTRATION_GROUP_ITEM].filter((item) => {
         if (!item.path && !item.children) return false;
         if (!user) return false;
-        return item.key === MenuKey.ADMINISTRATION ? hasAdministrationAccess(user) : hasMenuAccess(user, item.key);
+        if (item.key === MenuKey.ADMINISTRATION) return hasAdministrationAccess(user);
+        if (item.key === MenuKey.ORDERS) return hasOrdersMenuAccess(user);
+        if (item.key === MenuKey.REPORTING) return hasReportsMenuAccess(user);
+        return hasMenuAccess(user, item.key);
       }),
     [user],
   );

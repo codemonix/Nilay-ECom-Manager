@@ -7,17 +7,27 @@ import type {
   ShopfaClient,
   ShopfaDateRange,
   ShopfaOrderAdminNote,
+  ShopfaCustomerOrderRef,
   ShopfaOrderDateWindow,
+  ShopfaStatusOrder,
   ShopfaOrderPrecheckUpdate,
   ShopfaOrderPrecheckUpdateResult,
   ShopfaOrderStatusUpdateResult,
   ShopfaPackingOrder,
+  ShopfaOrderDetails,
   ShopfaPrecheckOrder,
   ShopfaProductLookup,
+  ShopfaCategory,
+  ShopfaCustomerReportScan,
+  ShopfaItemSalesEntry,
+  ShopfaSoldItemDayRow,
   ShopfaShortageReportOrder,
   ShopfaSoldQuantityResult,
 } from "./shopfaTypes";
 import { ApiError } from "../../utils/ApiError";
+
+const REPORT_LIVE_API_MESSAGE =
+  "This report requires the Live API data source -- imported/mock order data has no Shopfa payment dates, status titles or categories.";
 import { MOCK_CUSTOMERS, MOCK_ORDERS, MOCK_PRODUCT_CODES } from "./mockData";
 import { mapCustomerToSearchResult, mapCustomerToSummary, mapOrderToSummary } from "./shopfaMapper";
 
@@ -127,6 +137,27 @@ export class MockShopfaClient implements ShopfaClient {
     );
   }
 
+  /** Reporting's customer/item-sales reports need Shopfa's live order feed (see listOrdersByStatusForShortageReport above). */
+  async listOrdersForCustomerReport(_query: string, _range: ShopfaOrderDateWindow): Promise<ShopfaCustomerReportScan> {
+    throw ApiError.badRequest(REPORT_LIVE_API_MESSAGE);
+  }
+
+  async listSoldItemsForReport(_range: ShopfaOrderDateWindow): Promise<ShopfaItemSalesEntry[]> {
+    throw ApiError.badRequest(REPORT_LIVE_API_MESSAGE);
+  }
+
+  async listSoldItemsByDay(_range: ShopfaOrderDateWindow): Promise<ShopfaSoldItemDayRow[]> {
+    throw ApiError.badRequest(REPORT_LIVE_API_MESSAGE);
+  }
+
+  async listShopCategories(): Promise<ShopfaCategory[]> {
+    throw ApiError.badRequest(REPORT_LIVE_API_MESSAGE);
+  }
+
+  async listProductIdsInCategory(_categoryId: string): Promise<string[]> {
+    throw ApiError.badRequest(REPORT_LIVE_API_MESSAGE);
+  }
+
   /** Same reasoning as listOrdersByStatusForShortageReport above -- mock orders have no Shopfa numeric status codes to filter by. */
   async listOrdersByStatusForPrecheck(_statusCodes: number[]): Promise<ShopfaPrecheckOrder[]> {
     throw ApiError.badRequest(
@@ -147,7 +178,7 @@ export class MockShopfaClient implements ShopfaClient {
   /** Same reasoning as listOrdersByStatusForPrecheck above -- mock orders have no Shopfa numeric status codes to filter by. */
   async listOrdersByStatusForPacking(
     _statusCode: number,
-    _range: ShopfaOrderDateWindow,
+    _range: ShopfaOrderDateWindow | null,
   ): Promise<ShopfaPackingOrder[]> {
     throw ApiError.badRequest(
       "Packing requires the Live API data source -- mock/imported order data has no Shopfa status codes to filter by.",
@@ -158,6 +189,42 @@ export class MockShopfaClient implements ShopfaClient {
   async updateOrderStatus(_orderNumber: string, _statusCode: number): Promise<ShopfaOrderStatusUpdateResult | null> {
     throw ApiError.badRequest(
       "Packing requires the Live API data source -- mock/imported order data has no Shopfa status codes to filter by.",
+    );
+  }
+
+  /** Same reasoning as listOrdersByStatusForPacking above. */
+  async listOrdersByStatusesForCustomerLookup(
+    _statusCodes: number[],
+    _range: ShopfaOrderDateWindow | null | null,
+  ): Promise<ShopfaCustomerOrderRef[]> {
+    throw ApiError.badRequest(
+      "Packing requires the Live API data source -- mock order data has no Shopfa status codes to filter by.",
+    );
+  }
+
+  /** Same reasoning as getOrderAdminNote's live-only note field -- see listOrdersByStatusForShortageReport above. */
+  async getOrderDetailsByNumber(_orderNumber: string): Promise<ShopfaOrderDetails | null> {
+    throw ApiError.badRequest(
+      "Order details require the Live API data source -- mock/imported order data has no Shopfa admin note or status codes.",
+    );
+  }
+
+  /** No Shopfa customer search in this data source. */
+  async findOrdersByCustomerQuery(_query: string): Promise<ShopfaCustomerOrderRef[]> {
+    throw ApiError.badRequest(
+      "Order Precheck requires the Live API data source -- mock order data has no Shopfa customer search.",
+    );
+  }
+
+  /** Same reasoning as listOrdersByStatusForPacking -- no Shopfa status codes in this data source. */
+  /** No Shopfa status counts in this data source. */
+  async countOrdersInStatus(_statusCode: number): Promise<number | null> {
+    return null;
+  }
+
+  async listOrdersByStatuses(_statusCodes: number[], _range: ShopfaOrderDateWindow): Promise<ShopfaStatusOrder[]> {
+    throw ApiError.badRequest(
+      "Orders by status requires the Live API data source -- mock order data has no Shopfa status codes to filter by.",
     );
   }
 }

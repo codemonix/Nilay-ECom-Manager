@@ -82,6 +82,9 @@ export interface ShopfaApiOrder {
   payment_date?: string | number;
   status: string | number;
   status_title?: string;
+  /** Shipping method id / display title (title can be empty for some methods). Id 0 = none selected. */
+  post_method?: string | number;
+  post_method_title?: string;
   name?: string;
   family?: string;
   email?: string;
@@ -146,4 +149,17 @@ export interface ShopfaApiUser {
   last_name?: string;
   email?: string | null;
   mobile?: string;
+}
+
+/** One row of `/api/system/pages` -- a site section; product categories are the ones with `module` 2102. */
+export interface ShopfaApiPage {
+  id: string | number;
+  title: string;
+  parent?: string | number;
+  module?: string | number;
+  order?: string | number;
+}
+
+export interface ShopfaApiPageListResponse extends ShopfaApiCommonResponse {
+  items?: ShopfaApiPage[];
 }

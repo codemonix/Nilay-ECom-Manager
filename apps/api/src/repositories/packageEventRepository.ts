@@ -15,6 +15,10 @@ export const packageEventRepository = {
     return doc as PackageEventDocument;
   },
 
+  async findRecent(limit: number): Promise<PackageEventDocument[]> {
+    return PackageEventModel.find().sort({ createdAt: -1 }).limit(limit).populate("actorId", "name role");
+  },
+
   async findByPackageId(packageId: string): Promise<PackageEventDocument[]> {
     return PackageEventModel.find({ packageId }).sort({ createdAt: 1 }).populate("actorId", "name role");
   },

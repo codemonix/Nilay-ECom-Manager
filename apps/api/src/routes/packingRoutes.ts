@@ -5,20 +5,21 @@ import { upload } from "../middleware/upload";
 import {
   listPackingHistoryQuerySchema,
   listPackingQuerySchema,
-  orderNumberParamSchema,
-  sendPackedOrderSchema,
+  sendPackedOrdersSchema,
 } from "../validators/packingValidators";
 
 export const packingRoutes = Router();
 
+/** Generous cap on confirmation photos per customer group -- a guard against runaway uploads, not a business limit. */
+const MAX_PHOTOS_PER_SEND = 10;
+
 packingRoutes.get("/orders", validate(listPackingQuerySchema, "query"), packingController.listOrders);
 
 packingRoutes.post(
-  "/orders/:orderNumber/send",
-  validate(orderNumberParamSchema, "params"),
-  upload.single("photo"),
-  validate(sendPackedOrderSchema),
-  packingController.sendOrder,
+  "/send",
+  upload.array("photos", MAX_PHOTOS_PER_SEND),
+  validate(sendPackedOrdersSchema),
+  packingController.sendOrders,
 );
 
 packingRoutes.get("/history", validate(listPackingHistoryQuerySchema, "query"), packingController.listHistory);

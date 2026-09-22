@@ -12,12 +12,20 @@ import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import LinkIcon from "@mui/icons-material/Link";
 import AllInboxIcon from "@mui/icons-material/AllInbox";
-import { MenuKey } from "@complaint-system/shared";
+import PersonSearchIcon from "@mui/icons-material/PersonSearch";
+import InsightsIcon from "@mui/icons-material/Insights";
+import QueryStatsIcon from "@mui/icons-material/QueryStats";
+import ReportProblemIcon from "@mui/icons-material/ReportProblem";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import { MenuKey, ReportKey } from "@complaint-system/shared";
 
 export interface NavItem {
   key: MenuKey;
   icon: ReactNode;
   path?: string;
+  /** For Reports children: the individual report permission gating this entry (see ReportKey) -- all of them share MenuKey.REPORTING as their group key. */
+  reportKey?: ReportKey;
   /** Overrides the default `modules.<key>` translation lookup -- needed when several items share one MenuKey (see PURCHASING_CHILD_ITEMS, whose 5 entries all gate on MenuKey.PURCHASING but need distinct labels). */
   labelKey?: string;
   /** Sub-destinations rendered in a retractable group under this item (see PURCHASING below), same pattern as ADMIN_NAV_ITEMS. */
@@ -54,16 +62,91 @@ export const PURCHASING_CHILD_ITEMS: NavItem[] = [
   },
 ];
 
+// The "Orders" master menu: everything about working an order through the
+// warehouse. Each page keeps its own permission (unlike Purchasing's shared
+// one) -- the group shows for a user iff they can open at least one of them
+// (see hasOrdersMenuAccess), and MainLayout/QuickAccessMenuDialog filter the
+// children per user.
+export const ORDERS_CHILD_ITEMS: NavItem[] = [
+  {
+    key: MenuKey.ORDER_CHECK,
+    labelKey: "navigation:ordersNav.precheck",
+    icon: <FactCheckIcon />,
+    path: "/order-precheck",
+  },
+  {
+    key: MenuKey.PACKING,
+    labelKey: "navigation:ordersNav.packing",
+    icon: <Inventory2Icon />,
+    path: "/packing",
+  },
+  {
+    key: MenuKey.ORDERS_BY_STATUS,
+    labelKey: "navigation:ordersNav.byStatus",
+    icon: <FilterListIcon />,
+    path: "/orders/by-status",
+  },
+];
+
+// The whole Orders menu as one pinnable mobile quick-access group, like
+// ADMINISTRATION_GROUP_ITEM. Its `key` (MenuKey.ORDERS) is synthetic --
+// never stored as a permission.
+export const ORDERS_GROUP_ITEM: NavItem = {
+  key: MenuKey.ORDERS,
+  icon: <ReceiptLongIcon />,
+  children: ORDERS_CHILD_ITEMS,
+};
+
 // Modules with day-to-day operational use get a flat top-level entry.
 export const PRIMARY_NAV_ITEMS: NavItem[] = [
   { key: MenuKey.CASES, icon: <AssignmentIcon />, path: "/cases" },
-  { key: MenuKey.ORDER_CHECK, icon: <FactCheckIcon />, path: "/order-precheck" },
-  { key: MenuKey.PACKING, icon: <Inventory2Icon />, path: "/packing" },
   { key: MenuKey.PURCHASING, icon: <ShoppingCartIcon />, children: PURCHASING_CHILD_ITEMS },
   { key: MenuKey.RECEIVING, icon: <AllInboxIcon />, path: "/receiving" },
   { key: MenuKey.INVENTORY, icon: <WarehouseIcon /> },
-  { key: MenuKey.REPORTING, icon: <BarChartIcon />, path: "/reporting/shortage" },
 ];
+
+// Every report is individually access-controlled (ReportKey), unlike
+// Purchasing's screens which share one permission -- the Reports group and
+// each of its entries are filtered per user in MainLayout/QuickAccessMenuDialog.
+export const REPORT_CHILD_ITEMS: NavItem[] = [
+  {
+    key: MenuKey.REPORTING,
+    reportKey: ReportKey.CUSTOMER,
+    labelKey: "navigation:reportsNav.customer",
+    icon: <PersonSearchIcon />,
+    path: "/reporting/customer",
+  },
+  {
+    key: MenuKey.REPORTING,
+    reportKey: ReportKey.ITEM_SALES,
+    labelKey: "navigation:reportsNav.itemSales",
+    icon: <QueryStatsIcon />,
+    path: "/reporting/item-sales",
+  },
+  {
+    key: MenuKey.REPORTING,
+    reportKey: ReportKey.CATEGORY_TRENDS,
+    labelKey: "navigation:reportsNav.categoryTrends",
+    icon: <InsightsIcon />,
+    path: "/reporting/category-trends",
+  },
+  {
+    key: MenuKey.REPORTING,
+    reportKey: ReportKey.SHORTAGE,
+    labelKey: "navigation:reportsNav.shortage",
+    icon: <ReportProblemIcon />,
+    path: "/reporting/shortage",
+  },
+];
+
+// The whole Reports menu as one pinnable mobile quick-access group, like
+// ADMINISTRATION_GROUP_ITEM. Its `key` (MenuKey.REPORTING) is derived, not
+// stored: whether a user has it depends on hasReportsMenuAccess.
+export const REPORTS_GROUP_ITEM: NavItem = {
+  key: MenuKey.REPORTING,
+  icon: <BarChartIcon />,
+  children: REPORT_CHILD_ITEMS,
+};
 
 // Administrative tools live in their own retractable "Administration" group
 // (see MainLayout's navList) instead of the flat top-level list -- this is

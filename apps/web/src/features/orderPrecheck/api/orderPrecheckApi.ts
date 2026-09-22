@@ -14,6 +14,8 @@ export interface ListOrderPrecheckArgs {
 export interface SaveOrderPrecheckArgs {
   orderNumber: string;
   items: SaveOrderPrecheckItemInput[];
+  /** Second call after the user accepted the warning that other orders of this customer change status too. */
+  confirmStatusChanges?: boolean;
 }
 
 export const orderPrecheckApi = apiSlice.injectEndpoints({
@@ -28,10 +30,10 @@ export const orderPrecheckApi = apiSlice.injectEndpoints({
       providesTags: ["OrderPrecheckList"],
     }),
     saveOrderPrecheck: builder.mutation<SaveOrderPrecheckResultDTO, SaveOrderPrecheckArgs>({
-      query: ({ orderNumber, items }) => ({
+      query: ({ orderNumber, items, confirmStatusChanges }) => ({
         url: `/order-precheck/orders/${orderNumber}/save`,
         method: "POST",
-        body: { items },
+        body: { items, confirmStatusChanges },
       }),
       transformResponse: (response: ApiResponse<SaveOrderPrecheckResultDTO>) => unwrap(response),
       invalidatesTags: ["OrderPrecheckList"],

@@ -11,6 +11,7 @@ import Chip from "@mui/material/Chip";
 import Avatar from "@mui/material/Avatar";
 import Tooltip from "@mui/material/Tooltip";
 import Box from "@mui/material/Box";
+import Link from "@mui/material/Link";
 import FormGroup from "@mui/material/FormGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Checkbox from "@mui/material/Checkbox";
@@ -33,6 +34,7 @@ import DialogActions from "@mui/material/DialogActions";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { useTranslation } from "react-i18next";
+import { Link as RouterLink } from "react-router-dom";
 import { useLazyGetShortageReportQuery } from "../api/reportingApi";
 import {
   DEFAULT_SHORTAGE_REPORT_RANGE_DAYS,
@@ -110,7 +112,17 @@ function ShortageItemRow({ item, language }: { item: ShortageReportItemDTO; lang
                 {t("orderNumbers")}:
               </Typography>
               {item.orderNumbers.map((orderNumber) => (
-                <Chip key={orderNumber} size="small" variant="outlined" label={orderNumber} />
+                <Chip
+                  key={orderNumber}
+                  size="small"
+                  variant="outlined"
+                  label={orderNumber}
+                  component={RouterLink}
+                  to={`/reporting/orders/${encodeURIComponent(orderNumber)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  clickable
+                />
               ))}
             </Stack>
           </Collapse>
@@ -294,7 +306,16 @@ export function ShortageReportPage() {
                 <TableBody>
                   {result?.unresolvedNotes.map((entry) => (
                     <TableRow key={entry.orderNumber}>
-                      <TableCell>{entry.orderNumber}</TableCell>
+                      <TableCell>
+                        <Link
+                          component={RouterLink}
+                          to={`/reporting/orders/${encodeURIComponent(entry.orderNumber)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {entry.orderNumber}
+                        </Link>
+                      </TableCell>
                       <TableCell>{entry.note}</TableCell>
                     </TableRow>
                   ))}

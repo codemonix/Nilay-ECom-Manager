@@ -10,12 +10,3 @@ const counterSchema = new Schema({
 });
 
 export const CounterModel = model("Counter", counterSchema);
-
-export async function getNextSequence(key: string): Promise<number> {
-  const result = await CounterModel.findByIdAndUpdate(
-    key,
-    { $inc: { seq: 1 } },
-    { upsert: true, new: true },
-  ).lean();
-  return result!.seq;
-}

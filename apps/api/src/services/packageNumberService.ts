@@ -1,4 +1,4 @@
-import { getNextSequence } from "../models/Counter";
+import { counterRepository } from "../repositories/counterRepository";
 
 function dateKey(date: Date): string {
   const y = date.getUTCFullYear();
@@ -10,6 +10,6 @@ function dateKey(date: Date): string {
 /** Generates human-friendly, per-day-sequential package numbers, e.g. PKG-20260911-0001. */
 export async function generatePackageNumber(now: Date = new Date()): Promise<string> {
   const key = dateKey(now);
-  const seq = await getNextSequence(`package-${key}`);
+  const seq = await counterRepository.getNextSequence(`package-${key}`);
   return `PKG-${key}-${String(seq).padStart(4, "0")}`;
 }

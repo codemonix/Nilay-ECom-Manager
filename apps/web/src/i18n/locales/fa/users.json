@@ -20,7 +20,8 @@
     "error": "به‌روزرسانی دسترسی ممکن نشد",
     "summaryAll": "دسترسی کامل (مدیر)",
     "summaryNone": "بدون دسترسی",
-    "summaryCount": "{{count}} بخش"
+    "summaryCount": "{{count}} بخش",
+    "reportsHeading": "گزارش‌ها (دسترسی هر گزارش جداگانه تعیین می‌شود)"
   },
   "create": {
     "action": "افزودن کاربر",

@@ -1,4 +1,6 @@
 import { ShopfaTransactionLogModel, type ShopfaTransactionLogDocument } from "../models/ShopfaTransactionLog";
+import type { CollectionStats } from "../utils/collectionStats";
+import { getCollectionStats } from "../utils/collectionStats";
 import { escapeRegex } from "../utils/regex";
 
 export interface CreateShopfaTransactionLogData {
@@ -39,6 +41,10 @@ function buildFilter(params: ListShopfaTransactionLogsParams): Record<string, un
 export const shopfaTransactionLogRepository = {
   async create(data: CreateShopfaTransactionLogData): Promise<void> {
     await ShopfaTransactionLogModel.create(data);
+  },
+
+  async getStats(): Promise<CollectionStats> {
+    return getCollectionStats(ShopfaTransactionLogModel);
   },
 
   async list(

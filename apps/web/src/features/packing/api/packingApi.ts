@@ -6,7 +6,7 @@ import type {
   PackingRecordDTO,
   PackingRecordItemDTO,
   PackingRecordListResult,
-  SendPackedOrderResultDTO,
+  SendPackedOrdersResultDTO,
 } from "../types";
 
 function unwrap<T>(response: ApiResponse<T>): T {
@@ -18,13 +18,11 @@ export interface ListPackingOrdersArgs {
   days: PackingRangeDays;
 }
 
-export interface SendPackedOrderArgs {
-  orderNumber: string;
-  externalOrderId: string;
-  buyerName: string | null;
-  items: PackingRecordItemDTO[];
-  /** Undefined when staff explicitly sent without a confirmation photo (the warning dialog's "Confirm" override). */
-  photo?: File;
+export interface SendPackedOrdersArgs {
+  /** Every order of the customer group being sent -- the server trusts this snapshot (see packingService.markOrderPacked). */
+  orders: { orderNumber: string; externalOrderId: string; buyerName: string | null; items: PackingRecordItemDTO[] }[];
+  /** The group's confirmation photos; empty when staff chose "save and continue" without any. */
+  photos: File[];
 }
 
 export interface ListPackingHistoryArgs {
@@ -41,17 +39,15 @@ export const packingApi = apiSlice.injectEndpoints({
       transformResponse: (response: ApiResponse<PackingListResultDTO>) => unwrap(response),
       providesTags: ["PackingList"],
     }),
-    /** Multipart: an optional confirmation photo alongside a JSON snapshot of the order (see packingService.markOrderPacked for why the snapshot, not a re-fetch, is authoritative here). */
-    sendPackedOrder: builder.mutation<SendPackedOrderResultDTO, SendPackedOrderArgs>({
-      query: ({ orderNumber, externalOrderId, buyerName, items, photo }) => {
+    /** Multipart: the group's confirmation photos alongside a JSON snapshot of its orders. Orders succeed or fail individually -- see SendPackedOrdersResultDTO. */
+    sendPackedOrders: builder.mutation<SendPackedOrdersResultDTO, SendPackedOrdersArgs>({
+      query: ({ orders, photos }) => {
         const formData = new FormData();
-        formData.append("externalOrderId", externalOrderId);
-        if (buyerName) formData.append("buyerName", buyerName);
-        formData.append("items", JSON.stringify(items));
-        if (photo) formData.append("photo", photo);
-        return { url: `/packing/orders/${orderNumber}/send`, method: "POST", body: formData };
+        formData.append("orders", JSON.stringify(orders));
+        for (const photo of photos) formData.append("photos", photo);
+        return { url: "/packing/send", method: "POST", body: formData };
       },
-      transformResponse: (response: ApiResponse<SendPackedOrderResultDTO>) => unwrap(response),
+      transformResponse: (response: ApiResponse<SendPackedOrdersResultDTO>) => unwrap(response),
       invalidatesTags: ["PackingList", { type: "PackingHistoryList", id: "LIST" }],
     }),
     listPackingHistory: builder.query<PackingRecordListResult, ListPackingHistoryArgs>({
@@ -76,4 +72,4 @@ export const packingApi = apiSlice.injectEndpoints({
   }),
 });
 
-export const { useLazyListPackingOrdersQuery, useSendPackedOrderMutation, useListPackingHistoryQuery } = packingApi;
+export const { useLazyListPackingOrdersQuery, useSendPackedOrdersMutation, useListPackingHistoryQuery } = packingApi;

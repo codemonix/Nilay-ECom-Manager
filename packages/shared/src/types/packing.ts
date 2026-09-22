@@ -15,10 +15,23 @@ export interface PackingItemDTO {
   quantity: number;
 }
 
+export interface PackingPendingOrderDTO {
+  orderNumber: string;
+  statusCode: number;
+  statusTitle: string;
+}
+
 export interface PackingOrderDTO {
   externalOrderId: string;
   orderNumber: string;
   buyerName: string | null;
+  buyerMobile: string | null;
+  /** How this order ships (Shopfa's `post_method_title`, e.g. Tipax); null when none was selected. */
+  shippingMethod: string | null;
+  /** The same customer's OTHER orders still in a not-yet-shippable status (see PACKING_CUSTOMER_PENDING_STATUS_CODES) -- worth a look before boxing this one. */
+  pendingOrders: PackingPendingOrderDTO[];
+  /** Orders sharing this key belong to the same customer (matched by mobile number, else by name) and are placed next to each other in the queue so they can be packed together. */
+  customerGroupKey: string;
   orderDateISO: string | null;
   statusCode: number;
   statusTitle: string;
@@ -27,10 +40,14 @@ export interface PackingOrderDTO {
 
 export interface PackingListResultDTO {
   days: PackingRangeDays;
-  /** The exact window the server resolved `days` into, so the UI can display it without relying on the client's own clock. */
-  rangeFromISO: string;
-  rangeToISO: string;
+  /** The exact window the server resolved `days` into (null for "all time"), so the UI can display it without relying on the client's own clock. */
+  rangeFromISO: string | null;
+  rangeToISO: string | null;
+  /** Every order currently in the queue's status on Shopfa, regardless of the time window -- so the UI can show "N of TOTAL" when the window hides some. Null if it couldn't be read. */
+  statusTotal: number | null;
   orders: PackingOrderDTO[];
+  /** True when looking up the customers' other pending orders failed -- `pendingOrders` is then empty for every order, which does NOT mean the customers have none. */
+  pendingLookupFailed: boolean;
   generatedAtISO: string;
 }
 
@@ -39,7 +56,13 @@ export interface SendPackedOrderResultDTO {
   statusCode: number;
   statusTitle: string;
   packingRecordId: string;
-  photoUrl: string | null;
+  photoUrls: string[];
+}
+
+/** Result of sending a whole customer group: orders are sent one by one, so some can succeed while others fail (e.g. Shopfa hiccup) -- the UI removes `sent` orders and keeps `failed` ones. */
+export interface SendPackedOrdersResultDTO {
+  sent: SendPackedOrderResultDTO[];
+  failed: { orderNumber: string; message: string }[];
 }
 
 /**
@@ -65,8 +88,8 @@ export interface PackingRecordDTO {
   statusTitleAfterSend: string;
   sentByName: string | null;
   sentAtISO: string;
-  /** Null when staff sent the order without taking a confirmation photo (the explicit "Confirm" override on the warning dialog). */
-  photoUrl: string | null;
+  /** Confirmation photos of the customer group this order was sent with (oldest first); empty when staff chose "save and continue" without taking any. */
+  photoUrls: string[];
 }
 
 export interface PackingRecordListQuery {
@@ -78,19 +101,24 @@ export interface PackingRecordListQuery {
 /** "ارسال شده به سرویس پستی" (sent to postal service) -- the only status Packing's queue shows. */
 export const PACKING_SOURCE_STATUS_CODE = 13;
 
+/** "پردازش انبار" (8), "اعلام پرداخت" (9), "پرداخت تائيد شده" (4): a customer's orders in these statuses aren't ready to ship yet, and Packing flags them next to that customer's ready orders. */
+export const PACKING_CUSTOMER_PENDING_STATUS_CODES: number[] = [8, 9, 4];
+
 /** "ارسال شده" (shipped) -- where an order lands once every item has been physically packed and confirmed. */
 export const PACKING_SENT_STATUS_CODE = 5;
 
 /**
- * Selectable "how far back" presets for Packing's queue -- the same
- * day-count presets as the Shortage Report, and for the same reason:
- * Shopfa's `/api/shop/orders` `from`/`to` filter only narrows by order
- * *creation* date server-side, not by when an order actually entered
- * "ارسال شده به سرویس پستی", so this bounds "how far back to look for
- * orders in that status," not "orders that entered the status in this
- * window."
+ * Selectable "how far back" presets for Packing's queue. `0` means ALL TIME
+ * (no window) and is the default: the queue is "every order currently in
+ * "ارسال شده به سرویس پستی"", so a window can only hide real work (an order
+ * stuck there for months is exactly the one that must not be forgotten). The
+ * day presets remain for staff who want a narrower view. When a preset is
+ * used, Shopfa's `from`/`to` are sent together with `sort=date`, which
+ * confirmed live (2026-09-21) makes the filter apply to the order's
+ * *creation* date -- without a `sort` the same params filter by last-updated
+ * date instead.
  */
-export const PACKING_RANGE_DAYS_VALUES = [7, 30, 60, 180] as const;
+export const PACKING_RANGE_DAYS_VALUES = [0, 7, 30, 60, 180] as const;
 export type PackingRangeDays = (typeof PACKING_RANGE_DAYS_VALUES)[number];
-/** "2 months" -- the requested default, so stale orders don't clutter the queue unless a wider window is explicitly chosen. */
-export const DEFAULT_PACKING_RANGE_DAYS: PackingRangeDays = 60;
+/** 0 = all time (see PACKING_RANGE_DAYS_VALUES). */
+export const DEFAULT_PACKING_RANGE_DAYS: PackingRangeDays = 0;

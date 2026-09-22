@@ -2,6 +2,7 @@ import type { ListUserActivityLogsQuery } from "../validators/logValidators";
 import { userActivityLogRepository, type CreateUserActivityLogData } from "../repositories/userActivityLogRepository";
 import { serializeUserActivityLog } from "../utils/serializers";
 import { logger } from "../config/logger";
+import { redactor } from "../config/redactor";
 
 /**
  * Called fire-and-forget from middleware/activityLogger.ts. Never throws --
@@ -10,7 +11,7 @@ import { logger } from "../config/logger";
  */
 export async function record(data: CreateUserActivityLogData): Promise<void> {
   try {
-    await userActivityLogRepository.create(data);
+    await userActivityLogRepository.create({ ...data, path: redactor.scrubString(data.path) });
   } catch (err) {
     logger.error("Failed to record user activity log", { err });
   }

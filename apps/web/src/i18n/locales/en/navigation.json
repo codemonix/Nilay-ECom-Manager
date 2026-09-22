@@ -12,7 +12,9 @@
     "users": "Users",
     "logs": "Logs",
     "devTools": "Development Tools",
-    "administration": "Administration"
+    "administration": "Administration",
+    "orders": "Orders",
+    "ordersByStatus": "Status Check"
   },
   "purchasingNav": {
     "packages": "Packages",
@@ -36,5 +38,16 @@
   "noAccess": {
     "title": "No access",
     "description": "You don't have access to any section yet. Ask an administrator to grant you access."
+  },
+  "reportsNav": {
+    "customer": "Customer Report",
+    "itemSales": "Item Sales Report",
+    "shortage": "Shortage Report",
+    "categoryTrends": "Category Sales Trends"
+  },
+  "ordersNav": {
+    "precheck": "Order Pre-Check",
+    "packing": "Packing",
+    "byStatus": "Status Check"
   }
 }

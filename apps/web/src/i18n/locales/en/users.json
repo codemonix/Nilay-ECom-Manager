@@ -20,7 +20,8 @@
     "error": "Could not update access",
     "summaryAll": "All access (admin)",
     "summaryNone": "No access",
-    "summaryCount": "{{count}} sections"
+    "summaryCount": "{{count}} sections",
+    "reportsHeading": "Reports (each report is granted separately)"
   },
   "create": {
     "action": "Add user",

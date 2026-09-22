@@ -139,7 +139,37 @@ export interface ShopfaClient {
    * server-side (same constraint as listOrdersByStatusForShortageReport) --
    * not by when the order actually entered this status.
    */
-  listOrdersByStatusForPacking(statusCode: number, range: ShopfaOrderDateWindow): Promise<ShopfaPackingOrder[]>;
+  listOrdersByStatusForPacking(statusCode: number, range: ShopfaOrderDateWindow | null): Promise<ShopfaPackingOrder[]>;
+  /**
+   * How many orders are in `statusCode` on Shopfa right now, with no time
+   * window (Shopfa's `total_count`) -- lets the UI show "N of TOTAL" when a
+   * window hides some. Null when it couldn't be read (never throws).
+   */
+  countOrdersInStatus(statusCode: number): Promise<number | null>;
+  /**
+   * Orders whose customer name or mobile matches `query`, with line items --
+   * backs Reporting's customer report. Confirmed live (2026-09-20) that
+   * `/api/shop/orders?search=` matches buyer name/family/mobile by
+   * substring server-side (unlike `mobile=`, which needs an exact full
+   * number). `range` is applied per order by its effective date (payment
+   * date when paid, else creation date); the server-side fetch window is
+   * padded backward by PAYMENT_DATE_LOOKBACK_BUFFER_DAYS -- see
+   * HttpShopfaClient.scanOrdersForSoldQuantity for why. Live-API only.
+   */
+  listOrdersForCustomerReport(query: string, range: ShopfaOrderDateWindow): Promise<ShopfaCustomerReportScan>;
+  /**
+   * Per-product units/revenue sold in the window (sold-status orders only,
+   * windowed by effective date) -- backs Reporting's item sales report.
+   * Shopfa has no server-side filter by product or category, so this pages
+   * through every order in the window (cached briefly per window). Live-API only.
+   */
+  listSoldItemsForReport(range: ShopfaOrderDateWindow): Promise<ShopfaItemSalesEntry[]>;
+  /** Same scan as listSoldItemsForReport, but per product per store-local day -- backs the category sales chart. Live-API only. */
+  listSoldItemsByDay(range: ShopfaOrderDateWindow): Promise<ShopfaSoldItemDayRow[]>;
+  /** Every product category (Shopfa "page" of the product module, `/api/system/pages`, module 2102). Live-API only. */
+  listShopCategories(): Promise<ShopfaCategory[]>;
+  /** Ids of every product directly assigned to the category (`/api/shop/product/list?page_id=`; sub-categories are NOT included -- the caller expands the tree). Live-API only. */
+  listProductIdsInCategory(categoryId: string): Promise<string[]>;
   /**
    * Writes only an order's status, leaving its admin note untouched -- backs
    * Packing's "send" action. Uses the same partial-update/merge semantics
@@ -153,6 +183,44 @@ export interface ShopfaClient {
    * write on this interface.
    */
   updateOrderStatus(orderNumber: string, statusCode: number): Promise<ShopfaOrderStatusUpdateResult | null>;
+  /**
+   * Lightweight (no items, no admin note) list of every order in the given
+   * status codes with just enough to identify the customer -- backs
+   * Packing's "this customer has other orders still pending" flag. `range`
+   * is the same creation-date window Packing's queue uses (null = all time),
+   * so the check never looks further back than the time frame staff selected.
+   */
+  listOrdersByStatusesForCustomerLookup(
+    statusCodes: number[],
+    range: ShopfaOrderDateWindow | null,
+  ): Promise<ShopfaCustomerOrderRef[]>;
+  /**
+   * Looks up one order by its customer-facing order number (Shopfa's
+   * `session`), including its admin note and items -- backs Reporting's
+   * order details page, opened from the shortage report's order links.
+   * Live-API only for the same reasons as getOrderAdminNote.
+   */
+  getOrderDetailsByNumber(orderNumber: string): Promise<ShopfaOrderDetails | null>;
+  /**
+   * Every order (any status, any date) whose buyer name/family/mobile
+   * contains `query` -- confirmed live (2026-09-20) that `search=` matches
+   * those fields by substring server-side. Callers narrow the results to the
+   * exact customer themselves (see utils/customerMatching). Capped at a few
+   * pages of the most recent matches. Backs Order Precheck's "same customer's
+   * other orders" rules. Live-API only.
+   */
+  findOrdersByCustomerQuery(query: string): Promise<ShopfaCustomerOrderRef[]>;
+  /**
+   * Every order in any of the given status codes, summarized (customer,
+   * dates, shipping method, item/quantity totals) -- backs the "Orders by
+   * status" overview. One scan per status code (Shopfa's `status` filter
+   * takes a single code), bounded by `range` on the order's LAST-UPDATED
+   * date (the deliberate default behavior of Shopfa's `from`/`to` when no
+   * `sort` is sent, confirmed live 2026-09-21) -- this overview is about
+   * recent activity, unlike the creation-date windows of Precheck/Packing.
+   * No `note` requested so it pages at 500. Live-API only.
+   */
+  listOrdersByStatuses(statusCodes: number[], range: ShopfaOrderDateWindow | null): Promise<ShopfaStatusOrder[]>;
 }
 
 export interface ShopfaPackingOrderItem {
@@ -166,7 +234,13 @@ export interface ShopfaPackingOrder {
   externalOrderId: string;
   orderNumber: string;
   buyerName: string | null;
+  buyerMobile: string | null;
+  /** Shipping method display name; the HTTP client resolves it from the method id when the order itself carries no title. */
+  shippingMethod: string | null;
+  shippingMethodId: string | null;
   orderDate: Date | null;
+  /** When payment was confirmed -- what Order Precheck/Packing queues are ordered by (oldest payment first); null for orders never paid. */
+  paymentDate: Date | null;
   statusCode: number;
   statusTitle: string;
   items: ShopfaPackingOrderItem[];
@@ -176,6 +250,11 @@ export interface ShopfaOrderStatusUpdateResult {
   orderNumber: string;
   statusCode: number;
   statusTitle: string;
+}
+
+/** A precheck-shaped order plus its payment date, for Reporting's order details page. */
+export interface ShopfaOrderDetails extends ShopfaPrecheckOrder {
+  paymentDate: Date | null;
 }
 
 export interface ShopfaPrecheckOrderItem {
@@ -189,7 +268,10 @@ export interface ShopfaPrecheckOrder {
   externalOrderId: string;
   orderNumber: string;
   buyerName: string | null;
+  buyerMobile: string | null;
   orderDate: Date | null;
+  /** When payment was confirmed -- what Order Precheck/Packing queues are ordered by (oldest payment first); null for orders never paid. */
+  paymentDate: Date | null;
   note: string;
   statusCode: number;
   statusTitle: string;
@@ -235,6 +317,46 @@ export interface ShopfaShortageReportOrder {
   paymentDate: Date | null;
   createdDate: Date | null;
   items: ShopfaShortageReportOrderItem[];
+}
+
+export interface ShopfaCustomerReportOrder {
+  orderNumber: string;
+  statusTitle: string;
+  buyerName: string;
+  mobile: string | null;
+  orderDate: Date | null;
+  paymentDate: Date | null;
+  totalAmount: number;
+  items: Array<{ productId: string; title: string; quantity: number; unitPrice: number; amount: number }>;
+}
+
+export interface ShopfaCustomerReportScan {
+  orders: ShopfaCustomerReportOrder[];
+  /** True when the scan stopped at its page cap before exhausting the search results. */
+  truncated: boolean;
+}
+
+/** Per-product totals across sold-status orders whose effective date (payment date, else creation date) falls in the scanned window. */
+export interface ShopfaItemSalesEntry {
+  productId: string;
+  title: string;
+  imageUrl: string | null;
+  quantity: number;
+  revenue: number;
+  orderCount: number;
+}
+
+/** One product's sold-status sales on one store-local day (YYYY-MM-DD) -- the raw material for time-bucketed reports. */
+export interface ShopfaSoldItemDayRow extends ShopfaItemSalesEntry {
+  day: string;
+}
+
+export interface ShopfaCategory {
+  id: string;
+  title: string;
+  parentId: string;
+  /** Position in the store's own category menu (Shopfa's `order`). */
+  order: number;
 }
 
 export interface ShopfaDateRange {
@@ -299,4 +421,29 @@ export interface ShopfaRawOrder {
   items: ShopfaRawOrderItem[];
   /** Mutable so MockShopfaClient.updateOrderAdminNote can simulate a real write -- see ShopfaClient.updateOrderAdminNote. */
   note?: string;
+}
+
+export interface ShopfaCustomerOrderRef {
+  orderNumber: string;
+  buyerName: string | null;
+  buyerMobile: string | null;
+  statusCode: number;
+  statusTitle: string;
+}
+
+export interface ShopfaStatusOrder {
+  orderNumber: string;
+  buyerName: string | null;
+  buyerMobile: string | null;
+  orderDate: Date | null;
+  paymentDate: Date | null;
+  /** Shopfa's `update`: last modification of the order. */
+  updatedAt: Date | null;
+  statusCode: number;
+  statusTitle: string;
+  /** Resolved name, like ShopfaPackingOrder.shippingMethod. */
+  shippingMethod: string | null;
+  shippingMethodId: string | null;
+  itemCount: number;
+  totalQuantity: number;
 }

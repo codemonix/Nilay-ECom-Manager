@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import { MenuKey } from "@complaint-system/shared";
+import { MenuKey, ReportKey } from "@complaint-system/shared";
 import { MainLayout } from "../layouts/MainLayout";
 import { CaseListPage } from "../features/complaints/pages/CaseListPage";
 import { CaseDetailPage } from "../features/complaints/pages/CaseDetailPage";
@@ -17,13 +17,18 @@ import { SoldQuantityCheckPage } from "../features/devTools/pages/SoldQuantityCh
 import { TitleAsteriskCheckPage } from "../features/devTools/pages/TitleAsteriskCheckPage";
 import { OrderAdminNotePage } from "../features/devTools/pages/OrderAdminNotePage";
 import { ShortageReportPage } from "../features/reporting/pages/ShortageReportPage";
+import { CustomerReportPage } from "../features/reporting/pages/CustomerReportPage";
+import { CategoryTrendsReportPage } from "../features/reporting/pages/CategoryTrendsReportPage";
+import { ItemSalesReportPage } from "../features/reporting/pages/ItemSalesReportPage";
+import { ReportingOrderDetailsPage } from "../features/reporting/pages/ReportingOrderDetailsPage";
 import { OrderPrecheckPage } from "../features/orderPrecheck/pages/OrderPrecheckPage";
 import { PackingPage } from "../features/packing/pages/PackingPage";
 import { PackingHistoryPage } from "../features/packing/pages/PackingHistoryPage";
+import { OrdersByStatusPage } from "../features/ordersByStatus/pages/OrdersByStatusPage";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { NoAccessPage } from "../pages/NoAccessPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
-import { RequireAuth, RequirePermission } from "./RequireAuth";
+import { RequireAuth, RequirePermission, RequireReportAccess } from "./RequireAuth";
 
 export function AppRoutes() {
   return (
@@ -160,11 +165,37 @@ export function AppRoutes() {
                 <Route
                   path="/reporting/shortage"
                   element={
-                    <RequirePermission menuKey={MenuKey.REPORTING}>
+                    <RequireReportAccess reportKey={ReportKey.SHORTAGE}>
                       <ShortageReportPage />
-                    </RequirePermission>
+                    </RequireReportAccess>
                   }
                 />
+                <Route
+                  path="/reporting/customer"
+                  element={
+                    <RequireReportAccess reportKey={ReportKey.CUSTOMER}>
+                      <CustomerReportPage />
+                    </RequireReportAccess>
+                  }
+                />
+                <Route
+                  path="/reporting/item-sales"
+                  element={
+                    <RequireReportAccess reportKey={ReportKey.ITEM_SALES}>
+                      <ItemSalesReportPage />
+                    </RequireReportAccess>
+                  }
+                />
+                <Route
+                  path="/reporting/category-trends"
+                  element={
+                    <RequireReportAccess reportKey={ReportKey.CATEGORY_TRENDS}>
+                      <CategoryTrendsReportPage />
+                    </RequireReportAccess>
+                  }
+                />
+                <Route path="/reporting" element={<Navigate to="/reporting/customer" replace />} />
+                <Route path="/reporting/orders/:orderNumber" element={<ReportingOrderDetailsPage />} />
                 <Route
                   path="/order-precheck"
                   element={
@@ -178,6 +209,14 @@ export function AppRoutes() {
                   element={
                     <RequirePermission menuKey={MenuKey.PACKING}>
                       <PackingPage />
+                    </RequirePermission>
+                  }
+                />
+                <Route
+                  path="/orders/by-status"
+                  element={
+                    <RequirePermission menuKey={MenuKey.ORDERS_BY_STATUS}>
+                      <OrdersByStatusPage />
                     </RequirePermission>
                   }
                 />

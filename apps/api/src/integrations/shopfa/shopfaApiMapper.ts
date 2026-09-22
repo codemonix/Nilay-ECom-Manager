@@ -12,9 +12,12 @@ import type {
   ShopfaApiUserListResponse,
 } from "./shopfaApiTypes";
 import type {
+  ShopfaCustomerOrderRef,
   ShopfaPackingOrder,
   ShopfaPrecheckOrder,
+  ShopfaStatusOrder,
   ShopfaProductLookup,
+  ShopfaCustomerReportOrder,
   ShopfaShortageReportOrder,
 } from "./shopfaTypes";
 
@@ -163,7 +166,9 @@ export function mapApiOrderToPrecheckOrder(raw: ShopfaApiOrder, statusCode: numb
     externalOrderId: String(raw.id),
     orderNumber: raw.session !== undefined && raw.session !== "" ? String(raw.session) : String(raw.id),
     buyerName: customerName(raw) || null,
+    buyerMobile: raw.mobile?.trim() || null,
     orderDate: toDateOrNull(raw.date),
+    paymentDate: toDateOrNull(raw.payment_date),
     note: raw.note ?? "",
     statusCode,
     statusTitle: raw.status_title ?? String(raw.status),
@@ -176,13 +181,35 @@ export function mapApiOrderToPrecheckOrder(raw: ShopfaApiOrder, statusCode: numb
   };
 }
 
+/** Shopfa's `post_method_title` can be empty for some methods (only the id is set); id 0 means "none selected". The client fills in the name from the method list -- see HttpShopfaClient.getShippingMethodTitles. */
+function shippingMethodFields(raw: Pick<ShopfaApiOrder, "post_method" | "post_method_title">) {
+  return {
+    shippingMethod: raw.post_method_title?.trim() || null,
+    shippingMethodId: isZero(raw.post_method) ? null : String(raw.post_method),
+  };
+}
+
+/** For Order Precheck's / Packing's "customer's other orders" lookup -- see ShopfaClient.listOrdersByStatusesForCustomerLookup. */
+export function mapApiOrderToCustomerOrderRef(raw: ShopfaApiOrder, statusCode: number): ShopfaCustomerOrderRef {
+  return {
+    orderNumber: raw.session !== undefined && raw.session !== "" ? String(raw.session) : String(raw.id),
+    buyerName: customerName(raw) || null,
+    buyerMobile: raw.mobile?.trim() || null,
+    statusCode,
+    statusTitle: raw.status_title ?? String(raw.status),
+  };
+}
+
 /** For Packing's queue -- see ShopfaClient.listOrdersByStatusForPacking. Same shape as mapApiOrderToPrecheckOrder minus the admin note, which Packing never touches. */
 export function mapApiOrderToPackingOrder(raw: ShopfaApiOrder, statusCode: number): ShopfaPackingOrder {
   return {
     externalOrderId: String(raw.id),
     orderNumber: raw.session !== undefined && raw.session !== "" ? String(raw.session) : String(raw.id),
     buyerName: customerName(raw) || null,
+    buyerMobile: raw.mobile?.trim() || null,
+    ...shippingMethodFields(raw),
     orderDate: toDateOrNull(raw.date),
+    paymentDate: toDateOrNull(raw.payment_date),
     statusCode,
     statusTitle: raw.status_title ?? String(raw.status),
     items: (raw.items ?? []).map((item) => ({
@@ -191,6 +218,25 @@ export function mapApiOrderToPackingOrder(raw: ShopfaApiOrder, statusCode: numbe
       imageUrl: item.thumb ?? null,
       quantity: toNumber(item.count) || 1,
     })),
+  };
+}
+
+/** For the "Orders by status" overview -- see ShopfaClient.listOrdersByStatuses. */
+export function mapApiOrderToStatusOrder(raw: ShopfaApiOrder, statusCode: number): ShopfaStatusOrder {
+  const order = mapApiOrderToPackingOrder(raw, statusCode);
+  return {
+    orderNumber: order.orderNumber,
+    buyerName: order.buyerName,
+    buyerMobile: order.buyerMobile,
+    orderDate: order.orderDate,
+    paymentDate: order.paymentDate,
+    updatedAt: toDateOrNull(raw.update),
+    statusCode: order.statusCode,
+    statusTitle: order.statusTitle,
+    shippingMethod: order.shippingMethod,
+    shippingMethodId: order.shippingMethodId,
+    itemCount: order.items.length,
+    totalQuantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
   };
 }
 
@@ -212,5 +258,25 @@ export function summarizeCustomerOrders(
     currency: "IRR",
     averageOrderValue: Math.round(totalSpent / orders.length),
     lastOrderDate: toIsoDate(latest.date),
+  };
+}
+
+/** For Reporting's customer report -- see ShopfaClient.listOrdersForCustomerReport. */
+export function mapApiOrderToCustomerReportOrder(raw: ShopfaApiOrder): ShopfaCustomerReportOrder {
+  return {
+    orderNumber: raw.session !== undefined && raw.session !== "" ? String(raw.session) : String(raw.id),
+    statusTitle: raw.status_title ?? String(raw.status),
+    buyerName: customerName(raw),
+    mobile: raw.mobile || null,
+    orderDate: toDateOrNull(raw.date),
+    paymentDate: toDateOrNull(raw.payment_date),
+    totalAmount: toNumber(raw.sum_price),
+    items: (raw.items ?? []).map((item) => ({
+      productId: String(item.product_id),
+      title: [item.title, item.variant_title].filter(Boolean).join(" - "),
+      quantity: toNumber(item.count),
+      unitPrice: toNumber(item.price),
+      amount: toNumber(item.sum_price),
+    })),
   };
 }

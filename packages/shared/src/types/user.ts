@@ -1,5 +1,5 @@
 import type { StaffRole } from "../constants/caseEnums";
-import type { MenuKey } from "../constants/accessEnums";
+import type { MenuKey, PermissionKey } from "../constants/accessEnums";
 
 export interface UserDTO {
   id: string;
@@ -7,6 +7,6 @@ export interface UserDTO {
   email: string;
   role: StaffRole;
   active: boolean;
-  permissions: MenuKey[];
+  permissions: PermissionKey[];
   quickAccessMenu: MenuKey[];
 }

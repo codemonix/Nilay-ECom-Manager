@@ -10,6 +10,28 @@ export interface CreatePackageData {
 }
 
 export const packageRepository = {
+  async countByStatus(): Promise<{ _id: string; count: number }[]> {
+    return PackageModel.aggregate<{ _id: string; count: number }>([{ $group: { _id: "$status", count: { $sum: 1 } } }]);
+  },
+
+  async countItemsPendingMatch(): Promise<number> {
+    const [row] = await PackageModel.aggregate<{ count: number }>([
+      { $unwind: "$items" },
+      { $match: { "items.matchedAt": null } },
+      { $count: "count" },
+    ]);
+    return row?.count ?? 0;
+  },
+
+  async countItemsPendingInventoryDecision(): Promise<number> {
+    const [row] = await PackageModel.aggregate<{ count: number }>([
+      { $unwind: "$items" },
+      { $match: { "items.inventoryPending": true } },
+      { $count: "count" },
+    ]);
+    return row?.count ?? 0;
+  },
+
   async create(data: CreatePackageData, session?: ClientSession): Promise<PackageDocument> {
     const [doc] = await PackageModel.create([data], { session });
     return doc as PackageDocument;

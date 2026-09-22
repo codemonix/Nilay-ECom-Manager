@@ -1,4 +1,4 @@
-import { hasAdministrationAccess, hasMenuAccess, MenuKey } from "@complaint-system/shared";
+import { hasAdministrationAccess, hasMenuAccess, hasReportsMenuAccess, MenuKey } from "@complaint-system/shared";
 import { userRepository } from "../repositories/userRepository";
 import { ApiError } from "../utils/ApiError";
 import { comparePassword, hashPassword } from "../utils/password";
@@ -31,9 +31,11 @@ export async function updateOwnQuickAccessMenu(userId: string, quickAccessMenu: 
   const user = await userRepository.findById(userId);
   if (!user) throw ApiError.notFound("User not found");
 
-  const hasUnauthorizedKey = quickAccessMenu.some((key) =>
-    key === MenuKey.ADMINISTRATION ? !hasAdministrationAccess(user) : !hasMenuAccess(user, key),
-  );
+  const hasUnauthorizedKey = quickAccessMenu.some((key) => {
+    if (key === MenuKey.ADMINISTRATION) return !hasAdministrationAccess(user);
+    if (key === MenuKey.REPORTING) return !hasReportsMenuAccess(user);
+    return !hasMenuAccess(user, key);
+  });
   if (hasUnauthorizedKey) throw ApiError.badRequest("Cannot pin a page you don't have access to");
 
   user.quickAccessMenu = quickAccessMenu;

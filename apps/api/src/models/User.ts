@@ -1,5 +1,5 @@
 import { Schema, model, type InferSchemaType, type HydratedDocument } from "mongoose";
-import { STAFF_ROLE_VALUES, MENU_KEY_VALUES } from "@complaint-system/shared";
+import { STAFF_ROLE_VALUES, MENU_KEY_VALUES, PERMISSION_KEY_VALUES } from "@complaint-system/shared";
 
 const userSchema = new Schema(
   {
@@ -8,7 +8,7 @@ const userSchema = new Schema(
     passwordHash: { type: String, required: true, select: false },
     role: { type: String, enum: STAFF_ROLE_VALUES, required: true },
     active: { type: Boolean, default: true },
-    permissions: { type: [String], enum: MENU_KEY_VALUES, default: [] },
+    permissions: { type: [String], enum: PERMISSION_KEY_VALUES, default: [] },
     quickAccessMenu: { type: [String], enum: MENU_KEY_VALUES, default: [] },
   },
   { timestamps: true },

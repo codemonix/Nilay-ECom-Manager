@@ -12,7 +12,9 @@
     "users": "کاربران",
     "logs": "گزارش‌ها",
     "devTools": "ابزارهای توسعه",
-    "administration": "مدیریت سیستم"
+    "administration": "مدیریت سیستم",
+    "orders": "سفارش‌ها",
+    "ordersByStatus": "بررسی وضعیت"
   },
   "purchasingNav": {
     "packages": "بسته‌ها",
@@ -36,5 +38,16 @@
   "noAccess": {
     "title": "بدون دسترسی",
     "description": "شما هنوز به هیچ بخشی دسترسی ندارید. از یک مدیر بخواهید برایتان دسترسی تعریف کند."
+  },
+  "reportsNav": {
+    "customer": "گزارش مشتری",
+    "itemSales": "گزارش فروش کالا",
+    "shortage": "گزارش کمبود",
+    "categoryTrends": "روند فروش دسته‌بندی‌ها"
+  },
+  "ordersNav": {
+    "precheck": "بررسی اولیه سفارش",
+    "packing": "بسته‌بندی",
+    "byStatus": "بررسی وضعیت"
   }
 }

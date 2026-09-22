@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DataSource } from "@complaint-system/shared";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -28,11 +28,14 @@ import {
   ORDER_PRECHECK_DEFAULT_STATUS_CODES,
   SHOPFA_ORDER_STATUS_OPTIONS,
   type OrderPrecheckOrderDTO,
+  type SaveOrderPrecheckResultDTO,
 } from "../types";
 import { OrderPrecheckItemCard } from "../components/OrderPrecheckItemCard";
+import { ConfirmRelatedChangesDialog } from "../components/ConfirmRelatedChangesDialog";
 import { FixedActionBar } from "../../../components/FixedActionBar";
 import { useGetSettingsQuery } from "../../settings/api/settingsApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
+import { UpstreamErrorAlert } from "../../../components/UpstreamErrorAlert";
 import { formatDateTime } from "../../../utils/localeFormat";
 import { useActiveLanguage } from "../../../i18n/useActiveLanguage";
 
@@ -77,14 +80,19 @@ export function OrderPrecheckPage() {
   const [orders, setOrders] = useState<OrderPrecheckOrderDTO[] | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [pendingConfirmation, setPendingConfirmation] = useState<SaveOrderPrecheckResultDTO | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
 
   const [fetchOrders, { isFetching, error }] = useLazyListOrderPrecheckOrdersQuery();
   const [saveOrder, { isLoading: isSaving }] = useSaveOrderPrecheckMutation();
 
+  /** The status codes last sent to the API, so Retry re-runs that request rather than unapplied checkbox changes. */
+  const appliedCodesRef = useRef<number[]>([]);
+
   const loadOrders = async (codes: number[]) => {
     if (!isLiveApi || codes.length === 0) return;
+    appliedCodesRef.current = codes;
     setSaveError(null);
     setSaveSuccessMessage(null);
     setSearchQuery("");
@@ -131,7 +139,7 @@ export function OrderPrecheckPage() {
     });
   };
 
-  const handleSave = async () => {
+  const handleSave = async (confirmStatusChanges = false) => {
     if (!currentOrder || !allDecided) return;
     const orderNumber = currentOrder.orderNumber;
     setSaveError(null);
@@ -143,15 +151,37 @@ export function OrderPrecheckPage() {
           productCode: item.productCode,
           available: item.available as boolean,
         })),
+        confirmStatusChanges,
       }).unwrap();
-      setSaveSuccessMessage(
+
+      // Nothing was changed: the customer's postal-service orders would be pulled back, so ask first.
+      if (!result.saved) {
+        setPendingConfirmation(result);
+        return;
+      }
+      setPendingConfirmation(null);
+
+      const base =
         result.unavailableProductCodes.length === 0
-          ? t("saveSuccessAllAvailable")
-          : t("saveSuccessSomeUnavailable"),
-      );
+          ? t("saveSuccessStatus", { status: result.statusTitle })
+          : t("saveSuccessSomeUnavailable");
+      const related =
+        result.relatedOrders.length > 0
+          ? ` ${t("relatedUpdated", {
+              count: result.relatedOrders.length,
+              details: result.relatedOrders
+                .map((order) => `${order.orderNumber} → ${order.toStatusTitle}`)
+                .join("، "),
+            })}`
+          : "";
+      setSaveSuccessMessage(base + related);
+      if (result.relatedFailures.length > 0) {
+        setSaveError(t("relatedFailed", { orders: result.relatedFailures.map((f) => f.orderNumber).join("، ") }));
+      }
       setOrders((prev) => (prev ? prev.filter((order) => order.orderNumber !== orderNumber) : prev));
       setCurrentIndex((idx) => Math.max(0, Math.min(idx, visibleOrders.length - 2)));
     } catch (err) {
+      setPendingConfirmation(null);
       setSaveError(getApiErrorMessage(err) ?? t("saveError"));
     }
   };
@@ -233,7 +263,14 @@ export function OrderPrecheckPage() {
         </Box>
       )}
 
-      {error && <Alert severity="error">{getApiErrorMessage(error) ?? t("loadError")}</Alert>}
+      {error && (
+        <UpstreamErrorAlert
+          error={error}
+          fallbackMessage={t("loadError")}
+          isRetrying={isFetching}
+          onRetry={() => void loadOrders(appliedCodesRef.current)}
+        />
+      )}
       {saveSuccessMessage && !saveError && <Alert severity="success">{saveSuccessMessage}</Alert>}
       {saveError && <Alert severity="error">{saveError}</Alert>}
 
@@ -302,7 +339,7 @@ export function OrderPrecheckPage() {
               fullWidth
               variant="contained"
               disabled={!allDecided || isSaving}
-              onClick={handleSave}
+              onClick={() => void handleSave()}
               startIcon={isSaving ? <CircularProgress size={14} /> : undefined}
             >
               {t("save")}
@@ -318,6 +355,13 @@ export function OrderPrecheckPage() {
           </FixedActionBar>
         </>
       )}
+
+      <ConfirmRelatedChangesDialog
+        pending={pendingConfirmation}
+        isSaving={isSaving}
+        onCancel={() => setPendingConfirmation(null)}
+        onConfirm={() => void handleSave(true)}
+      />
     </Stack>
   );
 }

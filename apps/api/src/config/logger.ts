@@ -1,12 +1,27 @@
 import winston from "winston";
 import { env } from "./env";
 import { MongoLogTransport } from "./mongoLogTransport";
+import { redactor } from "./redactor";
+
+/**
+ * Runs first in the pipeline, so every transport (console and
+ * MongoLogTransport) only ever sees scrubbed data: secret-named keys are
+ * masked, secret-looking substrings (query-string tokens, Bearer/JWT
+ * values, URL credentials, the literal configured secrets) are replaced,
+ * and Error objects are reduced to a safe subset (never axios's full
+ * request config, which carries the Shopfa `private_key`).
+ */
+const redactSecrets = winston.format((info) => {
+  const { level, ...rest } = info;
+  return Object.assign(info, redactor.redact(rest), { level });
+});
 
 export const logger = winston.createLogger({
   level: env.LOG_LEVEL,
   format: winston.format.combine(
-    winston.format.timestamp(),
     winston.format.errors({ stack: true }),
+    redactSecrets(),
+    winston.format.timestamp(),
     env.NODE_ENV === "development" ? winston.format.colorize() : winston.format.uncolorize(),
     winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
       const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : "";

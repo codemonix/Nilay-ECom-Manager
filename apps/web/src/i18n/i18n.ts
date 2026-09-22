@@ -16,6 +16,7 @@ import enDevTools from "./locales/en/devTools.json";
 import enReporting from "./locales/en/reporting.json";
 import enOrderPrecheck from "./locales/en/orderPrecheck.json";
 import enPacking from "./locales/en/packing.json";
+import enOrdersByStatus from "./locales/en/ordersByStatus.json";
 import faCommon from "./locales/fa/common.json";
 import faNavigation from "./locales/fa/navigation.json";
 import faComplaints from "./locales/fa/complaints.json";
@@ -30,6 +31,7 @@ import faDevTools from "./locales/fa/devTools.json";
 import faReporting from "./locales/fa/reporting.json";
 import faOrderPrecheck from "./locales/fa/orderPrecheck.json";
 import faPacking from "./locales/fa/packing.json";
+import faOrdersByStatus from "./locales/fa/ordersByStatus.json";
 
 export const SUPPORTED_LANGUAGES = ["en", "fa"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
@@ -76,6 +78,7 @@ void i18n
         reporting: enReporting,
         orderPrecheck: enOrderPrecheck,
         packing: enPacking,
+        ordersByStatus: enOrdersByStatus,
       },
       fa: {
         common: faCommon,
@@ -92,6 +95,7 @@ void i18n
         reporting: faReporting,
         orderPrecheck: faOrderPrecheck,
         packing: faPacking,
+        ordersByStatus: faOrdersByStatus,
       },
     },
     fallbackLng: DEFAULT_LANGUAGE,
@@ -112,6 +116,7 @@ void i18n
       "reporting",
       "orderPrecheck",
       "packing",
+      "ordersByStatus",
     ],
     defaultNS: "common",
     interpolation: { escapeValue: false },
