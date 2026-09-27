@@ -7,7 +7,9 @@
  * call per selected code is required (see
  * ShopfaClient.listOrdersByStatusForShortageReport). This list backs the
  * Shortage Report's status picker so more statuses can be added to future
- * reports without any backend change.
+ * reports without any backend change. Codes 12 and 14 were never seen in
+ * that sample; their titles were confirmed live on 2026-09-27 by setting the
+ * test order to each code and reading the title back.
  */
 export interface ShopfaOrderStatusOption {
   code: number;
@@ -27,7 +29,9 @@ export const SHOPFA_ORDER_STATUS_OPTIONS: ShopfaOrderStatusOption[] = [
   { code: 9, statusTitle: "اعلام پرداخت" },
   { code: 10, statusTitle: "تایید حسابداری" },
   { code: 11, statusTitle: "چاپ فاکتور" },
+  { code: 12, statusTitle: "آماده به ارسال" },
   { code: 13, statusTitle: "ارسال شده به سرویس پستی" },
+  { code: 14, statusTitle: "خدمات پس از فروش" },
   { code: 15, statusTitle: "ثبت شده" },
   { code: 16, statusTitle: "در حال پیگیری" },
   { code: 17, statusTitle: "در انتظار واریز" },

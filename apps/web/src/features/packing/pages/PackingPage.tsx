@@ -32,8 +32,21 @@ import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import HistoryIcon from "@mui/icons-material/History";
 import { useTranslation } from "react-i18next";
-import { useLazyListPackingOrdersQuery, useSendPackedOrdersMutation } from "../api/packingApi";
-import { DEFAULT_PACKING_RANGE_DAYS, PACKING_RANGE_DAYS_VALUES, type PackingOrderDTO, type PackingRangeDays } from "../types";
+import {
+  useGetPackingCustomerOrdersQuery,
+  useLazyListPackingOrdersQuery,
+  useRetryPackingSyncMutation,
+  useSendPackedOrdersMutation,
+} from "../api/packingApi";
+import {
+  DEFAULT_PACKING_RANGE_DAYS,
+  PACKING_RANGE_DAYS_VALUES,
+  ShopfaSyncStatus,
+  type PackingOrderDTO,
+  type PackingRangeDays,
+  type PackingSyncIssueDTO,
+} from "../types";
+import { decideMove, decideSave } from "../utils/packingFlow";
 import { PackingItemTile } from "../components/PackingItemTile";
 import { ConfirmSendDialog } from "../components/ConfirmSendDialog";
 import { FinishCustomerDialog } from "../components/FinishCustomerDialog";
@@ -66,9 +79,12 @@ const hasCameraApi = typeof navigator !== "undefined" && !!navigator.mediaDevice
  * bottom. Send is enabled once every item of every order of the customer is
  * green and saves the whole group ("ارسال شده" + a local history record per
  * order, see packingService.markOrdersPacked); without a picture it first
- * asks whether to take one or "save and continue". Moving to another
- * customer while the current one is fully green but unsaved is blocked
- * (FinishCustomerDialog). Live-API only, like Order Precheck and Reporting's
+ * warns (ConfirmSendDialog, "Dialog A"). Moving to another customer while
+ * the current one is fully green but has no picture warns too
+ * (FinishCustomerDialog, "Dialog B") -- see utils/packingFlow for both rules
+ * and docs/order-status-mchine.md. A save whose Shopfa push failed is
+ * retried in the background; orders whose push gave up are listed here with
+ * a Retry button. Live-API only, like Order Precheck and Reporting's
  * shortage report.
  */
 export function PackingPage() {
@@ -81,7 +97,11 @@ export function PackingPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [orders, setOrders] = useState<PackingOrderDTO[] | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [pendingLookupFailed, setPendingLookupFailed] = useState(false);
+  const [failedSyncs, setFailedSyncs] = useState<PackingSyncIssueDTO[]>([]);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
+  /** Where a move blocked by Dialog B was headed, so Confirm can finish it. */
+  const [pendingMoveIndex, setPendingMoveIndex] = useState<number | null>(null);
   const [rangeShown, setRangeShown] = useState<{ fromISO: string | null; toISO: string | null; total: number | null } | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   /** `${orderNumber}:${productCode}` of every item marked green -- kept across navigation so a customer's progress isn't lost when moving between their orders. */
@@ -93,7 +113,6 @@ export function PackingPage() {
   const [photosByGroup, setPhotosByGroup] = useState<Record<string, GroupPhoto[]>>({});
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
   const [confirmSendDialogOpen, setConfirmSendDialogOpen] = useState(false);
-  const [finishCustomerDialogOpen, setFinishCustomerDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   /** Separate input with no `capture` attribute, so it opens the plain system file/gallery picker instead of jumping straight to the camera. */
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -102,6 +121,7 @@ export function PackingPage() {
 
   const [fetchOrders, { isFetching, error }] = useLazyListPackingOrdersQuery();
   const [sendPackedOrders, { isLoading: isSending }] = useSendPackedOrdersMutation();
+  const [retryPackingSync, { isLoading: isRetryingSync }] = useRetryPackingSyncMutation();
 
   const revokePhotos = (photos: GroupPhoto[]) => photos.forEach((photo) => URL.revokeObjectURL(photo.url));
 
@@ -119,9 +139,11 @@ export function PackingPage() {
     appliedDaysRef.current = selectedDays;
     setSendError(null);
     setSendSuccessMessage(null);
+    setSyncNotice(null);
     const result = await fetchOrders({ days: selectedDays }).unwrap().catch(() => null);
     setOrders(result?.orders ?? null);
-    setPendingLookupFailed(result?.pendingLookupFailed ?? false);
+    setFailedSyncs(result?.failedSyncs ?? []);
+    setPendingSyncCount(result?.pendingSyncCount ?? 0);
     setRangeShown(
       result ? { fromISO: result.rangeFromISO, toISO: result.rangeToISO, total: result.statusTotal } : null,
     );
@@ -170,9 +192,15 @@ export function PackingPage() {
     acc[method] = (acc[method] ?? 0) + 1;
     return acc;
   }, {});
-  const pendingOrders = currentOrder?.pendingOrders ?? [];
-  const pendingDetails = Object.entries(
-    pendingOrders.reduce<Record<string, number>>((acc, order) => {
+  // Opening a customer group: look up the customer's orders in other statuses once per group (information only).
+  const groupLeadOrderNumber = customerGroup[0]?.orderNumber ?? null;
+  const { data: customerOrders, isError: otherOrdersLookupFailed } = useGetPackingCustomerOrdersQuery(
+    { orderNumber: groupLeadOrderNumber ?? "" },
+    { skip: !isLiveApi || !groupLeadOrderNumber },
+  );
+  const otherStatusOrders = customerOrders?.orderNumber === groupLeadOrderNumber ? customerOrders.otherStatusOrders : [];
+  const otherStatusDetails = Object.entries(
+    otherStatusOrders.reduce<Record<string, number>>((acc, order) => {
       acc[order.statusTitle] = (acc[order.statusTitle] ?? 0) + 1;
       return acc;
     }, {}),
@@ -202,14 +230,19 @@ export function PackingPage() {
   };
 
   /**
-   * Every move between orders goes through here: leaving a customer whose
-   * orders are all fully green (but not yet saved) is blocked, so a finished
-   * box is never left behind without its final picture and save.
+   * Every move between orders goes through here. Leaving a customer whose
+   * items are all green but who has no picture yet opens Dialog B; nothing
+   * is saved and no status changes either way.
    */
   const navigateTo = (index: number) => {
     const target = visibleOrders[index];
-    if (currentOrder && target && target.customerGroupKey !== currentOrder.customerGroupKey && groupComplete) {
-      setFinishCustomerDialogOpen(true);
+    const decision = decideMove({
+      leavingGroup: !!currentOrder && !!target && target.customerGroupKey !== currentOrder.customerGroupKey,
+      allItemsMarkedGreen: groupComplete,
+      photoCount: groupPhotos.length,
+    });
+    if (decision === "warn_no_picture") {
+      setPendingMoveIndex(index);
       return;
     }
     setCurrentIndex(index);
@@ -281,6 +314,24 @@ export function PackingPage() {
       }).unwrap();
 
       const sentNumbers = new Set(result.sent.map((order) => order.orderNumber));
+      const notSynced = result.sent.filter((order) => order.syncStatus !== ShopfaSyncStatus.SYNCED);
+      const gaveUp = notSynced.filter((order) => order.syncStatus === ShopfaSyncStatus.FAILED);
+      setPendingSyncCount((count) => count + notSynced.length - gaveUp.length);
+      setFailedSyncs((prev) => [
+        ...prev,
+        ...gaveUp.map((order) => ({
+          packingRecordId: order.packingRecordId,
+          orderNumber: order.orderNumber,
+          buyerName: customerGroup.find((o) => o.orderNumber === order.orderNumber)?.buyerName ?? null,
+          lastSyncError: null,
+          sentAtISO: new Date().toISOString(),
+        })),
+      ]);
+      setSyncNotice(
+        notSynced.length > 0
+          ? t("syncPendingNotice", { orders: notSynced.map((order) => order.orderNumber).join("، ") })
+          : null,
+      );
       const sentVisibleCount = visibleOrders.filter((order) => sentNumbers.has(order.orderNumber)).length;
       setOrders((prev) => (prev ? prev.filter((order) => !sentNumbers.has(order.orderNumber)) : prev));
       setPackedKeys((prev) => new Set([...prev].filter((key) => !sentNumbers.has(key.slice(0, key.indexOf(":"))))));
@@ -296,10 +347,23 @@ export function PackingPage() {
 
   const handleSendClick = () => {
     if (!groupComplete) return;
-    if (groupPhotos.length > 0) {
+    if (decideSave({ photoCount: groupPhotos.length }) === "send") {
       void performSend();
     } else {
       setConfirmSendDialogOpen(true);
+    }
+  };
+
+  const handleRetrySync = async (packingRecordId: string) => {
+    try {
+      const result = await retryPackingSync({ packingRecordId }).unwrap();
+      if (result.syncStatus === ShopfaSyncStatus.SYNCED) {
+        setFailedSyncs((prev) => prev.filter((issue) => issue.packingRecordId !== packingRecordId));
+      } else {
+        setSendError(t("syncRetryFailed", { order: result.orderNumber }));
+      }
+    } catch (err) {
+      setSendError(getApiErrorMessage(err) ?? t("syncRetryFailed", { order: "" }));
     }
   };
 
@@ -474,17 +538,17 @@ export function PackingPage() {
                     />
                   ))}
                 </Stack>
-                {pendingOrders.length > 0 && (
-                  <Alert severity="warning" sx={{ py: 0 }}>
-                    {t("pendingOrdersWarning", { count: pendingOrders.length, details: pendingDetails })}
+                {otherStatusOrders.length > 0 && (
+                  <Alert severity="info" sx={{ py: 0 }}>
+                    {t("otherStatusOrdersInfo", { count: otherStatusOrders.length, details: otherStatusDetails })}
                     <Typography variant="caption" component="div" color="text.secondary">
-                      {pendingOrders.map((order) => order.orderNumber).join("، ")}
+                      {otherStatusOrders.map((order) => `${order.orderNumber} (${order.statusTitle})`).join("، ")}
                     </Typography>
                   </Alert>
                 )}
-                {pendingLookupFailed && (
+                {otherOrdersLookupFailed && (
                   <Typography variant="caption" color="warning.main">
-                    {t("pendingLookupFailed")}
+                    {t("otherStatusOrdersLookupFailed")}
                   </Typography>
                 )}
               </Stack>
@@ -511,6 +575,30 @@ export function PackingPage() {
         />
       )}
       {sendSuccessMessage && !sendError && <Alert severity="success">{sendSuccessMessage}</Alert>}
+      {syncNotice && <Alert severity="warning">{syncNotice}</Alert>}
+      {pendingSyncCount > 0 && !syncNotice && (
+        <Typography variant="caption" color="text.secondary">
+          {t("syncPendingCount", { count: pendingSyncCount })}
+        </Typography>
+      )}
+      {failedSyncs.length > 0 && (
+        <Alert severity="error">
+          <Typography variant="body2">{t("syncFailedTitle", { count: failedSyncs.length })}</Typography>
+          <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+            {failedSyncs.map((issue) => (
+              <Stack key={issue.packingRecordId} direction="row" alignItems="center" gap={1} flexWrap="wrap">
+                <Typography variant="caption">
+                  {issue.orderNumber}
+                  {issue.buyerName ? ` · ${issue.buyerName}` : ""}
+                </Typography>
+                <Button size="small" disabled={isRetryingSync} onClick={() => void handleRetrySync(issue.packingRecordId)}>
+                  {t("syncRetry")}
+                </Button>
+              </Stack>
+            ))}
+          </Stack>
+        </Alert>
+      )}
       {sendError && <Alert severity="error">{sendError}</Alert>}
 
       {orders && orders.length === 0 && !isFetching && <Alert severity="info">{t("noOrders")}</Alert>}
@@ -641,20 +729,26 @@ export function PackingPage() {
       />
 
       <FinishCustomerDialog
-        open={finishCustomerDialogOpen}
-        onClose={() => setFinishCustomerDialogOpen(false)}
+        open={pendingMoveIndex !== null}
         onTakePicture={() => {
-          setFinishCustomerDialogOpen(false);
+          setPendingMoveIndex(null);
           openCameraCapture();
+        }}
+        onCancel={() => setPendingMoveIndex(null)}
+        onConfirm={() => {
+          if (pendingMoveIndex !== null) setCurrentIndex(pendingMoveIndex);
+          setPendingMoveIndex(null);
         }}
       />
 
       <ConfirmSendDialog
         open={confirmSendDialogOpen}
-        photoPreviewUrls={groupPhotos.map((photo) => photo.url)}
         isSending={isSending}
         onCancel={() => setConfirmSendDialogOpen(false)}
-        onTakePicture={openCameraCapture}
+        onTakePicture={() => {
+          setConfirmSendDialogOpen(false);
+          openCameraCapture();
+        }}
         onConfirm={() => void performSend()}
       />
     </Stack>

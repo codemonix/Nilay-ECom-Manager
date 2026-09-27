@@ -1,3 +1,4 @@
+import { ShopfaSyncStatus } from "@complaint-system/shared";
 import { PackingRecordModel, type PackingRecordDocument } from "../models/PackingRecord";
 
 export interface CreatePackingRecordData {
@@ -5,8 +6,9 @@ export interface CreatePackingRecordData {
   orderNumber: string;
   buyerName: string | null;
   items: { productCode: string; title: string; quantity: number }[];
-  statusCodeAfterSend: number;
-  statusTitleAfterSend: string;
+  photoCount: number;
+  syncStatus: ShopfaSyncStatus;
+  nextSyncAt: Date | null;
   sentBy: string | null;
   sentByName: string | null;
   sentAt: Date;
@@ -31,6 +33,37 @@ export const packingRecordRepository = {
 
   async create(data: CreatePackingRecordData): Promise<PackingRecordDocument> {
     return PackingRecordModel.create(data);
+  },
+
+  async findById(id: string): Promise<PackingRecordDocument | null> {
+    return PackingRecordModel.findById(id);
+  },
+
+  /** Newest first. */
+  async listByOrderNumber(orderNumber: string): Promise<PackingRecordDocument[]> {
+    return PackingRecordModel.find({ orderNumber }).sort({ sentAt: -1 });
+  },
+
+  /** PENDING_SYNC records whose next retry time has come, oldest first. */
+  async findDueForSync(now: Date, limit: number): Promise<PackingRecordDocument[]> {
+    return PackingRecordModel.find({
+      syncStatus: ShopfaSyncStatus.PENDING_SYNC,
+      $or: [{ nextSyncAt: null }, { nextSyncAt: { $lte: now } }],
+    })
+      .sort({ sentAt: 1 })
+      .limit(limit);
+  },
+
+  /**
+   * Every record not yet synced to Shopfa (pending or failed), oldest first.
+   * Matches the two states explicitly: records written before syncStatus
+   * existed have no such field (they were only ever saved after a successful
+   * push), and `$ne: SYNCED` would match them too.
+   */
+  async listUnsynced(): Promise<PackingRecordDocument[]> {
+    return PackingRecordModel.find({
+      syncStatus: { $in: [ShopfaSyncStatus.PENDING_SYNC, ShopfaSyncStatus.FAILED] },
+    }).sort({ sentAt: 1 });
   },
 
   /** Case-insensitive substring match on order number or buyer name, same convention as importedOrderRepository.list. */

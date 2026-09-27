@@ -5,12 +5,24 @@ import * as packingService from "../services/packingService";
 import type {
   ListPackingHistoryQuery,
   ListPackingQuery,
+  PackingCustomerOrdersQuery,
   SendPackedOrdersInput,
 } from "../validators/packingValidators";
 
 export const listOrders = asyncHandler(async (req: Request, res: Response) => {
   const { days } = req.query as unknown as ListPackingQuery;
   const result = await packingService.listOrdersForPacking(days);
+  return sendSuccess(res, result);
+});
+
+export const getCustomerOrders = asyncHandler(async (req: Request, res: Response) => {
+  const { orderNumber } = req.query as unknown as PackingCustomerOrdersQuery;
+  const result = await packingService.getPackingCustomerOrders(orderNumber);
+  return sendSuccess(res, result);
+});
+
+export const retrySync = asyncHandler(async (req: Request, res: Response) => {
+  const result = await packingService.retryPackingSync(req.params.id as string);
   return sendSuccess(res, result);
 });
 

@@ -1,3 +1,5 @@
+import { OrderWorkflowStatus } from "./orderWorkflow";
+
 /**
  * Order Precheck: a warehouse-facing screen that walks staff through every
  * order sitting in "پرداخت تائيد شده" (payment confirmed, the default
@@ -70,19 +72,23 @@ export interface SaveOrderPrecheckResultDTO {
   relatedOrders: OrderPrecheckRelatedOrderDTO[];
   /** Related orders whose status change failed (the checked order itself was still saved). */
   relatedFailures: { orderNumber: string; message: string }[];
+  /** Set when the order was parked in "آماده به ارسال" because the customer's other orders are in a mixed combination of statuses -- staff should check the Shopfa panel. */
+  warning: OrderPrecheckWarning | null;
 }
 
+export type OrderPrecheckWarning = "check_shopfa_panel";
+
 /** "پرداخت تائيد شده" (payment confirmed) -- the status Order Precheck's queue defaults to. */
-export const ORDER_PRECHECK_DEFAULT_STATUS_CODES: number[] = [4];
+export const ORDER_PRECHECK_DEFAULT_STATUS_CODES: number[] = [OrderWorkflowStatus.PAYMENT_CONFIRMED];
 
-/** "تایید حسابداری" (accounting confirmed) -- where a fully-available order waits while the same customer still has other orders not yet prechecked (in the pending statuses below). */
-export const ORDER_PRECHECK_ACCOUNTING_CONFIRMED_STATUS_CODE = 10;
+/** "تایید حسابداری" (accounting confirmed) -- where a fully-available order waits while the same customer still has other orders not ready yet. */
+export const ORDER_PRECHECK_ACCOUNTING_CONFIRMED_STATUS_CODE = OrderWorkflowStatus.ACCOUNTING_APPROVED;
 
-/** "پرداخت تائيد شده" (4), "پردازش انبار" (8), "اعلام پرداخت" (9): orders of the same customer in these statuses are still waiting on precheck/stock, so a fully-available order is parked in accounting-confirmed instead of being sent to the postal service. */
-export const ORDER_PRECHECK_CUSTOMER_PENDING_STATUS_CODES: number[] = [4, 8, 9];
-
-/** "ارسال شده به سرویس پستی" (sent to postal service) -- where a save lands an order once every item was marked available. */
-export const ORDER_PRECHECK_ALL_AVAILABLE_STATUS_CODE = 13;
+/** "ارسال شده به سرویس پستی" (sent to postal service) -- where a save lands a fully-available order that can ship now. */
+export const ORDER_PRECHECK_ALL_AVAILABLE_STATUS_CODE = OrderWorkflowStatus.SENT_TO_POST;
 
 /** "پردازش انبار" (warehouse processing) -- where a save lands an order that has at least one unavailable item; also the status staff reopen to resume a precheck already in progress. */
-export const ORDER_PRECHECK_SOME_UNAVAILABLE_STATUS_CODE = 8;
+export const ORDER_PRECHECK_SOME_UNAVAILABLE_STATUS_CODE = OrderWorkflowStatus.WAREHOUSE_PROCESSING;
+
+/** "آماده به ارسال" (ready to send) -- where a fully-available order goes when the customer's other orders are in a combination precheck can't resolve on its own. */
+export const ORDER_PRECHECK_READY_TO_SEND_STATUS_CODE = OrderWorkflowStatus.READY_TO_SEND;

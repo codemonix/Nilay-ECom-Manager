@@ -19,6 +19,11 @@ export const listOrders = asyncHandler(async (req: Request, res: Response) => {
 export const saveOrder = asyncHandler(async (req: Request, res: Response) => {
   const { orderNumber } = req.params as unknown as OrderNumberParam;
   const { items, confirmStatusChanges } = req.body as SaveOrderPrecheckInput;
-  const result = await orderPrecheckService.saveOrderPrecheck(orderNumber, items, confirmStatusChanges ?? false);
+  const result = await orderPrecheckService.saveOrderPrecheck(
+    orderNumber,
+    items,
+    confirmStatusChanges ?? false,
+    req.currentUser,
+  );
   return sendSuccess(res, result);
 });

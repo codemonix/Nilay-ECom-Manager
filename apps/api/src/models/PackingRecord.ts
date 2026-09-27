@@ -1,3 +1,4 @@
+import { ShopfaSyncStatus } from "@complaint-system/shared";
 import { Schema, model, type InferSchemaType, type HydratedDocument, Types } from "mongoose";
 
 const packingRecordItemSchema = new Schema(
@@ -29,8 +30,24 @@ const packingRecordSchema = new Schema(
     orderNumber: { type: String, required: true, index: true },
     buyerName: { type: String, default: null },
     items: { type: [packingRecordItemSchema], default: [] },
-    statusCodeAfterSend: { type: Number, required: true },
-    statusTitleAfterSend: { type: String, required: true },
+    /** Set once Shopfa confirmed the "ارسال شده" write (see packingSyncService); null while the push is still pending or failed. */
+    statusCodeAfterSend: { type: Number, default: null },
+    statusTitleAfterSend: { type: String, default: null },
+    /** How many confirmation photos the group had -- written into the order's Shopfa admin note alongside the status (the photos themselves stay local). */
+    photoCount: { type: Number, default: 0 },
+    /**
+     * Whether the "ارسال شده" status + photo-count note reached Shopfa. A
+     * failed push stays PENDING_SYNC and is retried in the background with
+     * backoff (nextSyncAt); after PACKING_SYNC_MAX_ATTEMPTS it becomes FAILED
+     * and needs a manual retry. Records created before this field existed
+     * were only ever written after a successful push, hence the SYNCED default.
+     */
+    syncStatus: { type: String, enum: Object.values(ShopfaSyncStatus), default: ShopfaSyncStatus.SYNCED, index: true },
+    syncAttempts: { type: Number, default: 0 },
+    lastSyncError: { type: String, default: null },
+    nextSyncAt: { type: Date, default: null },
+    syncedAt: { type: Date, default: null },
+    /** Actor of the send, reused for the status-change audit entry when a background retry is what finally syncs. */
     sentBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
     /** Denormalized alongside `sentBy` so history displays the staff name without a User lookup/populate on every list read. */
     sentByName: { type: String, default: null },

@@ -1,3 +1,5 @@
+import { OrderWorkflowStatus, type ShopfaSyncStatus } from "./orderWorkflow";
+
 /**
  * Packing: a warehouse-facing screen that walks staff through every order
  * sitting in "ارسال شده به سرویس پستی" (sent to postal service) one order
@@ -15,10 +17,17 @@ export interface PackingItemDTO {
   quantity: number;
 }
 
-export interface PackingPendingOrderDTO {
+/** One of the customer's orders that is NOT in the packing queue's status -- shown for information only, never blocks packing. */
+export interface PackingOtherStatusOrderDTO {
   orderNumber: string;
   statusCode: number;
   statusTitle: string;
+}
+
+/** Result of opening a customer group: the customer's orders outside "ارسال شده به سرویس پستی" (excluding shipped/cancelled ones, see ORDER_WORKFLOW_SIBLING_EXCLUDED_STATUS_CODES). */
+export interface PackingCustomerOrdersDTO {
+  orderNumber: string;
+  otherStatusOrders: PackingOtherStatusOrderDTO[];
 }
 
 export interface PackingOrderDTO {
@@ -28,8 +37,6 @@ export interface PackingOrderDTO {
   buyerMobile: string | null;
   /** How this order ships (Shopfa's `post_method_title`, e.g. Tipax); null when none was selected. */
   shippingMethod: string | null;
-  /** The same customer's OTHER orders still in a not-yet-shippable status (see PACKING_CUSTOMER_PENDING_STATUS_CODES) -- worth a look before boxing this one. */
-  pendingOrders: PackingPendingOrderDTO[];
   /** Orders sharing this key belong to the same customer (matched by mobile number, else by name) and are placed next to each other in the queue so they can be packed together. */
   customerGroupKey: string;
   orderDateISO: string | null;
@@ -46,17 +53,31 @@ export interface PackingListResultDTO {
   /** Every order currently in the queue's status on Shopfa, regardless of the time window -- so the UI can show "N of TOTAL" when the window hides some. Null if it couldn't be read. */
   statusTotal: number | null;
   orders: PackingOrderDTO[];
-  /** True when looking up the customers' other pending orders failed -- `pendingOrders` is then empty for every order, which does NOT mean the customers have none. */
-  pendingLookupFailed: boolean;
+  /** Orders already packed here whose Shopfa push gave up (FAILED) -- they're hidden from the queue and need a manual retry (see POST /packing/records/:id/retry-sync). */
+  failedSyncs: PackingSyncIssueDTO[];
+  /** How many packed orders are still waiting for their Shopfa push to go through (retried in the background); they're hidden from the queue meanwhile. */
+  pendingSyncCount: number;
   generatedAtISO: string;
 }
 
+export interface PackingSyncIssueDTO {
+  packingRecordId: string;
+  orderNumber: string;
+  buyerName: string | null;
+  lastSyncError: string | null;
+  sentAtISO: string;
+}
+
+/**
+ * One order of a sent group. The order is packed locally either way;
+ * `syncStatus` says whether Shopfa already has it as "ارسال شده" (SYNCED) or
+ * whether the push failed and is being retried in the background (PENDING_SYNC).
+ */
 export interface SendPackedOrderResultDTO {
   orderNumber: string;
-  statusCode: number;
-  statusTitle: string;
   packingRecordId: string;
   photoUrls: string[];
+  syncStatus: ShopfaSyncStatus;
 }
 
 /** Result of sending a whole customer group: orders are sent one by one, so some can succeed while others fail (e.g. Shopfa hiccup) -- the UI removes `sent` orders and keeps `failed` ones. */
@@ -84,12 +105,16 @@ export interface PackingRecordDTO {
   orderNumber: string;
   buyerName: string | null;
   items: PackingRecordItemDTO[];
-  statusCodeAfterSend: number;
-  statusTitleAfterSend: string;
+  /** Null until the Shopfa push went through (see syncStatus). */
+  statusCodeAfterSend: number | null;
+  statusTitleAfterSend: string | null;
   sentByName: string | null;
   sentAtISO: string;
   /** Confirmation photos of the customer group this order was sent with (oldest first); empty when staff chose "save and continue" without taking any. */
   photoUrls: string[];
+  syncStatus: ShopfaSyncStatus;
+  syncAttempts: number;
+  lastSyncError: string | null;
 }
 
 export interface PackingRecordListQuery {
@@ -99,13 +124,10 @@ export interface PackingRecordListQuery {
 }
 
 /** "ارسال شده به سرویس پستی" (sent to postal service) -- the only status Packing's queue shows. */
-export const PACKING_SOURCE_STATUS_CODE = 13;
-
-/** "پردازش انبار" (8), "اعلام پرداخت" (9), "پرداخت تائيد شده" (4): a customer's orders in these statuses aren't ready to ship yet, and Packing flags them next to that customer's ready orders. */
-export const PACKING_CUSTOMER_PENDING_STATUS_CODES: number[] = [8, 9, 4];
+export const PACKING_SOURCE_STATUS_CODE = OrderWorkflowStatus.SENT_TO_POST;
 
 /** "ارسال شده" (shipped) -- where an order lands once every item has been physically packed and confirmed. */
-export const PACKING_SENT_STATUS_CODE = 5;
+export const PACKING_SENT_STATUS_CODE = OrderWorkflowStatus.SENT;
 
 /**
  * Selectable "how far back" presets for Packing's queue. `0` means ALL TIME

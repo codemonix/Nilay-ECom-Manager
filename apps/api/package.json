@@ -12,6 +12,7 @@
     "create-admin": "ts-node --transpile-only -r dotenv/config scripts/createAdmin.ts",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:live": "SHOPFA_LIVE_TEST=1 vitest run --config vitest.live.config.mts",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc -p . --noEmit"
   },

@@ -52,6 +52,11 @@ export const sendPackedOrdersSchema = z.object({
 });
 export type SendPackedOrdersInput = z.infer<typeof sendPackedOrdersSchema>;
 
+export const packingCustomerOrdersQuerySchema = z.object({
+  orderNumber: z.string().min(1),
+});
+export type PackingCustomerOrdersQuery = z.infer<typeof packingCustomerOrdersQuerySchema>;
+
 export const listPackingHistoryQuerySchema = paginationQuerySchema.extend({
   search: z.string().optional(),
 });

@@ -1,11 +1,10 @@
 import {
-  ORDER_PRECHECK_ACCOUNTING_CONFIRMED_STATUS_CODE,
-  ORDER_PRECHECK_ALL_AVAILABLE_STATUS_CODE,
-  ORDER_PRECHECK_CUSTOMER_PENDING_STATUS_CODES,
-  ORDER_PRECHECK_SOME_UNAVAILABLE_STATUS_CODE,
-  SHOPFA_ORDER_STATUS_OPTIONS,
+  ORDER_WORKFLOW_NOT_READY_STATUS_CODES,
+  OrderStatusChangeSource,
+  OrderWorkflowStatus,
 } from "@complaint-system/shared";
 import type {
+  OrderPrecheckWarning,
   OrderPrecheckItemDTO,
   OrderPrecheckOrderDTO,
   OrderPrecheckRelatedOrderDTO,
@@ -15,17 +14,13 @@ import type {
 import { getShopfaClient } from "../integrations/shopfa";
 import { buildOrderPrecheckNote, parseOrderPrecheckUnavailableCodes } from "../integrations/shopfa/orderPrecheckNoteMarker";
 import { ApiError } from "../utils/ApiError";
-import { customerGroupKey, normalizeMobile, normalizeName } from "../utils/customerMatching";
+import { findCustomerSiblingOrders, recordStatusChange, statusTitleForCode, type WorkflowActor } from "./orderWorkflowService";
 import { logger } from "../config/logger";
 
 /** Oldest payment first -- orders paid earliest have to be checked/packed and delivered first. Falls back to the creation date for an order with no payment date, and sorts fully undated orders last. */
 function byOldestFirst<T extends { paymentDate: Date | null; orderDate: Date | null }>(a: T, b: T): number {
   const time = (order: T) => (order.paymentDate ?? order.orderDate)?.getTime() ?? Infinity;
   return time(a) - time(b);
-}
-
-function statusTitleForCode(code: number): string {
-  return SHOPFA_ORDER_STATUS_OPTIONS.find((option) => option.code === code)?.statusTitle ?? String(code);
 }
 
 /**
@@ -62,40 +57,45 @@ export async function listOrdersForPrecheck(statusCodes: number[]): Promise<Orde
 
 interface RelatedChange {
   orderNumber: string;
+  fromStatusCode: number;
   fromStatusTitle: string;
   toStatusCode: number;
 }
 
 /**
- * Applies one order's precheck decision, taking the same customer's OTHER
- * orders (matched by mobile, else by name -- see utils/customerMatching)
- * into account:
+ * Applies one order's precheck decision following the order status machine
+ * (docs/order-status-mchine.md), taking the customer's sibling orders into
+ * account -- every other order of the same customer except shipped/cancelled
+ * ones (see orderWorkflowService.findCustomerSiblingOrders):
  *
  * - Every item available:
- *   - if the customer has another order still in "پرداخت تائيد شده" /
- *     "پردازش انبار" / "اعلام پرداخت" (not prechecked / short on stock yet),
- *     this order is parked in "تایید حسابداری" -- it ships together with the
- *     rest, not alone;
- *   - otherwise it goes to "ارسال شده به سرویس پستی", and the customer's
- *     other orders waiting in "تایید حسابداری" are promoted to it too, since
- *     the whole set is now ready.
+ *   - no siblings -> "ارسال شده به سرویس پستی";
+ *   - every sibling is in "تایید حسابداری" -> this order AND those siblings
+ *     go to "ارسال شده به سرویس پستی", the whole set ships together;
+ *   - some sibling is still in "پرداخت تائيد شده" / "پردازش انبار" /
+ *     "اعلام پرداخت" -> this order is parked in "تایید حسابداری";
+ *   - any other combination (e.g. a sibling already in "ارسال شده به سرویس
+ *     پستی" or "آماده به ارسال") -> "آماده به ارسال", with a warning to check
+ *     the Shopfa panel.
  * - Some item unavailable: this order goes to "پردازش انبار" (with the
  *   unavailable product codes written into its admin note, see
- *   orderPrecheckNoteMarker.ts). If the customer has orders already in
- *   "ارسال شده به سرویس پستی", those would ship without the missing items,
- *   so they're pulled back to "تایید حسابداری" -- but only after the user
- *   confirmed (`confirmStatusChanges`); without it nothing is changed and
- *   the result comes back with `saved: false` and the affected orders.
+ *   orderPrecheckNoteMarker.ts). Siblings already in "ارسال شده به سرویس
+ *   پستی" would ship without the missing items, so they're pulled back to
+ *   "تایید حسابداری" -- but only after the user confirmed
+ *   (`confirmStatusChanges`); without it nothing is changed and the result
+ *   comes back with `saved: false` and the affected orders.
  *
  * The note write preserves whatever free text staff had already put there
- * outside of a prior precheck marker. Other orders' statuses are updated
- * one by one after the checked order itself; a failure on one is reported
- * in `relatedFailures` rather than undoing the rest.
+ * outside of a prior precheck marker. Siblings are updated one by one after
+ * the checked order itself; a failure on one is reported in
+ * `relatedFailures` rather than undoing the rest. Every applied change is
+ * recorded in the local status-change log.
  */
 export async function saveOrderPrecheck(
   orderNumber: string,
   items: SaveOrderPrecheckItemInput[],
   confirmStatusChanges = false,
+  actor?: WorkflowActor,
 ): Promise<SaveOrderPrecheckResultDTO> {
   const client = await getShopfaClient();
   const existing = await client.getOrderAdminNote(orderNumber);
@@ -104,48 +104,45 @@ export async function saveOrderPrecheck(
   if (!details) throw ApiError.notFound("Order not found");
 
   const unavailableProductCodes = items.filter((item) => !item.available).map((item) => item.productCode);
-
-  // Same customer's other orders. The Shopfa search is a substring match on name/family/mobile, so results are
-  // narrowed to the exact customer with the same rule Packing uses to group them.
-  const searchQuery =
-    normalizeMobile(details.buyerMobile) !== null
-      ? (details.buyerMobile as string)
-      : (normalizeName(details.buyerName).split(" ").sort((a, b) => b.length - a.length)[0] ?? "");
-  const myKey = customerGroupKey({ buyerMobile: details.buyerMobile, buyerName: details.buyerName, orderNumber });
-  const others = searchQuery
-    ? (await client.findOrdersByCustomerQuery(searchQuery)).filter(
-        (order) => order.orderNumber !== orderNumber && customerGroupKey(order) === myKey,
-      )
-    : [];
+  const siblings = await findCustomerSiblingOrders(client, {
+    orderNumber,
+    buyerMobile: details.buyerMobile,
+    buyerName: details.buyerName,
+  });
+  const moveSiblings = (from: number, to: number): RelatedChange[] =>
+    siblings
+      .filter((order) => order.statusCode === from)
+      .map((order) => ({
+        orderNumber: order.orderNumber,
+        fromStatusCode: order.statusCode,
+        fromStatusTitle: order.statusTitle,
+        toStatusCode: to,
+      }));
 
   let statusCode: number;
   let changes: RelatedChange[] = [];
+  let warning: OrderPrecheckWarning | null = null;
   if (unavailableProductCodes.length === 0) {
-    if (others.some((order) => ORDER_PRECHECK_CUSTOMER_PENDING_STATUS_CODES.includes(order.statusCode))) {
-      statusCode = ORDER_PRECHECK_ACCOUNTING_CONFIRMED_STATUS_CODE;
+    if (siblings.length === 0) {
+      statusCode = OrderWorkflowStatus.SENT_TO_POST;
+    } else if (siblings.every((order) => order.statusCode === OrderWorkflowStatus.ACCOUNTING_APPROVED)) {
+      statusCode = OrderWorkflowStatus.SENT_TO_POST;
+      changes = moveSiblings(OrderWorkflowStatus.ACCOUNTING_APPROVED, OrderWorkflowStatus.SENT_TO_POST);
+    } else if (siblings.some((order) => ORDER_WORKFLOW_NOT_READY_STATUS_CODES.includes(order.statusCode))) {
+      statusCode = OrderWorkflowStatus.ACCOUNTING_APPROVED;
     } else {
-      statusCode = ORDER_PRECHECK_ALL_AVAILABLE_STATUS_CODE;
-      changes = others
-        .filter((order) => order.statusCode === ORDER_PRECHECK_ACCOUNTING_CONFIRMED_STATUS_CODE)
-        .map((order) => ({
-          orderNumber: order.orderNumber,
-          fromStatusTitle: order.statusTitle,
-          toStatusCode: ORDER_PRECHECK_ALL_AVAILABLE_STATUS_CODE,
-        }));
+      statusCode = OrderWorkflowStatus.READY_TO_SEND;
+      warning = "check_shopfa_panel";
     }
   } else {
-    statusCode = ORDER_PRECHECK_SOME_UNAVAILABLE_STATUS_CODE;
-    changes = others
-      .filter((order) => order.statusCode === ORDER_PRECHECK_ALL_AVAILABLE_STATUS_CODE)
-      .map((order) => ({
-        orderNumber: order.orderNumber,
-        fromStatusTitle: order.statusTitle,
-        toStatusCode: ORDER_PRECHECK_ACCOUNTING_CONFIRMED_STATUS_CODE,
-      }));
+    statusCode = OrderWorkflowStatus.WAREHOUSE_PROCESSING;
+    changes = moveSiblings(OrderWorkflowStatus.SENT_TO_POST, OrderWorkflowStatus.ACCOUNTING_APPROVED);
   }
 
   const relatedOrders: OrderPrecheckRelatedOrderDTO[] = changes.map((change) => ({
-    ...change,
+    orderNumber: change.orderNumber,
+    fromStatusTitle: change.fromStatusTitle,
+    toStatusCode: change.toStatusCode,
     toStatusTitle: statusTitleForCode(change.toStatusCode),
   }));
 
@@ -160,12 +157,21 @@ export async function saveOrderPrecheck(
       saved: false,
       relatedOrders,
       relatedFailures: [],
+      warning,
     };
   }
 
   const note = buildOrderPrecheckNote(existing.note, unavailableProductCodes);
   const result = await client.updateOrderNoteAndStatus(orderNumber, { note, statusCode });
   if (!result) throw ApiError.notFound("Order not found");
+  await recordStatusChange({
+    orderNumber: result.orderNumber,
+    fromStatusCode: details.statusCode,
+    toStatusCode: result.statusCode,
+    toStatusTitle: result.statusTitle,
+    source: OrderStatusChangeSource.PRECHECK,
+    actor,
+  });
 
   const relatedFailures: SaveOrderPrecheckResultDTO["relatedFailures"] = [];
   const applied: OrderPrecheckRelatedOrderDTO[] = [];
@@ -174,6 +180,14 @@ export async function saveOrderPrecheck(
       const updated = await client.updateOrderStatus(change.orderNumber, change.toStatusCode);
       if (!updated) throw ApiError.notFound("Order not found");
       applied.push(relatedOrders[index]!);
+      await recordStatusChange({
+        orderNumber: change.orderNumber,
+        fromStatusCode: change.fromStatusCode,
+        toStatusCode: updated.statusCode,
+        toStatusTitle: updated.statusTitle,
+        source: OrderStatusChangeSource.PRECHECK,
+        actor,
+      });
     } catch (err) {
       logger.error("Order Precheck: failed to update a related order's status", { orderNumber: change.orderNumber, err });
       relatedFailures.push({
@@ -191,5 +205,6 @@ export async function saveOrderPrecheck(
     saved: true,
     relatedOrders: applied,
     relatedFailures,
+    warning,
   };
 }

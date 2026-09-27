@@ -168,13 +168,14 @@ export type {
   SaveOrderPrecheckRequestDTO,
   SaveOrderPrecheckResultDTO,
   OrderPrecheckRelatedOrderDTO,
+  OrderPrecheckWarning,
 } from "./types/orderPrecheck";
 export {
   ORDER_PRECHECK_DEFAULT_STATUS_CODES,
   ORDER_PRECHECK_ALL_AVAILABLE_STATUS_CODE,
   ORDER_PRECHECK_SOME_UNAVAILABLE_STATUS_CODE,
   ORDER_PRECHECK_ACCOUNTING_CONFIRMED_STATUS_CODE,
-  ORDER_PRECHECK_CUSTOMER_PENDING_STATUS_CODES,
+  ORDER_PRECHECK_READY_TO_SEND_STATUS_CODE,
 } from "./types/orderPrecheck";
 
 export type {
@@ -193,14 +194,29 @@ export type {
   SendPackedOrdersResultDTO,
   PackingRangeDays,
   PackingRecordItemDTO,
-  PackingPendingOrderDTO,
+  PackingOtherStatusOrderDTO,
+  PackingCustomerOrdersDTO,
+  PackingSyncIssueDTO,
   PackingRecordDTO,
   PackingRecordListQuery,
 } from "./types/packing";
 export {
   PACKING_SOURCE_STATUS_CODE,
   PACKING_SENT_STATUS_CODE,
-  PACKING_CUSTOMER_PENDING_STATUS_CODES,
   PACKING_RANGE_DAYS_VALUES,
   DEFAULT_PACKING_RANGE_DAYS,
 } from "./types/packing";
+
+export type {
+  OrderWorkflowStatusCode,
+  OrderStatusChangeDTO,
+  OrderHistoryPackingDTO,
+  OrderHistoryDTO,
+} from "./types/orderWorkflow";
+export {
+  OrderWorkflowStatus,
+  ORDER_WORKFLOW_SIBLING_EXCLUDED_STATUS_CODES,
+  ORDER_WORKFLOW_NOT_READY_STATUS_CODES,
+  OrderStatusChangeSource,
+  ShopfaSyncStatus,
+} from "./types/orderWorkflow";

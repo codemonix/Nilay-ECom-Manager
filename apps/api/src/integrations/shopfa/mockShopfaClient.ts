@@ -192,16 +192,6 @@ export class MockShopfaClient implements ShopfaClient {
     );
   }
 
-  /** Same reasoning as listOrdersByStatusForPacking above. */
-  async listOrdersByStatusesForCustomerLookup(
-    _statusCodes: number[],
-    _range: ShopfaOrderDateWindow | null | null,
-  ): Promise<ShopfaCustomerOrderRef[]> {
-    throw ApiError.badRequest(
-      "Packing requires the Live API data source -- mock order data has no Shopfa status codes to filter by.",
-    );
-  }
-
   /** Same reasoning as getOrderAdminNote's live-only note field -- see listOrdersByStatusForShortageReport above. */
   async getOrderDetailsByNumber(_orderNumber: string): Promise<ShopfaOrderDetails | null> {
     throw ApiError.badRequest(

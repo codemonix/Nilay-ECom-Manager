@@ -17,8 +17,9 @@ import { devToolsRoutes } from "./devToolsRoutes";
 import { reportingRoutes } from "./reportingRoutes";
 import { orderPrecheckRoutes } from "./orderPrecheckRoutes";
 import { packingRoutes } from "./packingRoutes";
+import { orderHistoryRoutes } from "./orderHistoryRoutes";
 import { ordersByStatusRoutes } from "./ordersByStatusRoutes";
-import { requireAnyReportAccess, requireAuth, requirePermission } from "../middleware/authenticate";
+import { requireAnyPermission, requireAnyReportAccess, requireAuth, requirePermission } from "../middleware/authenticate";
 
 export const apiRouter = Router();
 
@@ -39,4 +40,10 @@ apiRouter.use("/dev-tools", requireAuth, requirePermission(MenuKey.DEV_TOOLS), d
 apiRouter.use("/reporting", requireAuth, requireAnyReportAccess, reportingRoutes);
 apiRouter.use("/order-precheck", requireAuth, requirePermission(MenuKey.ORDER_CHECK), orderPrecheckRoutes);
 apiRouter.use("/packing", requireAuth, requirePermission(MenuKey.PACKING), packingRoutes);
+apiRouter.use(
+  "/order-history",
+  requireAuth,
+  requireAnyPermission(MenuKey.ORDER_CHECK, MenuKey.PACKING),
+  orderHistoryRoutes,
+);
 apiRouter.use("/order-status", requireAuth, requirePermission(MenuKey.ORDERS_BY_STATUS), ordersByStatusRoutes);

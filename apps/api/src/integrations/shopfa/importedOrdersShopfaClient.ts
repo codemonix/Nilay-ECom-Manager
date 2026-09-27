@@ -238,16 +238,6 @@ export class ImportedOrdersShopfaClient implements ShopfaClient {
     );
   }
 
-  /** Same reasoning as listOrdersByStatusForPacking above. */
-  async listOrdersByStatusesForCustomerLookup(
-    _statusCodes: number[],
-    _range: ShopfaOrderDateWindow | null | null,
-  ): Promise<ShopfaCustomerOrderRef[]> {
-    throw ApiError.badRequest(
-      "Packing requires the Live API data source -- imported order data has no Shopfa status codes to filter by.",
-    );
-  }
-
   /** Same reasoning as getOrderAdminNote above. */
   async getOrderDetailsByNumber(_orderNumber: string): Promise<ShopfaOrderDetails | null> {
     throw ApiError.badRequest(

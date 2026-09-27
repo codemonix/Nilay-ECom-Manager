@@ -189,7 +189,7 @@ function shippingMethodFields(raw: Pick<ShopfaApiOrder, "post_method" | "post_me
   };
 }
 
-/** For Order Precheck's / Packing's "customer's other orders" lookup -- see ShopfaClient.listOrdersByStatusesForCustomerLookup. */
+/** For the order status machine's "customer's other orders" lookup -- see ShopfaClient.findOrdersByCustomerQuery. */
 export function mapApiOrderToCustomerOrderRef(raw: ShopfaApiOrder, statusCode: number): ShopfaCustomerOrderRef {
   return {
     orderNumber: raw.session !== undefined && raw.session !== "" ? String(raw.session) : String(raw.id),

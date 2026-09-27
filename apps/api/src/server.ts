@@ -4,6 +4,7 @@ import { env } from "./config/env";
 import { logger, applyLogLevel } from "./config/logger";
 import * as settingsService from "./services/settingsService";
 import { startSystemLogRetentionJob } from "./jobs/systemLogRetentionJob";
+import { startPackingSyncRetryJob } from "./jobs/packingSyncRetryJob";
 
 async function main() {
   await connectDatabase();
@@ -11,6 +12,7 @@ async function main() {
   const settings = await settingsService.getSettings();
   applyLogLevel(settings.systemLogLevel);
   startSystemLogRetentionJob();
+  startPackingSyncRetryJob();
 
   const app = createApp();
   app.listen(env.PORT, () => {

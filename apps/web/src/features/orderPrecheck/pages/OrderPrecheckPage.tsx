@@ -83,6 +83,7 @@ export function OrderPrecheckPage() {
   const [pendingConfirmation, setPendingConfirmation] = useState<SaveOrderPrecheckResultDTO | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const [saveWarning, setSaveWarning] = useState<string | null>(null);
 
   const [fetchOrders, { isFetching, error }] = useLazyListOrderPrecheckOrdersQuery();
   const [saveOrder, { isLoading: isSaving }] = useSaveOrderPrecheckMutation();
@@ -144,6 +145,7 @@ export function OrderPrecheckPage() {
     const orderNumber = currentOrder.orderNumber;
     setSaveError(null);
     setSaveSuccessMessage(null);
+    setSaveWarning(null);
     try {
       const result = await saveOrder({
         orderNumber,
@@ -175,6 +177,7 @@ export function OrderPrecheckPage() {
             })}`
           : "";
       setSaveSuccessMessage(base + related);
+      setSaveWarning(result.warning === "check_shopfa_panel" ? t("readyToSendWarning") : null);
       if (result.relatedFailures.length > 0) {
         setSaveError(t("relatedFailed", { orders: result.relatedFailures.map((f) => f.orderNumber).join("، ") }));
       }
@@ -272,6 +275,7 @@ export function OrderPrecheckPage() {
         />
       )}
       {saveSuccessMessage && !saveError && <Alert severity="success">{saveSuccessMessage}</Alert>}
+      {saveWarning && <Alert severity="warning">{saveWarning}</Alert>}
       {saveError && <Alert severity="error">{saveError}</Alert>}
 
       {orders && orders.length === 0 && !isFetching && <Alert severity="info">{t("noOrders")}</Alert>}

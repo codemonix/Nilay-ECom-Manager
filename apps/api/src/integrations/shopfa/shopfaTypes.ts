@@ -184,17 +184,6 @@ export interface ShopfaClient {
    */
   updateOrderStatus(orderNumber: string, statusCode: number): Promise<ShopfaOrderStatusUpdateResult | null>;
   /**
-   * Lightweight (no items, no admin note) list of every order in the given
-   * status codes with just enough to identify the customer -- backs
-   * Packing's "this customer has other orders still pending" flag. `range`
-   * is the same creation-date window Packing's queue uses (null = all time),
-   * so the check never looks further back than the time frame staff selected.
-   */
-  listOrdersByStatusesForCustomerLookup(
-    statusCodes: number[],
-    range: ShopfaOrderDateWindow | null,
-  ): Promise<ShopfaCustomerOrderRef[]>;
-  /**
    * Looks up one order by its customer-facing order number (Shopfa's
    * `session`), including its admin note and items -- backs Reporting's
    * order details page, opened from the shortage report's order links.

@@ -11,11 +11,13 @@ import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Alert from "@mui/material/Alert";
 import Skeleton from "@mui/material/Skeleton";
+import Box from "@mui/material/Box";
 import SearchIcon from "@mui/icons-material/Search";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useTranslation } from "react-i18next";
-import { useListPackingHistoryQuery } from "../api/packingApi";
-import type { PackingRecordDTO } from "../types";
+import Collapse from "@mui/material/Collapse";
+import { useLazyGetOrderHistoryQuery, useListPackingHistoryQuery, useRetryPackingSyncMutation } from "../api/packingApi";
+import { ShopfaSyncStatus, type PackingRecordDTO } from "../types";
 import { ItemPhoto } from "../../../components/ItemPhoto";
 import { resolveUploadUrl } from "../../../utils/attachments";
 import { EmptyState } from "../../../components/EmptyState";
@@ -25,8 +27,17 @@ import { useActiveLanguage } from "../../../i18n/useActiveLanguage";
 
 const DEFAULT_PAGE_SIZE = 10;
 
+const SYNC_CHIP_COLOR = {
+  [ShopfaSyncStatus.SYNCED]: "success",
+  [ShopfaSyncStatus.PENDING_SYNC]: "warning",
+  [ShopfaSyncStatus.FAILED]: "error",
+} as const;
+
 function PackingHistoryCard({ record, language }: { record: PackingRecordDTO; language: ReturnType<typeof useActiveLanguage> }) {
   const { t } = useTranslation("packing");
+  const [retrySync, { isLoading: isRetrying }] = useRetryPackingSyncMutation();
+  const [loadHistory, { data: history, isFetching: isLoadingHistory }] = useLazyGetOrderHistoryQuery();
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   return (
     <Card variant="outlined" sx={{ borderRadius: "14px" }}>
@@ -52,7 +63,12 @@ function PackingHistoryCard({ record, language }: { record: PackingRecordDTO; la
           <Stack spacing={0.5} sx={{ flexGrow: 1, minWidth: 0 }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
               <Typography variant="subtitle1">{record.buyerName || t("guestBuyer")}</Typography>
-              <Chip size="small" label={record.statusTitleAfterSend} color="success" variant="outlined" />
+              <Stack direction="row" gap={0.5} alignItems="center">
+                {record.statusTitleAfterSend && (
+                  <Chip size="small" label={record.statusTitleAfterSend} color="success" variant="outlined" />
+                )}
+                <Chip size="small" label={t(`syncStatus.${record.syncStatus}`)} color={SYNC_CHIP_COLOR[record.syncStatus]} />
+              </Stack>
             </Stack>
             <Typography variant="caption" color="text.secondary">
               {t("orderNumberLabel")}: {record.orderNumber}
@@ -64,6 +80,43 @@ function PackingHistoryCard({ record, language }: { record: PackingRecordDTO; la
             <Typography variant="caption" color="text.secondary">
               {t("historyItemsCount", { count: record.items.length })}
             </Typography>
+            {record.syncStatus !== ShopfaSyncStatus.SYNCED && (
+              <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
+                {record.lastSyncError && (
+                  <Typography variant="caption" color="error.main">
+                    {record.lastSyncError}
+                  </Typography>
+                )}
+                <Button size="small" disabled={isRetrying} onClick={() => void retrySync({ packingRecordId: record.id })}>
+                  {t("syncRetry")}
+                </Button>
+              </Stack>
+            )}
+            <Box>
+              <Button
+                size="small"
+                onClick={() => {
+                  if (!historyOpen) void loadHistory({ orderNumber: record.orderNumber });
+                  setHistoryOpen((open) => !open);
+                }}
+              >
+                {historyOpen ? t("statusHistoryHide") : t("statusHistoryShow")}
+              </Button>
+              <Collapse in={historyOpen}>
+                {isLoadingHistory && <Skeleton width="60%" />}
+                {history && history.statusChanges.length === 0 && (
+                  <Typography variant="caption" color="text.secondary">
+                    {t("statusHistoryEmpty")}
+                  </Typography>
+                )}
+                {history?.statusChanges.map((change) => (
+                  <Typography key={`${change.changedAtISO}-${change.toStatusCode}`} variant="caption" component="div" color="text.secondary">
+                    {formatDateTime(change.changedAtISO, language)} · {t(`statusSource.${change.source}`)} → {change.toStatusTitle}
+                    {change.changedByName ? ` · ${change.changedByName}` : ""}
+                  </Typography>
+                ))}
+              </Collapse>
+            </Box>
           </Stack>
         </Stack>
       </CardContent>

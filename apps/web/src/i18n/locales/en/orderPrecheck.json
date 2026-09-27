@@ -31,5 +31,6 @@
   "relatedFailed": "Could not update the status of these other orders of the customer: {{orders}}",
   "confirmRelatedTitle": "Other orders of this customer will change",
   "confirmRelatedMessage": "Some items are unavailable, but this customer already has orders sent to the postal service. To avoid shipping them without the missing items, they will be moved back to accounting confirmed and this order to \"{{status}}\". Cancel to change nothing.",
-  "confirmRelatedConfirm": "Confirm and save"
+  "confirmRelatedConfirm": "Confirm and save",
+  "readyToSendWarning": "The order was moved to \"Ready to send\" because this customer's other orders are in a mixed combination of statuses. Check the Shopfa panel for more information."
 }

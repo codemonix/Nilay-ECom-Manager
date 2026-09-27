@@ -1113,45 +1113,6 @@ export class HttpShopfaClient implements ShopfaClient {
     return results;
   }
 
-  /** See the ShopfaClient interface doc: one scan per status code, bounded by `range` (creation date), no `note` requested so it can page at 500. */
-  async listOrdersByStatusesForCustomerLookup(
-    statusCodes: number[],
-    range: ShopfaOrderDateWindow | null,
-  ): Promise<ShopfaCustomerOrderRef[]> {
-    const PAGE_SIZE = 500;
-    // `from`/`to` only act on the creation date when sent together with `sort: "date"` (confirmed live 2026-09-21; without a sort they filter by last-updated date), so every windowed call below sets it. A null range means no window at all.
-    const windowParams = range
-      ? { from: Math.floor(range.from.getTime() / 1000), to: Math.floor(range.to.getTime() / 1000) }
-      : {};
-    const results: ShopfaCustomerOrderRef[] = [];
-    try {
-      for (const statusCode of statusCodes) {
-        for (let page = 1; ; page += 1) {
-          const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
-            "/api/shop/orders",
-            {},
-            {
-              params: {
-                status: statusCode,
-                ...windowParams,
-                limit: PAGE_SIZE,
-                page,
-                fields: "id,session,status,status_title,name,family,mobile",
-              },
-            },
-          );
-          const baskets = data.baskets ?? [];
-          results.push(...baskets.map((raw) => mapApiOrderToCustomerOrderRef(raw, statusCode)));
-          if (baskets.length < PAGE_SIZE) break;
-        }
-      }
-    } catch (err) {
-      logger.error("Shopfa listOrdersByStatusesForCustomerLookup failed", { statusCodes, err });
-      throw ApiError.badGateway("Failed to reach Shopfa order service");
-    }
-    return results;
-  }
-
   private async fetchOrdersByUser(userId: string): Promise<ShopfaApiOrder[]> {
     const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
       "/api/shop/orders",

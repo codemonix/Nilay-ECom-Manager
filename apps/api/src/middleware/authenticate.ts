@@ -58,6 +58,15 @@ export function requirePermission(key: MenuKey) {
   };
 }
 
+/** Like requirePermission, but passes when the user has any one of the given menu sections. */
+export function requireAnyPermission(...keys: MenuKey[]) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.currentUser) throw ApiError.unauthorized();
+    if (!keys.some((key) => hasMenuAccess(req.currentUser!, key))) throw ApiError.forbidden();
+    next();
+  };
+}
+
 /** Gates one specific report (see ReportKey) -- admins always pass, everyone else needs that exact report key (or the legacy all-reports grant, see hasReportAccess). */
 export function requireReportAccess(key: ReportKey) {
   return (req: Request, _res: Response, next: NextFunction) => {

@@ -1,13 +1,7 @@
-import {
-  AttachmentSubjectType,
-  PACKING_CUSTOMER_PENDING_STATUS_CODES,
-  PACKING_SENT_STATUS_CODE,
-  PACKING_SOURCE_STATUS_CODE,
-  SHOPFA_ORDER_STATUS_OPTIONS,
-} from "@complaint-system/shared";
+import { AttachmentSubjectType, PACKING_SOURCE_STATUS_CODE, ShopfaSyncStatus } from "@complaint-system/shared";
 import type {
+  PackingCustomerOrdersDTO,
   PackingListResultDTO,
-  PackingPendingOrderDTO,
   PackingRangeDays,
   PackingRecordDTO,
   PackingRecordItemDTO,
@@ -22,6 +16,8 @@ import type { PackingRecordDocument } from "../models/PackingRecord";
 import { ApiError } from "../utils/ApiError";
 import { logger } from "../config/logger";
 import { customerGroupKey } from "../utils/customerMatching";
+import { findCustomerSiblingOrders } from "./orderWorkflowService";
+import * as packingSyncService from "./packingSyncService";
 
 export interface PackingActor {
   id: string;
@@ -53,15 +49,17 @@ function groupByCustomer<
   });
 }
 
-function statusTitleForCode(code: number): string {
-  return SHOPFA_ORDER_STATUS_OPTIONS.find((option) => option.code === code)?.statusTitle ?? String(code);
-}
-
 /**
  * Every order in "ارسال شده به سرویس پستی" (created within the last `days`
  * days, or all of them when `days` is 0), ready for Packing's one-at-a-time queue -- see
  * ShopfaClient.listOrdersByStatusForPacking for why this bounds by order
  * *creation* date rather than when the order entered this status.
+ *
+ * Orders already packed here whose Shopfa push hasn't gone through yet
+ * (PENDING_SYNC, being retried) or gave up (FAILED) are still in this status
+ * on Shopfa, but are physically packed -- they're left out of the queue so
+ * they aren't packed twice, and FAILED ones are listed in `failedSyncs` for a
+ * manual retry.
  */
 export async function listOrdersForPacking(days: PackingRangeDays): Promise<PackingListResultDTO> {
   // days === 0 means all time: no window, so no order sitting in the status is ever hidden.
@@ -69,28 +67,14 @@ export async function listOrdersForPacking(days: PackingRangeDays): Promise<Pack
   const window = days === 0 ? null : { from: new Date(to.getTime() - days * 24 * 60 * 60 * 1000), to };
 
   const client = await getShopfaClient();
-  const [statusOrders, statusTotal] = await Promise.all([
+  const [statusOrders, statusTotal, unsynced] = await Promise.all([
     client.listOrdersByStatusForPacking(PACKING_SOURCE_STATUS_CODE, window),
     client.countOrdersInStatus(PACKING_SOURCE_STATUS_CODE),
+    packingRecordRepository.listUnsynced(),
   ]);
-  const orders = groupByCustomer(statusOrders);
-
-  // The pending-orders flag is advisory: if this lookup fails, the queue itself must still load
-  // (staff can pack regardless), so the failure is reported via pendingLookupFailed instead of thrown.
-  const pendingByCustomer = new Map<string, PackingPendingOrderDTO[]>();
-  let pendingLookupFailed = false;
-  try {
-    const refs = await client.listOrdersByStatusesForCustomerLookup(PACKING_CUSTOMER_PENDING_STATUS_CODES, window);
-    for (const ref of refs) {
-      const key = customerGroupKey(ref);
-      const list = pendingByCustomer.get(key) ?? [];
-      list.push({ orderNumber: ref.orderNumber, statusCode: ref.statusCode, statusTitle: ref.statusTitle });
-      pendingByCustomer.set(key, list);
-    }
-  } catch (err) {
-    pendingLookupFailed = true;
-    logger.warn("Packing: could not look up customers' other pending orders", { err });
-  }
+  const unsyncedOrderNumbers = new Set(unsynced.map((record) => record.orderNumber));
+  const orders = groupByCustomer(statusOrders.filter((order) => !unsyncedOrderNumbers.has(order.orderNumber)));
+  const failed = unsynced.filter((record) => record.syncStatus === ShopfaSyncStatus.FAILED);
 
   return {
     days,
@@ -103,15 +87,43 @@ export async function listOrdersForPacking(days: PackingRangeDays): Promise<Pack
       buyerName: order.buyerName,
       buyerMobile: order.buyerMobile ?? null,
       shippingMethod: order.shippingMethod ?? null,
-      pendingOrders: pendingByCustomer.get(order.customerGroupKey) ?? [],
       customerGroupKey: order.customerGroupKey,
       orderDateISO: order.orderDate ? order.orderDate.toISOString() : null,
       statusCode: order.statusCode,
       statusTitle: order.statusTitle,
       items: order.items,
     })),
-    pendingLookupFailed,
+    failedSyncs: failed.map((record) => ({
+      packingRecordId: String(record._id),
+      orderNumber: record.orderNumber,
+      buyerName: record.buyerName ?? null,
+      lastSyncError: record.lastSyncError ?? null,
+      sentAtISO: record.sentAt.toISOString(),
+    })),
+    pendingSyncCount: unsynced.length - failed.length,
     generatedAtISO: new Date().toISOString(),
+  };
+}
+
+/**
+ * Opening a customer group: the customer's orders in any status other than
+ * "ارسال شده به سرویس پستی" (those are the group itself), leaving out
+ * shipped/cancelled ones -- purely informational, it never blocks packing.
+ */
+export async function getPackingCustomerOrders(orderNumber: string): Promise<PackingCustomerOrdersDTO> {
+  const client = await getShopfaClient();
+  const details = await client.getOrderDetailsByNumber(orderNumber);
+  if (!details) throw ApiError.notFound("Order not found");
+  const siblings = await findCustomerSiblingOrders(client, {
+    orderNumber,
+    buyerMobile: details.buyerMobile,
+    buyerName: details.buyerName,
+  });
+  return {
+    orderNumber,
+    otherStatusOrders: siblings
+      .filter((order) => order.statusCode !== PACKING_SOURCE_STATUS_CODE)
+      .map((order) => ({ orderNumber: order.orderNumber, statusCode: order.statusCode, statusTitle: order.statusTitle })),
   };
 }
 
@@ -122,19 +134,17 @@ export interface MarkOrderPackedSnapshot {
 }
 
 /**
- * Moves an order to "ارسال شده" once every item has been physically packed
- * and confirmed -- no admin note involved, unlike Order Precheck. Also
- * writes a local PackingRecord (Shopfa itself keeps no browsable packing
- * history) with a denormalized snapshot of the order and, when provided, a
- * confirmation photo attached via the normal Attachment pipeline. `photos`
- * may be empty -- staff can explicitly "save and continue" without any via the
- * warning dialog, in which case the record simply has no photos.
+ * Finalizes one packed order: a local PackingRecord is written first (a
+ * denormalized snapshot of the order -- Shopfa itself keeps no browsable
+ * packing history) with the group's confirmation photos attached via the
+ * normal Attachment pipeline, then the order is pushed to Shopfa as
+ * "ارسال شده" with the photo count in its admin note (see
+ * packingSyncService). `photos` may be empty -- staff can explicitly confirm
+ * the save without any.
  *
- * The Shopfa status write happens first; if the subsequent local history
- * write fails, the order is still correctly "ارسال شده" in Shopfa (the
- * system of record for order status) but missing from local history -- an
- * accepted, non-transactional gap rather than something this tries to roll
- * back, since Shopfa and MongoDB can't share a transaction.
+ * A failed push doesn't fail the send: the order is packed either way, so
+ * the record stays PENDING_SYNC and the background worker retries it
+ * (the result's `syncStatus` says which happened).
  */
 export async function markOrderPacked(
   orderNumber: string,
@@ -142,17 +152,14 @@ export async function markOrderPacked(
   photos: Express.Multer.File[],
   actor: PackingActor | undefined,
 ): Promise<SendPackedOrderResultDTO> {
-  const client = await getShopfaClient();
-  const result = await client.updateOrderStatus(orderNumber, PACKING_SENT_STATUS_CODE);
-  if (!result) throw ApiError.notFound("Order not found");
-
   const record = await packingRecordRepository.create({
     externalOrderId: snapshot.externalOrderId,
-    orderNumber: result.orderNumber,
+    orderNumber,
     buyerName: snapshot.buyerName,
     items: snapshot.items,
-    statusCodeAfterSend: result.statusCode,
-    statusTitleAfterSend: result.statusTitle || statusTitleForCode(PACKING_SENT_STATUS_CODE),
+    photoCount: photos.length,
+    syncStatus: ShopfaSyncStatus.PENDING_SYNC,
+    nextSyncAt: packingSyncService.newRecordLease(),
     sentBy: actor?.id ?? null,
     sentByName: actor?.name ?? null,
     sentAt: new Date(),
@@ -169,23 +176,34 @@ export async function markOrderPacked(
     photoUrls.push(serializeAttachment(attachment).url);
   }
 
+  const pushed = await packingSyncService.pushNewRecord(record);
   return {
-    orderNumber: result.orderNumber,
-    statusCode: result.statusCode,
-    statusTitle: result.statusTitle || statusTitleForCode(PACKING_SENT_STATUS_CODE),
+    orderNumber,
     packingRecordId: String(record._id),
     photoUrls,
+    syncStatus: pushed.syncStatus as ShopfaSyncStatus,
+  };
+}
+
+/** Manual "retry now" for a packed order whose Shopfa push is pending or gave up. */
+export async function retryPackingSync(recordId: string): Promise<SendPackedOrderResultDTO> {
+  const record = await packingSyncService.retryRecord(recordId);
+  return {
+    orderNumber: record.orderNumber,
+    packingRecordId: String(record._id),
+    photoUrls: [],
+    syncStatus: record.syncStatus as ShopfaSyncStatus,
   };
 }
 
 /**
- * Sends a whole customer group: every order is moved to "ارسال شده" and
- * recorded locally, and the group's confirmation photos are attached to each
- * order's record (same stored files, one Attachment per record) so each
- * order's history entry shows them. Orders are processed one by one and a
- * failure on one (e.g. a Shopfa timeout) doesn't stop the rest -- the result
- * lists which orders were sent and which failed so the caller can keep only
- * the failed ones in the queue.
+ * Sends a whole customer group (Packing's Save): every order is recorded
+ * locally and pushed to Shopfa as "ارسال شده", and the group's confirmation
+ * photos are attached to each order's record (same stored files, one
+ * Attachment per record) so each order's history entry shows them. Orders are
+ * processed one by one; a Shopfa failure only leaves that order PENDING_SYNC
+ * (see markOrderPacked), and only a local failure (the record couldn't be
+ * written) lands it in `failed` so the caller keeps it in the queue.
  */
 export async function markOrdersPacked(
   orders: (MarkOrderPackedSnapshot & { orderNumber: string })[],
@@ -213,11 +231,14 @@ function serializePackingRecord(doc: PackingRecordDocument, photoUrls: string[])
     orderNumber: obj.orderNumber,
     buyerName: obj.buyerName ?? null,
     items: obj.items.map((item) => ({ productCode: item.productCode, title: item.title, quantity: item.quantity })),
-    statusCodeAfterSend: obj.statusCodeAfterSend,
-    statusTitleAfterSend: obj.statusTitleAfterSend,
+    statusCodeAfterSend: obj.statusCodeAfterSend ?? null,
+    statusTitleAfterSend: obj.statusTitleAfterSend ?? null,
     sentByName: obj.sentByName ?? null,
     sentAtISO: obj.sentAt.toISOString(),
     photoUrls,
+    syncStatus: (obj.syncStatus as ShopfaSyncStatus | undefined) ?? ShopfaSyncStatus.SYNCED,
+    syncAttempts: obj.syncAttempts ?? 0,
+    lastSyncError: obj.lastSyncError ?? null,
   };
 }
 

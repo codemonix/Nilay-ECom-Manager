@@ -1,11 +1,14 @@
 import type { ApiResponse } from "@complaint-system/shared";
 import { apiSlice } from "../../../services/apiSlice";
 import type {
+  OrderHistoryDTO,
+  PackingCustomerOrdersDTO,
   PackingListResultDTO,
   PackingRangeDays,
   PackingRecordDTO,
   PackingRecordItemDTO,
   PackingRecordListResult,
+  SendPackedOrderResultDTO,
   SendPackedOrdersResultDTO,
 } from "../types";
 
@@ -50,6 +53,24 @@ export const packingApi = apiSlice.injectEndpoints({
       transformResponse: (response: ApiResponse<SendPackedOrdersResultDTO>) => unwrap(response),
       invalidatesTags: ["PackingList", { type: "PackingHistoryList", id: "LIST" }],
     }),
+    /** Opening a customer group: the customer's orders in other statuses (information only). */
+    getPackingCustomerOrders: builder.query<PackingCustomerOrdersDTO, { orderNumber: string }>({
+      query: ({ orderNumber }) => ({ url: "/packing/customer-orders", params: { orderNumber } }),
+      transformResponse: (response: ApiResponse<PackingCustomerOrdersDTO>) => unwrap(response),
+      providesTags: ["PackingList"],
+    }),
+    /** Push a packed order to Shopfa again now (its automatic retries are pending or gave up). */
+    retryPackingSync: builder.mutation<SendPackedOrderResultDTO, { packingRecordId: string }>({
+      query: ({ packingRecordId }) => ({ url: `/packing/records/${packingRecordId}/retry-sync`, method: "POST" }),
+      transformResponse: (response: ApiResponse<SendPackedOrderResultDTO>) => unwrap(response),
+      invalidatesTags: ["PackingList", { type: "PackingHistoryList", id: "LIST" }],
+    }),
+    /** Status changes this system made to an order plus its packing passes (pictures, Shopfa sync state). */
+    getOrderHistory: builder.query<OrderHistoryDTO, { orderNumber: string }>({
+      query: ({ orderNumber }) => ({ url: `/order-history/${encodeURIComponent(orderNumber)}` }),
+      transformResponse: (response: ApiResponse<OrderHistoryDTO>) => unwrap(response),
+      providesTags: [{ type: "PackingHistoryList", id: "LIST" }],
+    }),
     listPackingHistory: builder.query<PackingRecordListResult, ListPackingHistoryArgs>({
       query: (params) => ({ url: "/packing/history", params }),
       transformResponse: (
@@ -72,4 +93,11 @@ export const packingApi = apiSlice.injectEndpoints({
   }),
 });
 
-export const { useLazyListPackingOrdersQuery, useSendPackedOrdersMutation, useListPackingHistoryQuery } = packingApi;
+export const {
+  useLazyListPackingOrdersQuery,
+  useSendPackedOrdersMutation,
+  useListPackingHistoryQuery,
+  useGetPackingCustomerOrdersQuery,
+  useRetryPackingSyncMutation,
+  useLazyGetOrderHistoryQuery,
+} = packingApi;
