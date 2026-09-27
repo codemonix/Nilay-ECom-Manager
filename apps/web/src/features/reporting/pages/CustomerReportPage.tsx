@@ -25,7 +25,7 @@ import { useLazyGetCustomerReportQuery } from "../api/reportingApi";
 import type { CustomerReportCustomerDTO, CustomerReportOrderDTO } from "../types";
 import { DateRangeFields } from "../components/DateRangeFields";
 import { isValidDateRange, lastDaysRange, type DateRangeValue } from "../dateRange";
-import { useGetSettingsQuery } from "../../settings/api/settingsApi";
+import { useGetAppConfigQuery } from "../../settings/api/settingsApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 import { formatDate, formatDateTime, formatNumber } from "../../../utils/localeFormat";
 import { useActiveLanguage } from "../../../i18n/useActiveLanguage";
@@ -154,8 +154,8 @@ export function CustomerReportPage() {
   const [query, setQuery] = useState("");
   const [range, setRange] = useState<DateRangeValue>(() => lastDaysRange(90));
 
-  const { data: settings } = useGetSettingsQuery();
-  const isLiveApi = settings?.dataSource === DataSource.LIVE_API;
+  const { data: appConfig } = useGetAppConfigQuery();
+  const isLiveApi = appConfig?.dataSource === DataSource.LIVE_API;
   const [runReport, { data: result, isFetching, error }] = useLazyGetCustomerReportQuery();
 
   const canGenerate = isLiveApi && query.trim().length >= MIN_QUERY_LENGTH && isValidDateRange(range) && !isFetching;

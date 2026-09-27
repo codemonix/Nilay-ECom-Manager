@@ -1,4 +1,10 @@
-import type { ApiResponse, DataSource, SystemLogLevel } from "@complaint-system/shared";
+import type {
+  ApiResponse,
+  AppConfigDTO,
+  DataSource,
+  SessionSettingsInputDTO,
+  SystemLogLevel,
+} from "@complaint-system/shared";
 import { apiSlice } from "../../../services/apiSlice";
 import type { AppSettingsDTO, ImportOrdersResultDTO, ShopfaConnectionTestResultDTO, LogSizesDTO } from "../types";
 
@@ -15,6 +21,18 @@ export const settingsApi = apiSlice.injectEndpoints({
       providesTags: ["Settings"],
     }),
 
+    /**
+     * System-wide config (the data-source toggle) readable by every
+     * authenticated user -- use this, not getSettings, outside the Settings
+     * page, since /settings requires the Settings permission. Tagged
+     * "Settings" so toggling the data source refetches it.
+     */
+    getAppConfig: builder.query<AppConfigDTO, void>({
+      query: () => "/app-config",
+      transformResponse: (response: ApiResponse<AppConfigDTO>) => unwrap(response),
+      providesTags: ["Settings"],
+    }),
+
     updateDataSource: builder.mutation<AppSettingsDTO, DataSource>({
       query: (dataSource) => ({ url: "/settings/data-source", method: "PATCH", body: { dataSource } }),
       transformResponse: (response: ApiResponse<AppSettingsDTO>) => unwrap(response),
@@ -28,6 +46,12 @@ export const settingsApi = apiSlice.injectEndpoints({
 
     updateSystemLogLevel: builder.mutation<AppSettingsDTO, SystemLogLevel>({
       query: (systemLogLevel) => ({ url: "/settings/log-level", method: "PATCH", body: { systemLogLevel } }),
+      transformResponse: (response: ApiResponse<AppSettingsDTO>) => unwrap(response),
+      invalidatesTags: ["Settings"],
+    }),
+
+    updateSessionSettings: builder.mutation<AppSettingsDTO, SessionSettingsInputDTO>({
+      query: (body) => ({ url: "/settings/session", method: "PATCH", body }),
       transformResponse: (response: ApiResponse<AppSettingsDTO>) => unwrap(response),
       invalidatesTags: ["Settings"],
     }),
@@ -52,8 +76,10 @@ export const settingsApi = apiSlice.injectEndpoints({
 
 export const {
   useGetSettingsQuery,
+  useGetAppConfigQuery,
   useUpdateDataSourceMutation,
   useUpdateSystemLogLevelMutation,
+  useUpdateSessionSettingsMutation,
   useGetLogSizesQuery,
   useTestShopfaConnectionMutation,
   useImportOrdersFileMutation,

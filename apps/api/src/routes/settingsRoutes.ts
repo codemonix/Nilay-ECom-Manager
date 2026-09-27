@@ -2,7 +2,13 @@ import { Router } from "express";
 import * as settingsController from "../controllers/settingsController";
 import { validate } from "../middleware/validate";
 import { uploadOrdersFile } from "../middleware/upload";
-import { updateDataSourceSchema, updateSystemLogLevelSchema } from "../validators/settingsValidators";
+import { requireRole } from "../middleware/authenticate";
+import { StaffRole } from "@complaint-system/shared";
+import {
+  updateDataSourceSchema,
+  updateSessionSettingsSchema,
+  updateSystemLogLevelSchema,
+} from "../validators/settingsValidators";
 
 export const settingsRoutes = Router();
 
@@ -12,6 +18,14 @@ settingsRoutes.patch(
   "/log-level",
   validate(updateSystemLogLevelSchema),
   settingsController.updateSystemLogLevel,
+);
+// Session lifetimes are a security control, so they stay admin-only even
+// for staff who have been granted the Settings menu.
+settingsRoutes.patch(
+  "/session",
+  requireRole(StaffRole.ADMIN),
+  validate(updateSessionSettingsSchema),
+  settingsController.updateSessionSettings,
 );
 settingsRoutes.get("/log-sizes", settingsController.getLogSizes);
 settingsRoutes.post("/shopfa/test-connection", settingsController.testShopfaConnection);

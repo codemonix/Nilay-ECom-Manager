@@ -19,7 +19,7 @@ import { useGetCategoryTrendsQuery } from "../api/reportingApi";
 import type { CategoryTrendMonths } from "../types";
 import { CategoryTrendChart, type TrendMetric } from "../components/CategoryTrendChart";
 import { seriesLabel } from "../categoryTrendPalette";
-import { useGetSettingsQuery } from "../../settings/api/settingsApi";
+import { useGetAppConfigQuery } from "../../settings/api/settingsApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 import { formatDate, formatDateTime, formatNumber } from "../../../utils/localeFormat";
 import { useActiveLanguage } from "../../../i18n/useActiveLanguage";
@@ -42,8 +42,8 @@ export function CategoryTrendsReportPage() {
   const [metric, setMetric] = useState<TrendMetric>("quantity");
   const [view, setView] = useState<View>("chart");
 
-  const { data: settings } = useGetSettingsQuery();
-  const isLiveApi = settings?.dataSource === DataSource.LIVE_API;
+  const { data: appConfig } = useGetAppConfigQuery();
+  const isLiveApi = appConfig?.dataSource === DataSource.LIVE_API;
   const window = CATEGORY_TREND_WINDOWS.find((w) => w.months === months);
   const stepOptions: readonly number[] = window?.stepOptions ?? [];
   const stepDays = chosenStep !== null && stepOptions.includes(chosenStep) ? chosenStep : (window?.stepDays ?? 0);

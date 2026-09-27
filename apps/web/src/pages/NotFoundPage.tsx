@@ -10,7 +10,7 @@ export function NotFoundPage() {
     <Stack spacing={2} alignItems="center" sx={{ py: 8 }}>
       <Typography variant="h1">404</Typography>
       <Typography color="text.secondary">{t("state.empty")}</Typography>
-      <Button component={RouterLink} to="/cases" variant="contained">
+      <Button component={RouterLink} to="/" variant="contained">
         {t("actions.back")}
       </Button>
     </Stack>

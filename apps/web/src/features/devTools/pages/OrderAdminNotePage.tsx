@@ -11,7 +11,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { useTranslation } from "react-i18next";
 import { useLazyGetOrderAdminNoteQuery, useUpdateOrderAdminNoteMutation } from "../api/devToolsApi";
 import type { UpdateOrderAdminNoteResultDTO } from "../types";
-import { useGetSettingsQuery } from "../../settings/api/settingsApi";
+import { useGetAppConfigQuery } from "../../settings/api/settingsApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 
 /**
@@ -31,8 +31,8 @@ export function OrderAdminNotePage() {
   const [noteDraft, setNoteDraft] = useState("");
   const [saveResult, setSaveResult] = useState<UpdateOrderAdminNoteResultDTO | null>(null);
 
-  const { data: settings } = useGetSettingsQuery();
-  const isLiveApi = settings?.dataSource === DataSource.LIVE_API;
+  const { data: appConfig } = useGetAppConfigQuery();
+  const isLiveApi = appConfig?.dataSource === DataSource.LIVE_API;
 
   const [runLookup, { data: result, isFetching: isLookingUp, error: lookupError }] = useLazyGetOrderAdminNoteQuery();
   const [runSave, { isLoading: isSaving, error: saveError }] = useUpdateOrderAdminNoteMutation();

@@ -20,9 +20,14 @@ function toValue(available: boolean | null): AvailabilityValue {
 
 /**
  * One order item in Order Precheck's review screen -- deliberately card-based
- * (not a dense table row) with a large photo, since this is meant to be
- * operated on a phone/tablet by warehouse staff comparing the picture
- * against the physical item, not scanned as a data table.
+ * (not a dense table row) with a photo as large as the layout allows (fluid,
+ * filling the card's width), since this is meant to be operated on a
+ * phone/tablet by warehouse staff comparing the picture against the physical
+ * item, not scanned as a data table. The title is clamped to a fixed two-line
+ * height (rather than growing with longer titles) specifically so every
+ * card in the grid is the same height and the available/unavailable buttons
+ * always land in the same place -- switching between items or orders never
+ * shifts them.
  */
 export function OrderPrecheckItemCard({
   item,
@@ -38,8 +43,20 @@ export function OrderPrecheckItemCard({
     <Card variant="outlined" sx={{ borderRadius: "14px" }}>
       <CardContent>
         <Stack spacing={1.5} alignItems="center">
-          <ItemPhoto src={item.imageUrl} alt={item.title} size={160} />
-          <Typography variant="body2" align="center">
+          <ItemPhoto src={item.imageUrl} alt={item.title} fluid />
+          <Typography
+            variant="body2"
+            align="center"
+            sx={{
+              width: "100%",
+              height: "2.6em",
+              lineHeight: 1.3,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
             {item.title}
           </Typography>
           <Stack direction="row" spacing={1} alignItems="center">

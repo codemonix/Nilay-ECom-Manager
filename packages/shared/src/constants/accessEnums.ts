@@ -141,3 +141,18 @@ export function hasReportAccess(user: { role: string; permissions?: string[] }, 
 export function hasReportsMenuAccess(user: { role: string; permissions?: string[] }): boolean {
   return REPORT_KEY_VALUES.some((key) => hasReportAccess(user, key));
 }
+
+/**
+ * Whether the user may see/use a menu entry by its MenuKey, including the
+ * synthetic grouping keys (ADMINISTRATION, ORDERS) and the derived
+ * REPORTING key, which hasMenuAccess alone would wrongly reject for every
+ * non-admin since they are never stored as permissions. Use this -- not
+ * hasMenuAccess -- anywhere a key may be a group (e.g. validating or
+ * offering mobile quick-access pins), so the web app and the API agree.
+ */
+export function hasMenuEntryAccess(user: { role: string; permissions?: string[] }, key: MenuKey): boolean {
+  if (key === MenuKey.ADMINISTRATION) return hasAdministrationAccess(user);
+  if (key === MenuKey.ORDERS) return hasOrdersMenuAccess(user);
+  if (key === MenuKey.REPORTING) return hasReportsMenuAccess(user);
+  return hasMenuAccess(user, key);
+}

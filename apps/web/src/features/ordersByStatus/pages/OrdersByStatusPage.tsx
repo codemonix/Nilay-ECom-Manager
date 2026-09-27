@@ -25,7 +25,7 @@ import Box from "@mui/material/Box";
 import SearchIcon from "@mui/icons-material/Search";
 import { useTranslation } from "react-i18next";
 import { useLazyListOrdersByStatusQuery } from "../api/ordersByStatusApi";
-import { useGetSettingsQuery } from "../../settings/api/settingsApi";
+import { useGetAppConfigQuery } from "../../settings/api/settingsApi";
 import { UpstreamErrorAlert } from "../../../components/UpstreamErrorAlert";
 import { EmptyState } from "../../../components/EmptyState";
 import { ItemPhoto } from "../../../components/ItemPhoto";
@@ -50,8 +50,8 @@ const DEFAULT_STATUS_CODES = [8];
 export function OrdersByStatusPage() {
   const { t } = useTranslation("ordersByStatus");
   const language = useActiveLanguage();
-  const { data: settings } = useGetSettingsQuery();
-  const isLiveApi = settings?.dataSource === DataSource.LIVE_API;
+  const { data: appConfig } = useGetAppConfigQuery();
+  const isLiveApi = appConfig?.dataSource === DataSource.LIVE_API;
 
   const [selectedCodes, setSelectedCodes] = useState<number[]>(DEFAULT_STATUS_CODES);
   const [days, setDays] = useState<OrdersByStatusRangeDays>(DEFAULT_ORDERS_BY_STATUS_RANGE_DAYS);

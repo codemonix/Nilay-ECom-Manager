@@ -34,6 +34,14 @@ export const settingsRepository = {
     return doc;
   },
 
+  async setSessionTtls(accessTokenTtlMinutes: number, refreshTokenTtlDays: number): Promise<SettingsDocument> {
+    const doc = await this.getOrCreate();
+    doc.accessTokenTtlMinutes = accessTokenTtlMinutes;
+    doc.refreshTokenTtlDays = refreshTokenTtlDays;
+    await doc.save();
+    return doc;
+  },
+
   async recordImport(summary: ImportSummaryData): Promise<SettingsDocument> {
     const doc = await this.getOrCreate();
     doc.lastImport = summary as SettingsDocument["lastImport"];

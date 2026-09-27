@@ -1,5 +1,11 @@
 import { Schema, model, type InferSchemaType, type HydratedDocument } from "mongoose";
-import { DATA_SOURCE_VALUES, DataSource, SYSTEM_LOG_LEVEL_VALUES, SystemLogLevel } from "@complaint-system/shared";
+import {
+  DATA_SOURCE_VALUES,
+  DataSource,
+  SESSION_TTL_LIMITS,
+  SYSTEM_LOG_LEVEL_VALUES,
+  SystemLogLevel,
+} from "@complaint-system/shared";
 
 const lastImportSchema = new Schema(
   {
@@ -17,7 +23,8 @@ const lastImportSchema = new Schema(
 /**
  * Singleton document (fixed _id) holding app-wide settings -- the Shopfa
  * data-source toggle, last-import metadata, and the admin-configurable
- * internal system log level (see SystemLogLevel / config/logger.ts). See
+ * internal system log level (see SystemLogLevel / config/logger.ts), and
+ * the access/refresh token lifetimes (see SESSION_TTL_LIMITS). See
  * repositories/settingsRepository.ts#getOrCreate for how the single
  * document is created/fetched.
  */
@@ -36,6 +43,20 @@ const settingsSchema = new Schema(
       enum: SYSTEM_LOG_LEVEL_VALUES,
       required: true,
       default: SystemLogLevel.INFO,
+    },
+    accessTokenTtlMinutes: {
+      type: Number,
+      required: true,
+      min: SESSION_TTL_LIMITS.accessTokenTtlMinutes.min,
+      max: SESSION_TTL_LIMITS.accessTokenTtlMinutes.max,
+      default: SESSION_TTL_LIMITS.accessTokenTtlMinutes.default,
+    },
+    refreshTokenTtlDays: {
+      type: Number,
+      required: true,
+      min: SESSION_TTL_LIMITS.refreshTokenTtlDays.min,
+      max: SESSION_TTL_LIMITS.refreshTokenTtlDays.max,
+      default: SESSION_TTL_LIMITS.refreshTokenTtlDays.default,
     },
   },
   { timestamps: true },

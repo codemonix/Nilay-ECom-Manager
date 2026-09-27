@@ -10,6 +10,18 @@
     "wrongType": "This backup belongs to a different restore option.",
     "error": "Backup or restore failed"
   },
+  "session": {
+    "title": "Session Timeouts",
+    "description": "How long users stay signed in. The access token authorizes each request and is renewed silently in the background from the refresh token; the refresh token's lifetime restarts on every renewal, so users are signed out after that many days without using the app. Changes apply from each user's next sign-in or renewal.",
+    "accessTokenTtl": "Access token lifetime (minutes)",
+    "accessTokenTtlHelp": "{{min}}–{{max}} minutes. Shorter is safer; 15 is recommended.",
+    "refreshTokenTtl": "Refresh token lifetime (days)",
+    "refreshTokenTtlHelp": "{{min}}–{{max}} days of inactivity before sign-out.",
+    "refreshMustBeLonger": "Must be longer than the access token lifetime.",
+    "save": "Save",
+    "saved": "Session timeouts saved",
+    "updateError": "Could not update the session timeouts"
+  },
   "logLevel": {
     "title": "System Log Level",
     "description": "Controls how much detail the internal system log records, from errors only up to full request/debug detail. Takes effect immediately, no restart required.",

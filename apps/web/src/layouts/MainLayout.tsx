@@ -28,9 +28,6 @@ import CloseIcon from "@mui/icons-material/Close";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import BuildIcon from "@mui/icons-material/Build";
-import NumbersIcon from "@mui/icons-material/Numbers";
-import TextFieldsIcon from "@mui/icons-material/TextFields";
-import StickyNote2Icon from "@mui/icons-material/StickyNote2";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { UserMenu } from "../features/auth/components/UserMenu";
@@ -40,6 +37,7 @@ import { hasAdministrationAccess, hasMenuAccess, hasReportAccess, MenuKey } from
 import {
   ADMIN_NAV_ITEMS,
   ADMINISTRATION_GROUP_ITEM,
+  DEV_TOOLS_CHILD_ITEMS,
   ORDERS_GROUP_ITEM,
   PRIMARY_NAV_ITEMS,
   REPORTS_GROUP_ITEM,
@@ -51,31 +49,6 @@ const PURCHASING_MENU_EXPANDED_STORAGE_KEY = "complaint-system.purchasingMenuExp
 const DEV_TOOLS_MENU_EXPANDED_STORAGE_KEY = "complaint-system.devToolsMenuExpanded";
 const REPORTS_MENU_EXPANDED_STORAGE_KEY = "complaint-system.reportsMenuExpanded";
 const ORDERS_MENU_EXPANDED_STORAGE_KEY = "complaint-system.ordersMenuExpanded";
-
-// Internal test/debug pages live in their own retractable "Development
-// Tools" group, gated by the single MenuKey.DEV_TOOLS permission -- same
-// pattern as Purchasing's children above. New test pages just get appended
-// here.
-const DEV_TOOLS_CHILD_ITEMS: NavItem[] = [
-  {
-    key: MenuKey.DEV_TOOLS,
-    labelKey: "navigation:devToolsNav.soldQuantity",
-    icon: <NumbersIcon />,
-    path: "/dev-tools/sold-quantity",
-  },
-  {
-    key: MenuKey.DEV_TOOLS,
-    labelKey: "navigation:devToolsNav.titleAsterisk",
-    icon: <TextFieldsIcon />,
-    path: "/dev-tools/title-asterisk",
-  },
-  {
-    key: MenuKey.DEV_TOOLS,
-    labelKey: "navigation:devToolsNav.orderNote",
-    icon: <StickyNote2Icon />,
-    path: "/dev-tools/order-note",
-  },
-];
 
 // Fallback bottom-tab selection for a user who hasn't customized their
 // quick access menu yet (see UserMenu > "Mobile quick access"). Once a user
@@ -156,9 +129,18 @@ export function MainLayout({ children }: { children: ReactNode }) {
   // (like Purchasing and Administration) its own sub-pages -- tapping the
   // latter opens a small sheet of those sub-pages instead of navigating
   // (see quickAccessGroupItem).
-  const quickAccessKeys = (user?.quickAccessMenu?.length ? user.quickAccessMenu : DEFAULT_QUICK_ACCESS_KEYS).filter(
-    (key) => visibleNavItems.some((item) => item.key === key && (item.path || item.children)),
-  );
+  const isPinnable = (key: MenuKey) => visibleNavItems.some((item) => item.key === key && (item.path || item.children));
+  const defaultQuickAccessKeys = DEFAULT_QUICK_ACCESS_KEYS.filter(isPinnable);
+  const quickAccessKeys = user?.quickAccessMenu?.length
+    ? user.quickAccessMenu.filter(isPinnable)
+    : // A user with neither default page (e.g. warehouse staff) would otherwise get an empty bar.
+      defaultQuickAccessKeys.length > 0
+      ? defaultQuickAccessKeys
+      : visibleNavItems
+          .filter((item) => item.path || item.children)
+          .map((item) => item.key)
+          .filter((key, index, keys) => keys.indexOf(key) === index)
+          .slice(0, DEFAULT_QUICK_ACCESS_KEYS.length);
   const quickAccessGroupItem = quickAccessGroupKey
     ? (visibleNavItems.find((item) => item.key === quickAccessGroupKey) ?? null)
     : null;

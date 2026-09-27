@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import { MenuKey, ReportKey } from "@complaint-system/shared";
 import { MainLayout } from "../layouts/MainLayout";
 import { CaseListPage } from "../features/complaints/pages/CaseListPage";
@@ -29,6 +29,8 @@ import { LoginPage } from "../features/auth/pages/LoginPage";
 import { NoAccessPage } from "../pages/NoAccessPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { RequireAuth, RequirePermission, RequireReportAccess } from "./RequireAuth";
+import { HomeRedirect } from "./HomeRedirect";
+import { REPORT_CHILD_ITEMS } from "../config/navItems";
 
 export function AppRoutes() {
   return (
@@ -40,7 +42,7 @@ export function AppRoutes() {
           <RequireAuth>
             <MainLayout>
               <Routes>
-                <Route path="/" element={<Navigate to="/cases" replace />} />
+                <Route path="/" element={<HomeRedirect />} />
                 <Route path="/no-access" element={<NoAccessPage />} />
                 <Route
                   path="/cases"
@@ -194,7 +196,7 @@ export function AppRoutes() {
                     </RequireReportAccess>
                   }
                 />
-                <Route path="/reporting" element={<Navigate to="/reporting/customer" replace />} />
+                <Route path="/reporting" element={<HomeRedirect candidates={REPORT_CHILD_ITEMS} />} />
                 <Route path="/reporting/orders/:orderNumber" element={<ReportingOrderDetailsPage />} />
                 <Route
                   path="/order-precheck"

@@ -10,3 +10,16 @@ export const DataSource = {
 } as const;
 export type DataSource = (typeof DataSource)[keyof typeof DataSource];
 export const DATA_SOURCE_VALUES = Object.values(DataSource);
+
+/**
+ * Admin-configurable session lifetimes (Settings page -> Session). The
+ * access token is the short-lived JWT sent on every request; the refresh
+ * token is the long-lived, httpOnly-cookie credential used to mint new
+ * access tokens. Each refresh rotates the refresh token and restarts its
+ * lifetime, so refreshTokenTtlDays is effectively "sign out after this many
+ * days of inactivity". Changes apply to tokens issued afterwards.
+ */
+export const SESSION_TTL_LIMITS = {
+  accessTokenTtlMinutes: { min: 1, max: 1440, default: 15 },
+  refreshTokenTtlDays: { min: 1, max: 365, default: 30 },
+} as const;

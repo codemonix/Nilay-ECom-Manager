@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import request from "supertest";
-import { StaffRole } from "@complaint-system/shared";
+import {
+  ASSIGNABLE_MENU_KEY_VALUES,
+  hasMenuEntryAccess,
+  MENU_KEY_VALUES,
+  MenuKey,
+  REPORT_KEY_VALUES,
+  StaffRole,
+} from "@complaint-system/shared";
 import { createApp } from "../src/app";
 import { UserModel } from "../src/models/User";
 import { hashPassword } from "../src/utils/password";
@@ -170,5 +177,34 @@ describe("User management (admin only)", () => {
     const { authHeader } = await createAuthenticatedUser(StaffRole.CUSTOMER_SERVICE);
     const res = await request(app).get("/api/users/all").set("Authorization", authHeader);
     expect(res.status).toBe(403);
+  });
+});
+
+describe("PATCH /api/auth/me/quick-access-menu", () => {
+  it("lets a non-admin pin the Orders group and other pages they can open", async () => {
+    const { authHeader } = await createAuthenticatedUser(StaffRole.WAREHOUSE);
+    const res = await request(app)
+      .patch("/api/auth/me/quick-access-menu")
+      .set("Authorization", authHeader)
+      .send({ quickAccessMenu: [MenuKey.RECEIVING, MenuKey.ORDERS] });
+    expect(res.status).toBe(200);
+    expect(res.body.data.quickAccessMenu).toEqual([MenuKey.RECEIVING, MenuKey.ORDERS]);
+  });
+
+  it("rejects pinning a group the user has no page of", async () => {
+    const { authHeader } = await createAuthenticatedUser(StaffRole.CUSTOMER_SERVICE);
+    const res = await request(app)
+      .patch("/api/auth/me/quick-access-menu")
+      .set("Authorization", authHeader)
+      .send({ quickAccessMenu: [MenuKey.ORDERS] });
+    expect(res.status).toBe(400);
+  });
+
+  // Guards against a new synthetic/derived group key being added to MenuKey
+  // without hasMenuEntryAccess learning it -- the bug where even users with
+  // access couldn't pin the Orders group.
+  it("treats every menu key as accessible for a non-admin holding every grantable permission", () => {
+    const user = { role: StaffRole.MANAGER, permissions: [...ASSIGNABLE_MENU_KEY_VALUES, ...REPORT_KEY_VALUES] };
+    expect(MENU_KEY_VALUES.filter((key) => !hasMenuEntryAccess(user, key))).toEqual([]);
   });
 });

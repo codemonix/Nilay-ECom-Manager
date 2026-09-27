@@ -37,7 +37,9 @@
   },
   "noAccess": {
     "title": "No access",
-    "description": "You don't have access to any section yet. Ask an administrator to grant you access."
+    "description": "You don't have access to any section yet. Ask an administrator to grant you access.",
+    "pageDescription": "You don't have access to this page.",
+    "goHome": "Go to my pages"
   },
   "reportsNav": {
     "customer": "Customer Report",

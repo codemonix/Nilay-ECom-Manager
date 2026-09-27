@@ -19,7 +19,7 @@ import {
   useToggleTitleAsteriskMutation,
 } from "../api/devToolsApi";
 import type { SoldItemSearchResultDTO, ToggleTitleAsteriskResultDTO } from "../types";
-import { useGetSettingsQuery } from "../../settings/api/settingsApi";
+import { useGetAppConfigQuery } from "../../settings/api/settingsApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 
 const MIN_SEARCH_LENGTH = 2;
@@ -42,8 +42,8 @@ export function TitleAsteriskCheckPage() {
   const [debouncedNameQuery, setDebouncedNameQuery] = useState("");
   const [toggleResult, setToggleResult] = useState<ToggleTitleAsteriskResultDTO | null>(null);
 
-  const { data: settings } = useGetSettingsQuery();
-  const isLiveApi = settings?.dataSource === DataSource.LIVE_API;
+  const { data: appConfig } = useGetAppConfigQuery();
+  const isLiveApi = appConfig?.dataSource === DataSource.LIVE_API;
 
   const [runCheck, { data: result, isFetching: isChecking, error: checkError }] = useLazyCheckTitleAsteriskQuery();
   const [runToggle, { isLoading: isToggling, error: toggleError }] = useToggleTitleAsteriskMutation();

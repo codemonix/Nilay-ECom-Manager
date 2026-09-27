@@ -140,22 +140,35 @@ imported, regardless of the live/imported toggle.
 
 ## Authentication
 
-V1 intentionally ships without real authentication (per the project brief —
-"do not spend excessive time implementing a complicated authentication
-system"). Instead:
+Sign-in issues two credentials:
 
-- `middleware/currentUser.ts` reads an `x-user-id` header, looks up the
-  seeded `User`, and attaches `req.currentUser`.
-- The frontend's `DevUserSelector` (in the header) lets whoever is using the
-  browser pick which seeded staff member they're "acting as"; that choice is
-  persisted in `localStorage` and sent as `x-user-id` on every request via
-  `services/apiSlice.ts`'s `prepareHeaders`.
+- **Access token** -- a short-lived JWT (`{ sub, role }`, signed with
+  `JWT_SECRET`) returned in the response body and sent as
+  `Authorization: Bearer <token>`. `middleware/authenticate.ts` verifies it and
+  reloads the user on every request, so a deactivated user is locked out at
+  once. The frontend keeps it in Redux (persisted to `localStorage`).
+- **Refresh token** -- 256 random bits in an `httpOnly`, `SameSite=Strict`
+  cookie scoped to `/api/auth` (so page scripts can never read it and it is
+  not sent on ordinary API calls). Only its SHA-256 hash is stored, in the
+  `RefreshToken` collection (TTL-indexed on `expiresAt`).
 
-Swapping this for real session/JWT auth later means replacing
-`attachCurrentUser` with real middleware that populates `req.currentUser` the
-same way — **no controller, service, or frontend component needs to change**,
-because they only ever depend on `req.currentUser` / the Redux `devUser`
-slice, never on how that identity was established.
+When a request returns `401`, `services/apiSlice.ts` calls
+`POST /auth/refresh` once (shared by all requests failing at the same time),
+stores the new access token and replays the request; if the refresh fails the
+user is logged out.
+
+Refresh tokens rotate: each refresh revokes the presented token and issues a
+new one with a fresh lifetime. Reusing a rotated token more than 30 s later
+is treated as theft and revokes all of that user's sessions; within 30 s it
+is assumed to be two tabs refreshing together and just gets an access token.
+Logout, an admin deactivating a user, and an admin password reset revoke the
+user's refresh tokens; changing your own password revokes all *other*
+sessions.
+
+Both lifetimes are set by an admin on the Settings page (**Session
+Timeouts**), stored on the `Settings` singleton (`accessTokenTtlMinutes`,
+default 15; `refreshTokenTtlDays`, default 30; limits in
+`SESSION_TTL_LIMITS`), and apply to tokens issued afterwards.
 
 ## Frontend structure
 

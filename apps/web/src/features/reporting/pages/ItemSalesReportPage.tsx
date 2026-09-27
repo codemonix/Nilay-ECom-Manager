@@ -27,7 +27,7 @@ import {
 import type { ItemSalesCategoryDTO, ItemSalesProductSearchResultDTO } from "../types";
 import { DateRangeFields } from "../components/DateRangeFields";
 import { isValidDateRange, lastDaysRange, type DateRangeValue } from "../dateRange";
-import { useGetSettingsQuery } from "../../settings/api/settingsApi";
+import { useGetAppConfigQuery } from "../../settings/api/settingsApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 import { formatDate, formatDateTime, formatNumber } from "../../../utils/localeFormat";
 import { useActiveLanguage } from "../../../i18n/useActiveLanguage";
@@ -76,8 +76,8 @@ export function ItemSalesReportPage() {
   const [debouncedProductInput, setDebouncedProductInput] = useState("");
   const [range, setRange] = useState<DateRangeValue>(() => lastDaysRange(30));
 
-  const { data: settings } = useGetSettingsQuery();
-  const isLiveApi = settings?.dataSource === DataSource.LIVE_API;
+  const { data: appConfig } = useGetAppConfigQuery();
+  const isLiveApi = appConfig?.dataSource === DataSource.LIVE_API;
 
   const { data: categories = [] } = useGetItemSalesCategoriesQuery(undefined, { skip: !isLiveApi });
   const categoryOptions = useMemo(() => buildCategoryOptions(categories), [categories]);

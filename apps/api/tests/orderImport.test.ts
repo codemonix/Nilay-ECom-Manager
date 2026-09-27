@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import request from "supertest";
 import ExcelJS from "exceljs";
-import { StaffRole } from "@complaint-system/shared";
+import { DataSource, StaffRole } from "@complaint-system/shared";
 import { createApp } from "../src/app";
 import { createAuthenticatedUser } from "./testUtils";
+import { settingsRepository } from "../src/repositories/settingsRepository";
 
 const app = createApp();
 
@@ -120,6 +121,19 @@ describe("Order xlsx import + Settings", () => {
       .send({ dataSource: "live_api" });
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
+  });
+
+  it("exposes the system-wide data source to users without the Settings permission", async () => {
+    const { authHeader } = await createAuthenticatedUser(StaffRole.CUSTOMER_SERVICE);
+    // Set directly -- PATCH /settings/data-source refuses live_api without Shopfa credentials.
+    await settingsRepository.setDataSource(DataSource.LIVE_API);
+
+    const denied = await request(app).get("/api/settings").set("Authorization", authHeader);
+    expect(denied.status).toBe(403);
+
+    const res = await request(app).get("/api/app-config").set("Authorization", authHeader);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual({ dataSource: "live_api", shopfaApiConfigured: false });
   });
 
   it("imports orders from an xlsx file, grouping rows by order code", async () => {

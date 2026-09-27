@@ -18,14 +18,23 @@ All responses are wrapped:
 `meta` is only present on paginated list endpoints (`page`, `pageSize`,
 `total`, `totalPages`).
 
-Every non-GET request that changes a Case should include an
-`x-user-id: <staff user id>` header — see [architecture.md#authentication](architecture.md#authentication).
-Requests without it still succeed; the resulting `CaseEvent.actorId` is just
-`null` (attributed to "system" in the UI).
+Every endpoint except `/health` and the public `/auth` ones requires
+`Authorization: Bearer <access token>` -- see
+[architecture.md#authentication](architecture.md#authentication).
 
 Standard HTTP status codes are used: `200` (success), `201` (created), `400`
 (bad request), `404` (not found), `409` (conflict — e.g. invalid status
 transition), `422` (validation error), `502` (Shopfa upstream error).
+
+## Auth
+
+| Method | Path | Body | Notes |
+|---|---|---|---|
+| POST | `/auth/login` | `{ email, password }` | Returns `{ token, user }` and sets the `refresh_token` httpOnly cookie |
+| POST | `/auth/refresh` | — (cookie) | Rotates the refresh cookie, returns `{ token, user }`; `401` if missing/expired/revoked |
+| POST | `/auth/logout` | — (cookie) | Revokes the refresh token and clears the cookie |
+| GET | `/auth/me` | — | Current user |
+| POST | `/auth/change-password` | `{ currentPassword, newPassword }` | Also signs out the user's other sessions |
 
 ## Health
 
@@ -88,7 +97,8 @@ from orders imported via an xlsx upload -- see
 
 | Method | Path | Body / Query | Notes |
 |---|---|---|---|
-| GET | `/settings` | — | `{ dataSource, shopfaApiConfigured, lastImport, updatedAt }` |
+| GET | `/settings` | — | `{ dataSource, shopfaApiConfigured, lastImport, systemLogLevel, accessTokenTtlMinutes, refreshTokenTtlDays, updatedAt }` |
+| PATCH | `/settings/session` | `{ accessTokenTtlMinutes: 1–1440, refreshTokenTtlDays: 1–365 }` | Admin only; `400` unless the refresh lifetime is longer than the access lifetime |
 | PATCH | `/settings/data-source` | `{ dataSource: "imported_file" \| "live_api" }` | `400` if switching to `live_api` without `SHOPFA_API_BASE_URL`/`SHOPFA_API_TOKEN` configured |
 | POST | `/settings/orders/import` | multipart `file` field (`.xlsx`) | Parses a Shopfa order export, upserts by order code (re-importing an order updates it, never duplicates), returns `{ rowsProcessed, rowsSkipped, ordersImported, itemsImported, skippedSamples, settings }` |
 | GET | `/orders` | query: `page, pageSize, search` | Paginated list of imported orders |

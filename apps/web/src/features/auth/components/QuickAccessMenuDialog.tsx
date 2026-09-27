@@ -11,7 +11,7 @@ import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useTranslation } from "react-i18next";
-import { hasAdministrationAccess, hasMenuAccess, hasOrdersMenuAccess, hasReportsMenuAccess, MenuKey } from "@complaint-system/shared";
+import { hasMenuEntryAccess, MenuKey } from "@complaint-system/shared";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { setCurrentUser } from "../../../store/authSlice";
 import { ADMINISTRATION_GROUP_ITEM, ORDERS_GROUP_ITEM, PRIMARY_NAV_ITEMS, REPORTS_GROUP_ITEM } from "../../../config/navItems";
@@ -44,17 +44,20 @@ export function QuickAccessMenuDialog({ open, onClose }: QuickAccessMenuDialogPr
       [...PRIMARY_NAV_ITEMS, ORDERS_GROUP_ITEM, REPORTS_GROUP_ITEM, ADMINISTRATION_GROUP_ITEM].filter((item) => {
         if (!item.path && !item.children) return false;
         if (!user) return false;
-        if (item.key === MenuKey.ADMINISTRATION) return hasAdministrationAccess(user);
-        if (item.key === MenuKey.ORDERS) return hasOrdersMenuAccess(user);
-        if (item.key === MenuKey.REPORTING) return hasReportsMenuAccess(user);
-        return hasMenuAccess(user, item.key);
+        return hasMenuEntryAccess(user, item.key);
       }),
     [user],
   );
 
   useEffect(() => {
-    if (open) setSelected(user?.quickAccessMenu ?? []);
-  }, [open, user]);
+    // Drop pins the dialog doesn't offer (access since revoked, or a legacy
+    // key) -- they'd be invisible here yet still count toward the limit, and
+    // the API would reject the save.
+    if (open) {
+      const offered = new Set(candidateItems.map((item) => item.key));
+      setSelected((user?.quickAccessMenu ?? []).filter((key) => offered.has(key)));
+    }
+  }, [open, user, candidateItems]);
 
   const handleClose = () => {
     reset();

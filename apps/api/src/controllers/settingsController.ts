@@ -6,10 +6,16 @@ import { ApiError } from "../utils/ApiError";
 import * as settingsService from "../services/settingsService";
 import * as orderImportService from "../services/orderImportService";
 import * as backupService from "../services/backupService";
+import type { UpdateSessionSettingsInput } from "../validators/settingsValidators";
 
 export const getSettings = asyncHandler(async (_req: Request, res: Response) => {
   const settings = await settingsService.getSettings();
   return sendSuccess(res, settings);
+});
+
+export const getAppConfig = asyncHandler(async (_req: Request, res: Response) => {
+  const config = await settingsService.getAppConfig();
+  return sendSuccess(res, config);
 });
 
 export const updateDataSource = asyncHandler(async (req: Request, res: Response) => {
@@ -21,6 +27,11 @@ export const updateDataSource = asyncHandler(async (req: Request, res: Response)
 export const updateSystemLogLevel = asyncHandler(async (req: Request, res: Response) => {
   const { systemLogLevel } = req.body as { systemLogLevel: SystemLogLevel };
   const settings = await settingsService.setSystemLogLevel(systemLogLevel);
+  return sendSuccess(res, settings);
+});
+
+export const updateSessionSettings = asyncHandler(async (req: Request, res: Response) => {
+  const settings = await settingsService.setSessionTtls(req.body as UpdateSessionSettingsInput);
   return sendSuccess(res, settings);
 });
 

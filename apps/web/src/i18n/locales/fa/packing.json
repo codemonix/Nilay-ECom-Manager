@@ -71,5 +71,6 @@
   "sendGroupSuccess_other": "{{count}} سفارش با موفقیت ارسال شد.",
   "sendGroupHint": "برای ارسال، همه کالاهای همهٔ سفارش‌های این مشتری باید سبز شوند.",
   "rangeAll": "همهٔ سفارش‌های موجود در این وضعیت",
-  "ordersCount": "{{shown}} از {{total}} سفارش این وضعیت"
+  "ordersCount": "{{shown}} از {{total}} سفارش این وضعیت",
+  "uploadPhoto": "بارگذاری از گالری"
 }

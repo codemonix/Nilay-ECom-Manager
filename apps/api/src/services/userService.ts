@@ -2,6 +2,7 @@ import { DEFAULT_PERMISSIONS_BY_ROLE } from "@complaint-system/shared";
 import { userRepository } from "../repositories/userRepository";
 import { ApiError } from "../utils/ApiError";
 import { hashPassword } from "../utils/password";
+import { refreshTokenRepository } from "../repositories/refreshTokenRepository";
 import type { CreateUserInput, UpdateUserInput } from "../validators/userValidators";
 
 export async function listStaff() {
@@ -31,6 +32,7 @@ export async function updateUser(id: string, input: UpdateUserInput) {
   if (input.permissions !== undefined) user.permissions = input.permissions;
 
   await user.save();
+  if (input.active === false) await refreshTokenRepository.revokeAllForUser(id);
   return user;
 }
 
@@ -40,4 +42,5 @@ export async function resetPassword(id: string, newPassword: string) {
 
   user.passwordHash = await hashPassword(newPassword);
   await user.save();
+  await refreshTokenRepository.revokeAllForUser(id);
 }

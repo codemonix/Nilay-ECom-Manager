@@ -2,8 +2,10 @@ import {
   DataSource,
   type SystemLogLevel,
   type AppSettingsDTO,
+  type AppConfigDTO,
   type ShopfaConnectionTestResultDTO,
   type LogSizesDTO,
+  type SessionSettingsInputDTO,
 } from "@complaint-system/shared";
 import { env } from "../config/env";
 import { settingsRepository } from "../repositories/settingsRepository";
@@ -36,6 +38,8 @@ function serialize(doc: SettingsDocument): AppSettingsDTO {
         }
       : null,
     systemLogLevel: doc.systemLogLevel as SystemLogLevel,
+    accessTokenTtlMinutes: doc.accessTokenTtlMinutes,
+    refreshTokenTtlDays: doc.refreshTokenTtlDays,
     updatedAt: doc.updatedAt.toISOString(),
   };
 }
@@ -43,6 +47,12 @@ function serialize(doc: SettingsDocument): AppSettingsDTO {
 export async function getSettings(): Promise<AppSettingsDTO> {
   const doc = await settingsRepository.getOrCreate();
   return serialize(doc);
+}
+
+/** System-wide config readable by every authenticated user -- see AppConfigDTO. */
+export async function getAppConfig(): Promise<AppConfigDTO> {
+  const { dataSource, shopfaApiConfigured } = await getSettings();
+  return { dataSource, shopfaApiConfigured };
 }
 
 export async function setDataSource(dataSource: DataSource): Promise<AppSettingsDTO> {
@@ -64,6 +74,29 @@ export async function setSystemLogLevel(systemLogLevel: SystemLogLevel): Promise
   const doc = await settingsRepository.setSystemLogLevel(systemLogLevel);
   applyLogLevel(systemLogLevel);
   return serialize(doc);
+}
+
+/**
+ * Applies to tokens issued from now on (next login/refresh); already-issued
+ * access tokens keep their original expiry, which is short by design.
+ */
+export async function setSessionTtls(input: SessionSettingsInputDTO): Promise<AppSettingsDTO> {
+  const accessTtlMs = input.accessTokenTtlMinutes * 60_000;
+  const refreshTtlMs = input.refreshTokenTtlDays * 86_400_000;
+  if (refreshTtlMs <= accessTtlMs) {
+    throw ApiError.badRequest("The refresh token lifetime must be longer than the access token lifetime");
+  }
+  const doc = await settingsRepository.setSessionTtls(input.accessTokenTtlMinutes, input.refreshTokenTtlDays);
+  return serialize(doc);
+}
+
+/** Lifetimes used by authService when issuing tokens. */
+export async function getSessionTtls(): Promise<{ accessTokenTtlSeconds: number; refreshTokenTtlMs: number }> {
+  const doc = await settingsRepository.getOrCreate();
+  return {
+    accessTokenTtlSeconds: doc.accessTokenTtlMinutes * 60,
+    refreshTokenTtlMs: doc.refreshTokenTtlDays * 86_400_000,
+  };
 }
 
 /**

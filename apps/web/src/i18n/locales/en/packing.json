@@ -71,5 +71,6 @@
   "sendGroupSuccess_other": "{{count}} orders sent successfully.",
   "sendGroupHint": "Every item of all of this customer's orders must be marked green before you can send.",
   "rangeAll": "All orders currently in this status",
-  "ordersCount": "{{shown}} of {{total}} orders in this status"
+  "ordersCount": "{{shown}} of {{total}} orders in this status",
+  "uploadPhoto": "Upload"
 }

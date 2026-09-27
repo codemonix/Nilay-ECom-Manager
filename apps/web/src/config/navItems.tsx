@@ -18,7 +18,10 @@ import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import ReportProblemIcon from "@mui/icons-material/ReportProblem";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import FilterListIcon from "@mui/icons-material/FilterList";
-import { MenuKey, ReportKey } from "@complaint-system/shared";
+import NumbersIcon from "@mui/icons-material/Numbers";
+import TextFieldsIcon from "@mui/icons-material/TextFields";
+import StickyNote2Icon from "@mui/icons-material/StickyNote2";
+import { hasMenuAccess, hasReportAccess, MenuKey, ReportKey } from "@complaint-system/shared";
 
 export interface NavItem {
   key: MenuKey;
@@ -170,3 +173,56 @@ export const ADMINISTRATION_GROUP_ITEM: NavItem = {
   icon: <AdminPanelSettingsIcon />,
   children: ADMIN_NAV_ITEMS,
 };
+
+// Internal test/debug pages live in their own retractable "Development
+// Tools" group, gated by the single MenuKey.DEV_TOOLS permission -- same
+// pattern as PURCHASING_CHILD_ITEMS. New test pages just get appended
+// here.
+export const DEV_TOOLS_CHILD_ITEMS: NavItem[] = [
+  {
+    key: MenuKey.DEV_TOOLS,
+    labelKey: "navigation:devToolsNav.soldQuantity",
+    icon: <NumbersIcon />,
+    path: "/dev-tools/sold-quantity",
+  },
+  {
+    key: MenuKey.DEV_TOOLS,
+    labelKey: "navigation:devToolsNav.titleAsterisk",
+    icon: <TextFieldsIcon />,
+    path: "/dev-tools/title-asterisk",
+  },
+  {
+    key: MenuKey.DEV_TOOLS,
+    labelKey: "navigation:devToolsNav.orderNote",
+    icon: <StickyNote2Icon />,
+    path: "/dev-tools/order-note",
+  },
+];
+
+type AccessUser = { role: string; permissions?: string[] };
+
+/** Whether the user may open this specific leaf destination (a report entry is gated by its own ReportKey). */
+function canOpenNavItem(user: AccessUser, item: NavItem): boolean {
+  if (item.reportKey) return hasReportAccess(user, item.reportKey);
+  return hasMenuAccess(user, item.key);
+}
+
+/** Every leaf destination in drawer order -- groups flattened to their pages. */
+const ALL_DESTINATIONS: NavItem[] = [
+  ...PRIMARY_NAV_ITEMS.flatMap((item) => item.children ?? [item]),
+  ...ORDERS_CHILD_ITEMS,
+  ...REPORT_CHILD_ITEMS,
+  ...ADMIN_NAV_ITEMS,
+  ...DEV_TOOLS_CHILD_ITEMS,
+].filter((item) => item.path);
+
+/**
+ * The first page (in drawer order) this user can open, or null when they
+ * can open none. "/" and other section-level entry points redirect here
+ * instead of to a hardcoded page, so a user who lacks that one page isn't
+ * shown "no access" while the drawer offers them other pages.
+ */
+export function getFirstAccessiblePath(user: AccessUser | null, candidates: NavItem[] = ALL_DESTINATIONS): string | null {
+  if (!user) return null;
+  return candidates.find((item) => item.path && canOpenNavItem(user, item))?.path ?? null;
+}

@@ -13,7 +13,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import AppsIcon from "@mui/icons-material/Apps";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
-import { logout } from "../../../store/authSlice";
+import { logoutSession } from "../../../services/apiSlice";
 import { ChangePasswordDialog } from "./ChangePasswordDialog";
 import { QuickAccessMenuDialog } from "./QuickAccessMenuDialog";
 
@@ -79,7 +79,7 @@ export function UserMenu() {
         <MenuItem
           onClick={() => {
             handleClose();
-            dispatch(logout());
+            void logoutSession(dispatch);
           }}
         >
           <ListItemIcon>

@@ -44,7 +44,7 @@ import {
   type ShortageReportItemDTO,
   type ShortageReportRangeDays,
 } from "../types";
-import { useGetSettingsQuery } from "../../settings/api/settingsApi";
+import { useGetAppConfigQuery } from "../../settings/api/settingsApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 import { formatDateTime } from "../../../utils/localeFormat";
 import { useActiveLanguage } from "../../../i18n/useActiveLanguage";
@@ -148,8 +148,8 @@ export function ShortageReportPage() {
   const [days, setDays] = useState<ShortageReportRangeDays>(DEFAULT_SHORTAGE_REPORT_RANGE_DAYS);
   const [unresolvedDialogOpen, setUnresolvedDialogOpen] = useState(false);
 
-  const { data: settings } = useGetSettingsQuery();
-  const isLiveApi = settings?.dataSource === DataSource.LIVE_API;
+  const { data: appConfig } = useGetAppConfigQuery();
+  const isLiveApi = appConfig?.dataSource === DataSource.LIVE_API;
 
   const [runReport, { data: result, isFetching, error }] = useLazyGetShortageReportQuery();
 

@@ -12,6 +12,8 @@ interface ItemPhotoProps {
   src: string | null;
   alt: string;
   size?: number;
+  /** Fills 100% of the parent's width as a square instead of a fixed pixel size, so the photo is as large as the surrounding layout allows (e.g. Order Precheck's review cards, sized by a responsive grid) -- overrides `size`. */
+  fluid?: boolean;
   /** Shown as a badge over the full-screen preview (not the thumbnail) so the count is visible while identifying the item. */
   quantity?: number;
 }
@@ -23,7 +25,7 @@ interface ItemPhotoProps {
  * deliberately much bigger than a typical row-icon/avatar. Clicking it opens
  * a full-screen preview, mirroring AttachmentsPanel.tsx's pattern.
  */
-export function ItemPhoto({ src, alt, size = 120, quantity }: ItemPhotoProps) {
+export function ItemPhoto({ src, alt, size = 120, fluid = false, quantity }: ItemPhotoProps) {
   const { t } = useTranslation("common");
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -32,8 +34,7 @@ export function ItemPhoto({ src, alt, size = 120, quantity }: ItemPhotoProps) {
       <Box
         onClick={src ? () => setPreviewOpen(true) : undefined}
         sx={{
-          width: size,
-          height: size,
+          ...(fluid ? { width: "100%", aspectRatio: "1" } : { width: size, height: size }),
           borderRadius: "12px",
           overflow: "hidden",
           bgcolor: "action.hover",
@@ -47,7 +48,7 @@ export function ItemPhoto({ src, alt, size = 120, quantity }: ItemPhotoProps) {
         {src ? (
           <Box component="img" src={src} alt={alt} sx={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
-          <Inventory2Icon color="disabled" sx={{ fontSize: size * 0.4 }} />
+          <Inventory2Icon color="disabled" sx={{ fontSize: fluid ? "40%" : size * 0.4 }} />
         )}
       </Box>
 
@@ -66,12 +67,16 @@ export function ItemPhoto({ src, alt, size = 120, quantity }: ItemPhotoProps) {
           onClick={() => setPreviewOpen(false)}
         >
           {src && (
-            <Box sx={{ position: "relative", maxWidth: "95vw", maxHeight: "95vh" }}>
+            // `dvw`/`dvh` (dynamic viewport units), not `vw`/`vh`: on mobile browsers the static
+            // `vh` unit is taller than the actually visible viewport (it ignores the address bar
+            // chrome), which let the image size itself past what's really on screen and get
+            // clipped. `dvh`/`dvw` track the real visible area as browser chrome shows/hides.
+            <Box sx={{ position: "relative", maxWidth: "92dvw", maxHeight: "92dvh" }}>
               <Box
                 component="img"
                 src={src}
                 alt={alt}
-                sx={{ display: "block", maxWidth: "95vw", maxHeight: "95vh", objectFit: "contain" }}
+                sx={{ display: "block", maxWidth: "92dvw", maxHeight: "92dvh", objectFit: "contain" }}
                 onClick={(e) => e.stopPropagation()}
               />
               {quantity !== undefined && (

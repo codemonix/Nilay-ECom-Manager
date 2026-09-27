@@ -33,7 +33,7 @@ import {
 import { OrderPrecheckItemCard } from "../components/OrderPrecheckItemCard";
 import { ConfirmRelatedChangesDialog } from "../components/ConfirmRelatedChangesDialog";
 import { FixedActionBar } from "../../../components/FixedActionBar";
-import { useGetSettingsQuery } from "../../settings/api/settingsApi";
+import { useGetAppConfigQuery } from "../../settings/api/settingsApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 import { UpstreamErrorAlert } from "../../../components/UpstreamErrorAlert";
 import { formatDateTime } from "../../../utils/localeFormat";
@@ -72,8 +72,8 @@ function statusTitle(code: number): string {
 export function OrderPrecheckPage() {
   const { t } = useTranslation("orderPrecheck");
   const language = useActiveLanguage();
-  const { data: settings } = useGetSettingsQuery();
-  const isLiveApi = settings?.dataSource === DataSource.LIVE_API;
+  const { data: appConfig } = useGetAppConfigQuery();
+  const isLiveApi = appConfig?.dataSource === DataSource.LIVE_API;
 
   const [selectedCodes, setSelectedCodes] = useState<number[]>(ORDER_PRECHECK_DEFAULT_STATUS_CODES);
   const [filterOpen, setFilterOpen] = useState(false);

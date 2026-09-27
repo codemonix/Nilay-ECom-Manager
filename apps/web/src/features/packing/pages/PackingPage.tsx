@@ -29,6 +29,7 @@ import MenuItem from "@mui/material/MenuItem";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import HistoryIcon from "@mui/icons-material/History";
 import { useTranslation } from "react-i18next";
 import { useLazyListPackingOrdersQuery, useSendPackedOrdersMutation } from "../api/packingApi";
@@ -39,7 +40,7 @@ import { FinishCustomerDialog } from "../components/FinishCustomerDialog";
 import CloseIcon from "@mui/icons-material/Close";
 import { CameraCaptureDialog } from "../../../components/CameraCaptureDialog";
 import { FixedActionBar } from "../../../components/FixedActionBar";
-import { useGetSettingsQuery } from "../../settings/api/settingsApi";
+import { useGetAppConfigQuery } from "../../settings/api/settingsApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
 import { UpstreamErrorAlert } from "../../../components/UpstreamErrorAlert";
 import { formatDateTime } from "../../../utils/localeFormat";
@@ -73,8 +74,8 @@ const hasCameraApi = typeof navigator !== "undefined" && !!navigator.mediaDevice
 export function PackingPage() {
   const { t } = useTranslation("packing");
   const language = useActiveLanguage();
-  const { data: settings } = useGetSettingsQuery();
-  const isLiveApi = settings?.dataSource === DataSource.LIVE_API;
+  const { data: appConfig } = useGetAppConfigQuery();
+  const isLiveApi = appConfig?.dataSource === DataSource.LIVE_API;
 
   const [days, setDays] = useState<PackingRangeDays>(DEFAULT_PACKING_RANGE_DAYS);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -94,6 +95,8 @@ export function PackingPage() {
   const [confirmSendDialogOpen, setConfirmSendDialogOpen] = useState(false);
   const [finishCustomerDialogOpen, setFinishCustomerDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /** Separate input with no `capture` attribute, so it opens the plain system file/gallery picker instead of jumping straight to the camera. */
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   /** The time frame last sent to the API, so Retry re-runs that request rather than an unapplied dropdown change. */
   const appliedDaysRef = useRef<PackingRangeDays>(DEFAULT_PACKING_RANGE_DAYS);
 
@@ -254,6 +257,10 @@ export function PackingPage() {
   const useFilePickerFallback = () => {
     setCameraDialogOpen(false);
     fileInputRef.current?.click();
+  };
+
+  const openGalleryPicker = () => {
+    galleryInputRef.current?.click();
   };
 
   const performSend = async () => {
@@ -533,12 +540,15 @@ export function PackingPage() {
           <Card variant="outlined" sx={{ borderRadius: "14px" }}>
             <CardContent sx={{ py: 1, "&:last-child": { pb: 1 } }}>
               <Stack spacing={1}>
-                <Stack direction="row" spacing={1.5} alignItems="center">
+                <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap>
                   <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
                     {t("photoSectionTitle")}
                   </Typography>
                   <Button variant="outlined" size="small" startIcon={<PhotoCameraIcon />} onClick={openCameraCapture}>
                     {groupPhotos.length > 0 ? t("addPhoto") : t("takePhoto")}
+                  </Button>
+                  <Button variant="outlined" size="small" startIcon={<PhotoLibraryIcon />} onClick={openGalleryPicker}>
+                    {t("uploadPhoto")}
                   </Button>
                   <input
                     ref={fileInputRef}
@@ -548,6 +558,7 @@ export function PackingPage() {
                     capture="environment"
                     onChange={handleFilePickerChange}
                   />
+                  <input ref={galleryInputRef} type="file" hidden accept="image/*" onChange={handleFilePickerChange} />
                 </Stack>
                 {customerGroup.length > 1 && (
                   <Typography variant="caption" color="text.secondary">

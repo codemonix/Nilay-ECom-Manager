@@ -19,7 +19,28 @@ export interface AppSettingsDTO {
   lastImport: LastImportSummaryDTO | null;
   /** Minimum severity written to the console and the SystemLog collection; see SystemLogLevel. */
   systemLogLevel: SystemLogLevel;
+  /** Lifetime of each access token (JWT); see SESSION_TTL_LIMITS. */
+  accessTokenTtlMinutes: number;
+  /** Lifetime of each refresh token, restarted on every refresh; see SESSION_TTL_LIMITS. */
+  refreshTokenTtlDays: number;
   updatedAt: string;
+}
+
+/** Body of PATCH /api/settings/session (admin only). */
+export interface SessionSettingsInputDTO {
+  accessTokenTtlMinutes: number;
+  refreshTokenTtlDays: number;
+}
+
+/**
+ * The system-wide slice of AppSettingsDTO that every authenticated user may
+ * read (GET /api/app-config). Pages outside Settings need the data-source
+ * toggle to decide whether live-API features are available, but most users
+ * lack the Settings permission that guards the full AppSettingsDTO.
+ */
+export interface AppConfigDTO {
+  dataSource: DataSource;
+  shopfaApiConfigured: boolean;
 }
 
 /** Result of a live, read-only ping to Shopfa's /api/system/info -- lets the Settings page show whether the app can actually reach the shop, independent of the data-source toggle. */
