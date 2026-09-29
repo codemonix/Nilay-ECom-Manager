@@ -9,6 +9,7 @@ import ImageListItemBar from "@mui/material/ImageListItemBar";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import CircularProgress from "@mui/material/CircularProgress";
+import Alert from "@mui/material/Alert";
 import Dialog from "@mui/material/Dialog";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
@@ -18,6 +19,7 @@ import { useTranslation } from "react-i18next";
 import { useListAttachmentsQuery, useUploadAttachmentMutation } from "../api/casesApi";
 import { API_ORIGIN } from "../../../services/apiSlice";
 import { EmptyState } from "../../../components/EmptyState";
+import { usePrepareImageUpload } from "../../settings/hooks/usePrepareImageUpload";
 
 export function AttachmentsPanel({ caseId }: { caseId: string }) {
   const { t } = useTranslation("complaints");
@@ -28,12 +30,26 @@ export function AttachmentsPanel({ caseId }: { caseId: string }) {
   const [uploadAttachment, { isLoading: isUploading }] = useUploadAttachmentMutation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<{ url: string; filename: string } | null>(null);
+  const prepareUpload = usePrepareImageUpload();
+  const [isPreparing, setIsPreparing] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    await uploadAttachment({ caseId, file });
+    const original = event.target.files?.[0];
     event.target.value = "";
+    if (!original) return;
+    setImageError(false);
+    setIsPreparing(true);
+    let file: File;
+    try {
+      file = await prepareUpload(original);
+    } catch {
+      setImageError(true);
+      return;
+    } finally {
+      setIsPreparing(false);
+    }
+    await uploadAttachment({ caseId, file });
   };
 
   return (
@@ -43,14 +59,20 @@ export function AttachmentsPanel({ caseId }: { caseId: string }) {
         <Button
           size="small"
           variant="outlined"
-          startIcon={isUploading ? <CircularProgress size={14} /> : <UploadFileIcon />}
+          startIcon={isUploading || isPreparing ? <CircularProgress size={14} /> : <UploadFileIcon />}
           onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
+          disabled={isUploading || isPreparing}
         >
           {t("attachments.upload")}
         </Button>
         <input ref={fileInputRef} type="file" hidden onChange={handleFileSelected} accept="image/*,application/pdf" />
       </Stack>
+
+      {imageError && (
+        <Alert severity="error" onClose={() => setImageError(false)} sx={{ mb: 1 }}>
+          {tCommon("upload.imageProcessError")}
+        </Alert>
+      )}
 
       {!isLoading && attachments.length === 0 && <EmptyState message={t("attachments.empty")} />}
 

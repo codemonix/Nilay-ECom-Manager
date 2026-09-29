@@ -22,6 +22,15 @@
     "saved": "Session timeouts saved",
     "updateError": "Could not update the session timeouts"
   },
+  "uploads": {
+    "title": "Image Uploads",
+    "description": "Largest size allowed for each uploaded image (packing, receiving and attachment photos). Photos are compressed on the phone or browser before upload, to at most 2560 pixels on the long side, and further if needed to fit this limit; the server rejects any image above it. PDFs are not affected.",
+    "maxImageSize": "Maximum image size (MB)",
+    "maxImageSizeHelp": "{{min}}–{{max}} MB. 2 MB keeps full detail for label and damage photos.",
+    "save": "Save",
+    "saved": "Image upload limit saved",
+    "updateError": "Could not update the image upload limit"
+  },
   "logLevel": {
     "title": "System Log Level",
     "description": "Controls how much detail the internal system log records, from errors only up to full request/debug detail. Takes effect immediately, no restart required.",

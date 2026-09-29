@@ -1,7 +1,7 @@
 import { Router } from "express";
 import * as packingController from "../controllers/packingController";
 import { validate } from "../middleware/validate";
-import { upload } from "../middleware/upload";
+import { enforceImageSizeLimit, upload } from "../middleware/upload";
 import { idParamSchema } from "../validators/commonValidators";
 import {
   listPackingHistoryQuerySchema,
@@ -26,6 +26,7 @@ packingRoutes.post("/records/:id/retry-sync", validate(idParamSchema, "params"),
 packingRoutes.post(
   "/send",
   upload.array("photos", MAX_PHOTOS_PER_SEND),
+  enforceImageSizeLimit,
   validate(sendPackedOrdersSchema),
   packingController.sendOrders,
 );

@@ -2,6 +2,7 @@ import { Schema, model, type InferSchemaType, type HydratedDocument } from "mong
 import {
   DATA_SOURCE_VALUES,
   DataSource,
+  IMAGE_UPLOAD_LIMITS,
   SESSION_TTL_LIMITS,
   SYSTEM_LOG_LEVEL_VALUES,
   SystemLogLevel,
@@ -24,7 +25,8 @@ const lastImportSchema = new Schema(
  * Singleton document (fixed _id) holding app-wide settings -- the Shopfa
  * data-source toggle, last-import metadata, and the admin-configurable
  * internal system log level (see SystemLogLevel / config/logger.ts), and
- * the access/refresh token lifetimes (see SESSION_TTL_LIMITS). See
+ * the access/refresh token lifetimes (see SESSION_TTL_LIMITS), and the
+ * per-image upload cap (see IMAGE_UPLOAD_LIMITS). See
  * repositories/settingsRepository.ts#getOrCreate for how the single
  * document is created/fetched.
  */
@@ -57,6 +59,13 @@ const settingsSchema = new Schema(
       min: SESSION_TTL_LIMITS.refreshTokenTtlDays.min,
       max: SESSION_TTL_LIMITS.refreshTokenTtlDays.max,
       default: SESSION_TTL_LIMITS.refreshTokenTtlDays.default,
+    },
+    maxImageUploadSizeMB: {
+      type: Number,
+      required: true,
+      min: IMAGE_UPLOAD_LIMITS.maxImageUploadSizeMB.min,
+      max: IMAGE_UPLOAD_LIMITS.maxImageUploadSizeMB.max,
+      default: IMAGE_UPLOAD_LIMITS.maxImageUploadSizeMB.default,
     },
   },
   { timestamps: true },

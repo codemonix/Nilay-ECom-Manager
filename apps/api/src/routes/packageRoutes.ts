@@ -1,7 +1,7 @@
 import { Router } from "express";
 import * as packageController from "../controllers/packageController";
 import { validate } from "../middleware/validate";
-import { upload } from "../middleware/upload";
+import { enforceImageSizeLimit, upload } from "../middleware/upload";
 import { idParamSchema } from "../validators/commonValidators";
 import {
   changePackageStatusSchema,
@@ -26,6 +26,7 @@ packageRoutes.post(
   "/:id/items",
   validate(idParamSchema, "params"),
   upload.single("photo"),
+  enforceImageSizeLimit,
   validate(receiveItemSchema),
   packageController.receiveItem,
 );
@@ -71,5 +72,6 @@ packageRoutes.post(
   "/:id/attachments",
   validate(idParamSchema, "params"),
   upload.single("file"),
+  enforceImageSizeLimit,
   packageController.uploadAttachment,
 );

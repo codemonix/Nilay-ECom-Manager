@@ -2,8 +2,11 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import multer from "multer";
+import type { NextFunction, Request, Response } from "express";
 import { env } from "../config/env";
+import { logger } from "../config/logger";
 import { ApiError } from "../utils/ApiError";
+import { getMaxImageUploadBytes } from "../services/settingsService";
 
 const uploadRoot = path.resolve(process.cwd(), env.UPLOAD_DIR);
 if (!fs.existsSync(uploadRoot)) {
@@ -38,6 +41,48 @@ export const upload = multer({
     cb(null, true);
   },
 });
+
+function uploadedFiles(req: Request): Express.Multer.File[] {
+  if (req.file) return [req.file];
+  if (Array.isArray(req.files)) return req.files;
+  return req.files ? Object.values(req.files).flat() : [];
+}
+
+/**
+ * Runs after `upload`: rejects the request (413) when any image is larger
+ * than the admin-configured Settings.maxImageUploadSizeMB, deleting every
+ * file the request stored. The browser compresses images to fit before
+ * uploading (see the web app's imageCompression.ts), so this only catches
+ * uploads that skipped that. PDFs are left to `upload`'s MAX_UPLOAD_SIZE_MB.
+ */
+export async function enforceImageSizeLimit(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  try {
+    const files = uploadedFiles(req);
+    const images = files.filter((file) => file.mimetype.startsWith("image/"));
+    if (images.length === 0) return next();
+    const maxBytes = await getMaxImageUploadBytes();
+    const oversized = images.find((file) => file.size > maxBytes);
+    if (!oversized) return next();
+
+    await Promise.all(files.map((file) => fs.promises.unlink(file.path).catch(() => undefined)));
+    const maxMB = maxBytes / (1024 * 1024);
+    const sizeMB = oversized.size / (1024 * 1024);
+    logger.warn("Upload rejected: image exceeds the configured size limit", {
+      path: req.path,
+      fileSizeMB: Number(sizeMB.toFixed(2)),
+      limitMB: Number(maxMB.toFixed(2)),
+    });
+    next(
+      new ApiError(
+        413,
+        "FILE_TOO_LARGE",
+        `Image is ${sizeMB.toFixed(1)} MB; the limit is ${Number(maxMB.toFixed(2))} MB (Settings -> Image uploads)`,
+      ),
+    );
+  } catch (err) {
+    next(err);
+  }
+}
 
 export const UPLOAD_ROOT = uploadRoot;
 

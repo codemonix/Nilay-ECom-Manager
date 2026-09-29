@@ -133,7 +133,7 @@ describe("Order xlsx import + Settings", () => {
 
     const res = await request(app).get("/api/app-config").set("Authorization", authHeader);
     expect(res.status).toBe(200);
-    expect(res.body.data).toEqual({ dataSource: "live_api", shopfaApiConfigured: false });
+    expect(res.body.data).toEqual({ dataSource: "live_api", shopfaApiConfigured: false, maxImageUploadSizeMB: 2 });
   });
 
   it("imports orders from an xlsx file, grouping rows by order code", async () => {

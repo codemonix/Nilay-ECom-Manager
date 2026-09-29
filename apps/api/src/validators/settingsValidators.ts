@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { DATA_SOURCE_VALUES, SESSION_TTL_LIMITS, SYSTEM_LOG_LEVEL_VALUES } from "@complaint-system/shared";
+import {
+  DATA_SOURCE_VALUES,
+  IMAGE_UPLOAD_LIMITS,
+  SESSION_TTL_LIMITS,
+  SYSTEM_LOG_LEVEL_VALUES,
+} from "@complaint-system/shared";
 
 export const updateDataSourceSchema = z.object({
   dataSource: z.enum(DATA_SOURCE_VALUES as [string, ...string[]]),
@@ -18,3 +23,10 @@ export const updateSessionSettingsSchema = z.object({
   refreshTokenTtlDays: z.number().int().min(refreshTokenTtlDays.min).max(refreshTokenTtlDays.max),
 });
 export type UpdateSessionSettingsInput = z.infer<typeof updateSessionSettingsSchema>;
+
+const { maxImageUploadSizeMB } = IMAGE_UPLOAD_LIMITS;
+
+export const updateUploadSettingsSchema = z.object({
+  maxImageUploadSizeMB: z.number().min(maxImageUploadSizeMB.min).max(maxImageUploadSizeMB.max),
+});
+export type UpdateUploadSettingsInput = z.infer<typeof updateUploadSettingsSchema>;

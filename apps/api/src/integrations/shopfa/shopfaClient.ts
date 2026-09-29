@@ -35,6 +35,7 @@ import type {
   ShopfaSoldQuantityStatusRow,
 } from "./shopfaTypes";
 import type {
+  ShopfaApiCommonResponse,
   ShopfaApiOrder,
   ShopfaApiOrderListResponse,
   ShopfaApiPageListResponse,
@@ -64,6 +65,52 @@ import { record as recordShopfaTransaction } from "../../services/shopfaTransact
 /** Augments axios's request config with a start-time marker so the response/error interceptor can compute call duration for ShopfaTransactionLog. */
 interface RequestConfigWithTiming extends InternalAxiosRequestConfig {
   shopfaLogStartedAt?: number;
+}
+
+/**
+ * Shopfa answered 2xx but its body reports an error (`error` set, or
+ * `successful: false`). Thrown by the response interceptor for write
+ * endpoints, so a rejected update surfaces as a failure with Shopfa's own
+ * message instead of passing as success.
+ */
+export class ShopfaResponseError extends Error {
+  constructor(
+    message: string,
+    readonly endpoint: string,
+    readonly httpStatus: number,
+    readonly shopfaErrorCode: number | null,
+  ) {
+    super(message);
+    this.name = "ShopfaResponseError";
+    Object.setPrototypeOf(this, ShopfaResponseError.prototype);
+  }
+}
+
+/** Write endpoints: an error in a 2xx body means the write was rejected. */
+function isWriteEndpoint(url: string | undefined): boolean {
+  return typeof url === "string" && url.endsWith("/update");
+}
+
+/**
+ * Reads the error Shopfa reported inside a 2xx body, or null when there is
+ * none. A read's `error: "Not Found"` is only an empty result (see
+ * getProductByCode), so it isn't treated as an error.
+ */
+function readBodyError(url: string | undefined, data: unknown): { message: string; code: number | null } | null {
+  if (!data || typeof data !== "object") return null;
+  const body = data as ShopfaApiCommonResponse;
+  const errorText = typeof body.error === "string" ? body.error.trim() : "";
+  if (!errorText && body.successful !== false) return null;
+  if (!isWriteEndpoint(url) && errorText.toLowerCase() === "not found") return null;
+  const code = typeof body.error_code === "number" ? body.error_code : null;
+  return { message: errorText || "Shopfa reported the request as unsuccessful", code };
+}
+
+/** API error for a failed Shopfa call: Shopfa's own message when it rejected the request, otherwise the given fallback. */
+function shopfaFailure(err: unknown, fallback: string): ApiError {
+  return err instanceof ShopfaResponseError
+    ? ApiError.badGateway(`Shopfa rejected the request: ${err.message}`)
+    : ApiError.badGateway(fallback);
 }
 
 /** Per-status quantity/order-count accumulator for one product code, keyed by status label -- see SoldQuantityIndexEntry. */
@@ -146,6 +193,9 @@ const SHIPPING_TITLES_CACHE_TTL_MS = 60 * 60 * 1000;
  * errors with a `{ successful: true, error, error_code }` body on a 4xx
  * response rather than `successful: false`, so failures are detected from
  * the HTTP status (axios throws on non-2xx by default), not `successful`.
+ * Shopfa can also report an error inside a 2xx body: the interceptor logs
+ * those calls as failed, and rejects write (`/update`) calls with a
+ * ShopfaResponseError carrying Shopfa's message -- see readBodyError().
  *
  * A response/error interceptor pair also records every call (method,
  * endpoint, params with `private_key` redacted, status, duration, success)
@@ -172,7 +222,21 @@ export class HttpShopfaClient implements ShopfaClient {
     });
     this.http.interceptors.response.use(
       (response) => {
-        this.logTransaction(response.config, response.status, true);
+        const bodyError = readBodyError(response.config.url, response.data);
+        if (!bodyError) {
+          this.logTransaction(response.config, response.status, true);
+          return response;
+        }
+        const codeSuffix = bodyError.code !== null ? ` (error_code ${bodyError.code})` : "";
+        this.logTransaction(
+          response.config,
+          response.status,
+          false,
+          `Shopfa error in HTTP ${response.status} response${codeSuffix}: ${bodyError.message}`,
+        );
+        const error = new ShopfaResponseError(bodyError.message, response.config.url ?? "", response.status, bodyError.code);
+        if (isWriteEndpoint(response.config.url)) return Promise.reject(error);
+        logger.warn("Shopfa returned an error in a successful response", { err: error });
         return response;
       },
       (err) => {
@@ -224,6 +288,8 @@ export class HttpShopfaClient implements ShopfaClient {
     try {
       return await this.http.post<T>(url, body, config);
     } catch (err) {
+      // Shopfa answered and rejected the request -- sending it again won't change that.
+      if (err instanceof ShopfaResponseError) throw err;
       logger.warn("Shopfa API call failed, retrying once", {
         url,
         err: axios.isAxiosError(err) ? err.message : String(err),
@@ -685,7 +751,7 @@ export class HttpShopfaClient implements ShopfaClient {
       await this.postWithRetry("/api/shop/product/update", { id: productCode, title });
     } catch (err) {
       logger.error("Shopfa updateProductTitle failed", { productCode, err });
-      throw ApiError.badGateway("Failed to reach Shopfa product service");
+      throw shopfaFailure(err, "Failed to reach Shopfa product service");
     }
     return this.getProductByCode(productCode);
   }
@@ -732,7 +798,7 @@ export class HttpShopfaClient implements ShopfaClient {
       );
     } catch (err) {
       logger.error("Shopfa updateOrderAdminNote failed", { orderNumber, err });
-      throw ApiError.badGateway("Failed to reach Shopfa order service");
+      throw shopfaFailure(err, "Failed to reach Shopfa order service");
     }
     return this.getOrderAdminNote(orderNumber);
   }
@@ -852,7 +918,7 @@ export class HttpShopfaClient implements ShopfaClient {
       );
     } catch (err) {
       logger.error("Shopfa updateOrderNoteAndStatus failed", { orderNumber, err });
-      throw ApiError.badGateway("Failed to reach Shopfa order service");
+      throw shopfaFailure(err, "Failed to reach Shopfa order service");
     }
     try {
       const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
@@ -988,7 +1054,7 @@ export class HttpShopfaClient implements ShopfaClient {
       );
     } catch (err) {
       logger.error("Shopfa updateOrderStatus failed", { orderNumber, err });
-      throw ApiError.badGateway("Failed to reach Shopfa order service");
+      throw shopfaFailure(err, "Failed to reach Shopfa order service");
     }
 
     try {

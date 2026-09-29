@@ -25,7 +25,7 @@ export {
   isValidStatusTransition,
 } from "./constants/caseEnums";
 
-export { DataSource, DATA_SOURCE_VALUES, SESSION_TTL_LIMITS } from "./constants/settingsEnums";
+export { DataSource, DATA_SOURCE_VALUES, SESSION_TTL_LIMITS, IMAGE_UPLOAD_LIMITS } from "./constants/settingsEnums";
 
 export {
   MenuKey,
@@ -84,6 +84,7 @@ export type {
   AppSettingsDTO,
   AppConfigDTO,
   SessionSettingsInputDTO,
+  UploadSettingsInputDTO,
   LastImportSummaryDTO,
   ImportOrdersResultDTO,
   ShopfaConnectionTestResultDTO,

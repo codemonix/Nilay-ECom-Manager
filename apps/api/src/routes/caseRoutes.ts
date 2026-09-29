@@ -1,7 +1,7 @@
 import { Router } from "express";
 import * as caseController from "../controllers/caseController";
 import { validate } from "../middleware/validate";
-import { upload } from "../middleware/upload";
+import { enforceImageSizeLimit, upload } from "../middleware/upload";
 import { idParamSchema } from "../validators/commonValidators";
 import {
   addNoteSchema,
@@ -98,5 +98,6 @@ caseRoutes.post(
   "/:id/attachments",
   validate(idParamSchema, "params"),
   upload.single("file"),
+  enforceImageSizeLimit,
   caseController.uploadAttachment,
 );

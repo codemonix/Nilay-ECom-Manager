@@ -23,6 +23,8 @@ export interface AppSettingsDTO {
   accessTokenTtlMinutes: number;
   /** Lifetime of each refresh token, restarted on every refresh; see SESSION_TTL_LIMITS. */
   refreshTokenTtlDays: number;
+  /** Largest image accepted per upload, in MB; see IMAGE_UPLOAD_LIMITS. */
+  maxImageUploadSizeMB: number;
   updatedAt: string;
 }
 
@@ -30,6 +32,11 @@ export interface AppSettingsDTO {
 export interface SessionSettingsInputDTO {
   accessTokenTtlMinutes: number;
   refreshTokenTtlDays: number;
+}
+
+/** Body of PATCH /api/settings/uploads. */
+export interface UploadSettingsInputDTO {
+  maxImageUploadSizeMB: number;
 }
 
 /**
@@ -41,6 +48,8 @@ export interface SessionSettingsInputDTO {
 export interface AppConfigDTO {
   dataSource: DataSource;
   shopfaApiConfigured: boolean;
+  /** Every page that uploads images compresses them to fit under this. */
+  maxImageUploadSizeMB: number;
 }
 
 /** Result of a live, read-only ping to Shopfa's /api/system/info -- lets the Settings page show whether the app can actually reach the shop, independent of the data-source toggle. */

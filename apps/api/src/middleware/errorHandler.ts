@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { MulterError } from "multer";
 import { ZodError } from "zod";
 import { ApiError } from "../utils/ApiError";
 import { logger } from "../config/logger";
@@ -11,6 +12,18 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     return res.status(err.statusCode).json({
       success: false,
       error: { code: err.code, message: err.message, details: err.details },
+    });
+  }
+
+  if (err instanceof MulterError) {
+    const tooLarge = err.code === "LIMIT_FILE_SIZE";
+    logger.warn("Upload rejected", { code: err.code, field: err.field, path: req.path });
+    return res.status(tooLarge ? 413 : 400).json({
+      success: false,
+      error: {
+        code: tooLarge ? "FILE_TOO_LARGE" : "UPLOAD_ERROR",
+        message: tooLarge ? "The uploaded file is too large" : err.message,
+      },
     });
   }
 

@@ -54,7 +54,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import { CameraCaptureDialog } from "../../../components/CameraCaptureDialog";
 import { FixedActionBar } from "../../../components/FixedActionBar";
 import { useGetAppConfigQuery } from "../../settings/api/settingsApi";
-import { getApiErrorMessage } from "../../../utils/apiError";
+import { getApiErrorMessage, getApiErrorStatus } from "../../../utils/apiError";
+import { usePrepareImageUpload } from "../../settings/hooks/usePrepareImageUpload";
 import { UpstreamErrorAlert } from "../../../components/UpstreamErrorAlert";
 import { formatDateTime } from "../../../utils/localeFormat";
 import { matchesOrderSearch, normalizeSearchQuery } from "../../../utils/orderSearch";
@@ -91,6 +92,7 @@ export function PackingPage() {
   const { t } = useTranslation("packing");
   const language = useActiveLanguage();
   const { data: appConfig } = useGetAppConfigQuery();
+  const prepareUpload = usePrepareImageUpload();
   const isLiveApi = appConfig?.dataSource === DataSource.LIVE_API;
 
   const [days, setDays] = useState<PackingRangeDays>(DEFAULT_PACKING_RANGE_DAYS);
@@ -111,6 +113,9 @@ export function PackingPage() {
 
   /** Confirmation photos per customer group (a customer's orders share their photos); several per group. */
   const [photosByGroup, setPhotosByGroup] = useState<Record<string, GroupPhoto[]>>({});
+  /** Photos still being compressed -- sending waits for them so none is left out. */
+  const [compressingPhotos, setCompressingPhotos] = useState(0);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
   const [confirmSendDialogOpen, setConfirmSendDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -261,10 +266,21 @@ export function PackingPage() {
     }
   };
 
-  const applyPhoto = (file: File) => {
-    if (!currentGroupKey) return;
-    const photo: GroupPhoto = { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, file, url: URL.createObjectURL(file) };
-    setPhotosByGroup((prev) => ({ ...prev, [currentGroupKey]: [...(prev[currentGroupKey] ?? []), photo] }));
+  /** Photos are compressed before they join the group (see usePrepareImageUpload), so a send never uploads raw camera files. */
+  const applyPhoto = async (original: File) => {
+    const groupKey = currentGroupKey;
+    if (!groupKey) return;
+    setPhotoError(null);
+    setCompressingPhotos((count) => count + 1);
+    try {
+      const file = await prepareUpload(original);
+      const photo: GroupPhoto = { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, file, url: URL.createObjectURL(file) };
+      setPhotosByGroup((prev) => ({ ...prev, [groupKey]: [...(prev[groupKey] ?? []), photo] }));
+    } catch {
+      setPhotoError(t("photoProcessError"));
+    } finally {
+      setCompressingPhotos((count) => count - 1);
+    }
   };
 
   const removePhoto = (photoId: string) => {
@@ -277,13 +293,13 @@ export function PackingPage() {
   };
 
   const handlePhotoCaptured = (file: File) => {
-    applyPhoto(file);
+    void applyPhoto(file);
     setCameraDialogOpen(false);
   };
 
   const handleFilePickerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) applyPhoto(file);
+    if (file) void applyPhoto(file);
     event.target.value = "";
   };
 
@@ -341,12 +357,17 @@ export function PackingPage() {
       else setSendError(t("sendGroupError", { orders: result.failed.map((order) => order.orderNumber).join("، ") }));
       setCurrentIndex(Math.max(0, Math.min(groupStart, visibleOrders.length - sentVisibleCount - 1)));
     } catch (err) {
-      setSendError(getApiErrorMessage(err) ?? t("sendError"));
+      const status = getApiErrorStatus(err);
+      setSendError(
+        status === 413
+          ? t("sendErrorTooLarge")
+          : (getApiErrorMessage(err) ?? (status !== undefined ? t("sendErrorWithStatus", { status }) : t("sendError"))),
+      );
     }
   };
 
   const handleSendClick = () => {
-    if (!groupComplete) return;
+    if (!groupComplete || compressingPhotos > 0) return;
     if (decideSave({ photoCount: groupPhotos.length }) === "send") {
       void performSend();
     } else {
@@ -653,7 +674,12 @@ export function PackingPage() {
                     {t("photosHint")}
                   </Typography>
                 )}
-                {groupPhotos.length > 0 && (
+                {photoError && (
+                  <Alert severity="error" onClose={() => setPhotoError(null)}>
+                    {photoError}
+                  </Alert>
+                )}
+                {(groupPhotos.length > 0 || compressingPhotos > 0) && (
                   <Stack direction="row" gap={1} flexWrap="wrap">
                     {groupPhotos.map((photo) => (
                       <Box key={photo.id} sx={{ position: "relative", width: 64, height: 64 }}>
@@ -681,6 +707,14 @@ export function PackingPage() {
                         </IconButton>
                       </Box>
                     ))}
+                    {compressingPhotos > 0 && (
+                      <Box
+                        aria-label={t("photoProcessing")}
+                        sx={{ width: 64, height: 64, borderRadius: "10px", bgcolor: "action.hover", display: "grid", placeItems: "center" }}
+                      >
+                        <CircularProgress size={20} />
+                      </Box>
+                    )}
                   </Stack>
                 )}
               </Stack>
@@ -700,9 +734,9 @@ export function PackingPage() {
               fullWidth
               variant="contained"
               color="success"
-              disabled={!groupComplete || isSending}
+              disabled={!groupComplete || isSending || compressingPhotos > 0}
               onClick={handleSendClick}
-              startIcon={isSending ? <CircularProgress size={14} /> : undefined}
+              startIcon={isSending || compressingPhotos > 0 ? <CircularProgress size={14} /> : undefined}
             >
               {customerGroup.length > 1
                 ? t("sendGroupWithTotal", { orders: customerGroup.length, total: groupTotalQuantity })

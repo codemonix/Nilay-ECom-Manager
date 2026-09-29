@@ -42,6 +42,13 @@ export const settingsRepository = {
     return doc;
   },
 
+  async setMaxImageUploadSize(maxImageUploadSizeMB: number): Promise<SettingsDocument> {
+    const doc = await this.getOrCreate();
+    doc.maxImageUploadSizeMB = maxImageUploadSizeMB;
+    await doc.save();
+    return doc;
+  },
+
   async recordImport(summary: ImportSummaryData): Promise<SettingsDocument> {
     const doc = await this.getOrCreate();
     doc.lastImport = summary as SettingsDocument["lastImport"];

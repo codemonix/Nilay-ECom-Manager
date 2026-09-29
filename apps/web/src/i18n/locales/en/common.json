@@ -74,5 +74,8 @@
       "title": "Can't reach the server",
       "body": "Check your internet connection. This is usually temporary."
     }
+  },
+  "upload": {
+    "imageProcessError": "This image couldn't be processed. Please retake it or pick another one."
   }
 }

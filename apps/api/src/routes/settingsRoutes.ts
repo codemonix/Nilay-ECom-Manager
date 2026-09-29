@@ -8,6 +8,7 @@ import {
   updateDataSourceSchema,
   updateSessionSettingsSchema,
   updateSystemLogLevelSchema,
+  updateUploadSettingsSchema,
 } from "../validators/settingsValidators";
 
 export const settingsRoutes = Router();
@@ -27,6 +28,7 @@ settingsRoutes.patch(
   validate(updateSessionSettingsSchema),
   settingsController.updateSessionSettings,
 );
+settingsRoutes.patch("/uploads", validate(updateUploadSettingsSchema), settingsController.updateUploadSettings);
 settingsRoutes.get("/log-sizes", settingsController.getLogSizes);
 settingsRoutes.post("/shopfa/test-connection", settingsController.testShopfaConnection);
 settingsRoutes.post("/orders/import", uploadOrdersFile.single("file"), settingsController.importOrders);

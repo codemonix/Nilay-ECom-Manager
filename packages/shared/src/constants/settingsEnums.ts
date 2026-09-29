@@ -23,3 +23,14 @@ export const SESSION_TTL_LIMITS = {
   accessTokenTtlMinutes: { min: 1, max: 1440, default: 15 },
   refreshTokenTtlDays: { min: 1, max: 365, default: 30 },
 } as const;
+
+/**
+ * Admin-configurable cap on each uploaded image, in MB (Settings page ->
+ * Image uploads). The browser compresses every image to fit under it before
+ * upload, and the API rejects any image above it. PDFs aren't affected --
+ * they stay under the server's MAX_UPLOAD_SIZE_MB, which also caps this
+ * setting in practice (an image over it never gets through).
+ */
+export const IMAGE_UPLOAD_LIMITS = {
+  maxImageUploadSizeMB: { min: 0.5, max: 10, default: 2 },
+} as const;

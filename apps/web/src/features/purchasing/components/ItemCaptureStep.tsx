@@ -6,9 +6,11 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Avatar from "@mui/material/Avatar";
 import CircularProgress from "@mui/material/CircularProgress";
+import Alert from "@mui/material/Alert";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import { useTranslation } from "react-i18next";
 import { CameraCaptureDialog } from "../../../components/CameraCaptureDialog";
+import { usePrepareImageUpload } from "../../settings/hooks/usePrepareImageUpload";
 
 export interface ItemCaptureValues {
   photo: File;
@@ -42,26 +44,38 @@ export function ItemCaptureStep({ onSubmit, isSubmitting }: ItemCaptureStepProps
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
+  const prepareUpload = usePrepareImageUpload();
+  const [isPreparingPhoto, setIsPreparingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
   const [quantity, setQuantity] = useState("1");
   const [unitPrice, setUnitPrice] = useState("");
   const [description, setDescription] = useState("");
   const [variantLabel, setVariantLabel] = useState("");
   const [notes, setNotes] = useState("");
 
-  const applyPhoto = (file: File) => {
-    setPhoto(file);
-    setPhotoPreviewUrl(URL.createObjectURL(file));
+  const applyPhoto = async (original: File) => {
+    setPhotoError(false);
+    setIsPreparingPhoto(true);
+    try {
+      const file = await prepareUpload(original);
+      setPhoto(file);
+      setPhotoPreviewUrl(URL.createObjectURL(file));
+    } catch {
+      setPhotoError(true);
+    } finally {
+      setIsPreparingPhoto(false);
+    }
   };
 
   const handlePhotoSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    applyPhoto(file);
+    void applyPhoto(file);
     event.target.value = "";
   };
 
   const handleCapture = (file: File) => {
-    applyPhoto(file);
+    void applyPhoto(file);
     setCameraDialogOpen(false);
   };
 
@@ -78,7 +92,7 @@ export function ItemCaptureStep({ onSubmit, isSubmitting }: ItemCaptureStepProps
     fileInputRef.current?.click();
   };
 
-  const canSubmit = !!photo && Number(quantity) > 0 && Number(unitPrice) >= 0 && !isSubmitting;
+  const canSubmit = !!photo && !isPreparingPhoto && Number(quantity) > 0 && Number(unitPrice) >= 0 && !isSubmitting;
 
   const reset = () => {
     setPhoto(null);
@@ -113,7 +127,7 @@ export function ItemCaptureStep({ onSubmit, isSubmitting }: ItemCaptureStepProps
             sx={{ width: 72, height: 72, bgcolor: "action.hover", cursor: "pointer" }}
             onClick={openCapture}
           >
-            <PhotoCameraIcon color="action" />
+            {isPreparingPhoto ? <CircularProgress size={24} /> : <PhotoCameraIcon color="action" />}
           </Avatar>
           <Stack spacing={0.5} sx={{ flexGrow: 1 }}>
             <Button variant="outlined" startIcon={<PhotoCameraIcon />} onClick={openCapture}>
@@ -180,6 +194,7 @@ export function ItemCaptureStep({ onSubmit, isSubmitting }: ItemCaptureStepProps
         >
           {t("receiveItems.addItem")}
         </Button>
+        {photoError && <Alert severity="error">{t("upload.imageProcessError", { ns: "common" })}</Alert>}
         {!photo && (
           <Typography variant="caption" color="text.secondary">
             {t("receiveItems.photoRequired")}

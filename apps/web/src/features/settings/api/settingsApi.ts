@@ -4,6 +4,7 @@ import type {
   DataSource,
   SessionSettingsInputDTO,
   SystemLogLevel,
+  UploadSettingsInputDTO,
 } from "@complaint-system/shared";
 import { apiSlice } from "../../../services/apiSlice";
 import type { AppSettingsDTO, ImportOrdersResultDTO, ShopfaConnectionTestResultDTO, LogSizesDTO } from "../types";
@@ -56,6 +57,12 @@ export const settingsApi = apiSlice.injectEndpoints({
       invalidatesTags: ["Settings"],
     }),
 
+    updateUploadSettings: builder.mutation<AppSettingsDTO, UploadSettingsInputDTO>({
+      query: (body) => ({ url: "/settings/uploads", method: "PATCH", body }),
+      transformResponse: (response: ApiResponse<AppSettingsDTO>) => unwrap(response),
+      invalidatesTags: ["Settings"],
+    }),
+
     getLogSizes: builder.query<LogSizesDTO, void>({
       query: () => "/settings/log-sizes",
       transformResponse: (response: ApiResponse<LogSizesDTO>) => unwrap(response),
@@ -80,6 +87,7 @@ export const {
   useUpdateDataSourceMutation,
   useUpdateSystemLogLevelMutation,
   useUpdateSessionSettingsMutation,
+  useUpdateUploadSettingsMutation,
   useGetLogSizesQuery,
   useTestShopfaConnectionMutation,
   useImportOrdersFileMutation,

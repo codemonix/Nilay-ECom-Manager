@@ -6,7 +6,7 @@ import { ApiError } from "../utils/ApiError";
 import * as settingsService from "../services/settingsService";
 import * as orderImportService from "../services/orderImportService";
 import * as backupService from "../services/backupService";
-import type { UpdateSessionSettingsInput } from "../validators/settingsValidators";
+import type { UpdateSessionSettingsInput, UpdateUploadSettingsInput } from "../validators/settingsValidators";
 
 export const getSettings = asyncHandler(async (_req: Request, res: Response) => {
   const settings = await settingsService.getSettings();
@@ -32,6 +32,11 @@ export const updateSystemLogLevel = asyncHandler(async (req: Request, res: Respo
 
 export const updateSessionSettings = asyncHandler(async (req: Request, res: Response) => {
   const settings = await settingsService.setSessionTtls(req.body as UpdateSessionSettingsInput);
+  return sendSuccess(res, settings);
+});
+
+export const updateUploadSettings = asyncHandler(async (req: Request, res: Response) => {
+  const settings = await settingsService.setMaxImageUploadSize(req.body as UpdateUploadSettingsInput);
   return sendSuccess(res, settings);
 });
 

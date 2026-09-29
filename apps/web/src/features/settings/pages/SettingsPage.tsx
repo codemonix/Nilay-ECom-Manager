@@ -8,6 +8,7 @@ import { BackupRestoreCard } from "../components/BackupRestoreCard";
 import { LogLevelCard } from "../components/LogLevelCard";
 import { LogSizesCard } from "../components/LogSizesCard";
 import { SessionSettingsCard } from "../components/SessionSettingsCard";
+import { UploadSettingsCard } from "../components/UploadSettingsCard";
 import { useAppSelector } from "../../../app/hooks";
 import { StaffRole } from "@complaint-system/shared";
 
@@ -21,6 +22,7 @@ export function SettingsPage() {
       <DataSourceCard />
       <ImportOrdersCard />
       {isAdmin && <SessionSettingsCard />}
+      <UploadSettingsCard />
       <LogLevelCard />
       <LogSizesCard />
       <BackupRestoreCard />

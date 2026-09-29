@@ -6,6 +6,7 @@ import {
   type ShopfaConnectionTestResultDTO,
   type LogSizesDTO,
   type SessionSettingsInputDTO,
+  type UploadSettingsInputDTO,
 } from "@complaint-system/shared";
 import { env } from "../config/env";
 import { settingsRepository } from "../repositories/settingsRepository";
@@ -40,6 +41,7 @@ function serialize(doc: SettingsDocument): AppSettingsDTO {
     systemLogLevel: doc.systemLogLevel as SystemLogLevel,
     accessTokenTtlMinutes: doc.accessTokenTtlMinutes,
     refreshTokenTtlDays: doc.refreshTokenTtlDays,
+    maxImageUploadSizeMB: doc.maxImageUploadSizeMB,
     updatedAt: doc.updatedAt.toISOString(),
   };
 }
@@ -51,8 +53,8 @@ export async function getSettings(): Promise<AppSettingsDTO> {
 
 /** System-wide config readable by every authenticated user -- see AppConfigDTO. */
 export async function getAppConfig(): Promise<AppConfigDTO> {
-  const { dataSource, shopfaApiConfigured } = await getSettings();
-  return { dataSource, shopfaApiConfigured };
+  const { dataSource, shopfaApiConfigured, maxImageUploadSizeMB } = await getSettings();
+  return { dataSource, shopfaApiConfigured, maxImageUploadSizeMB };
 }
 
 export async function setDataSource(dataSource: DataSource): Promise<AppSettingsDTO> {
@@ -97,6 +99,17 @@ export async function getSessionTtls(): Promise<{ accessTokenTtlSeconds: number;
     accessTokenTtlSeconds: doc.accessTokenTtlMinutes * 60,
     refreshTokenTtlMs: doc.refreshTokenTtlDays * 86_400_000,
   };
+}
+
+export async function setMaxImageUploadSize(input: UploadSettingsInputDTO): Promise<AppSettingsDTO> {
+  const doc = await settingsRepository.setMaxImageUploadSize(input.maxImageUploadSizeMB);
+  return serialize(doc);
+}
+
+/** The per-image cap in bytes, enforced by middleware/upload.ts#enforceImageSizeLimit. */
+export async function getMaxImageUploadBytes(): Promise<number> {
+  const doc = await settingsRepository.getOrCreate();
+  return Math.round(doc.maxImageUploadSizeMB * 1024 * 1024);
 }
 
 /**
