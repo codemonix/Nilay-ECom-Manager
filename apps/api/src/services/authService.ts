@@ -50,12 +50,26 @@ async function issueAccessTokenOnly(user: UserDocument): Promise<IssuedSession> 
   return { accessToken, refreshToken: null, refreshTokenExpiresAt: null, user };
 }
 
-export async function login(email: string, password: string, client: ClientInfo): Promise<IssuedSession> {
+/** Why a login was refused -- for the security log only; the client always gets the same message, so it can't probe which emails exist. */
+export type LoginFailureReason = "unknown_account" | "inactive_account" | "wrong_password";
+
+export async function login(
+  email: string,
+  password: string,
+  client: ClientInfo,
+  onFailure?: (reason: LoginFailureReason) => void,
+): Promise<IssuedSession> {
   const user = await userRepository.findByEmailWithPassword(email);
-  if (!user || !user.active) throw ApiError.unauthorized("Invalid email or password");
+  if (!user || !user.active) {
+    onFailure?.(user ? "inactive_account" : "unknown_account");
+    throw ApiError.unauthorized("Invalid email or password");
+  }
 
   const valid = await comparePassword(password, user.passwordHash);
-  if (!valid) throw ApiError.unauthorized("Invalid email or password");
+  if (!valid) {
+    onFailure?.("wrong_password");
+    throw ApiError.unauthorized("Invalid email or password");
+  }
 
   return issueSession(user, client);
 }
@@ -66,7 +80,11 @@ export async function login(email: string, password: string, client: ClientInfo)
  * grace window means it was copied -- every session of that user is
  * revoked, forcing a fresh login everywhere.
  */
-export async function refresh(rawToken: string | undefined, client: ClientInfo): Promise<IssuedSession> {
+export async function refresh(
+  rawToken: string | undefined,
+  client: ClientInfo,
+  onTokenReuse?: (user: UserDocument) => void,
+): Promise<IssuedSession> {
   if (!rawToken) throw ApiError.unauthorized("Session expired");
 
   const stored = await refreshTokenRepository.findByHash(hashRefreshToken(rawToken));
@@ -81,6 +99,7 @@ export async function refresh(rawToken: string | undefined, client: ClientInfo):
     if (withinGrace) return issueAccessTokenOnly(user);
     if (stored.replacedAt) {
       logger.warn("Rotated refresh token reused; revoking all sessions for user", { userId: String(user._id) });
+      onTokenReuse?.(user);
       await refreshTokenRepository.revokeAllForUser(String(user._id));
     }
     throw ApiError.unauthorized("Session expired");

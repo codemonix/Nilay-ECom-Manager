@@ -57,6 +57,26 @@ export interface ShopfaApiOrderListResponse extends ShopfaApiCommonResponse {
   total_count?: number;
 }
 
+/** One row of POST /api/system/logs (the store's activity log), per a live response (2026-10-04). */
+export interface ShopfaApiSystemLog {
+  log_id: string | number;
+  /** Section of the store the event belongs to, e.g. "فروشگاه". */
+  log_type?: string;
+  /** Persian description of the event, mentioning the order by its `session`. */
+  log_event?: string;
+  log_ip?: string;
+  /** Unix seconds. */
+  log_date?: string | number;
+  /** "0" for events the store itself generated. */
+  log_user_id?: string | number;
+  log_firstname?: string;
+  log_lastname?: string;
+}
+
+export interface ShopfaApiSystemLogListResponse extends ShopfaApiCommonResponse {
+  data?: ShopfaApiSystemLog[];
+}
+
 /** A product line inside an order (its own `items` array), per a live /api/shop/orders response. */
 export interface ShopfaApiOrderItem {
   id?: string | number;

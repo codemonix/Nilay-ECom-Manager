@@ -1,6 +1,15 @@
-import type { SystemLogDTO, UserActivityLogDTO, ShopfaTransactionLogDTO, SystemLogLevel } from "@complaint-system/shared";
+import type {
+  SecurityEventDTO,
+  SecurityEventType,
+  SecurityReportDTO,
+  SecuritySeverity,
+  ShopfaTransactionLogDTO,
+  SystemLogDTO,
+  SystemLogLevel,
+  UserActivityLogDTO,
+} from "@complaint-system/shared";
 
-export type { SystemLogDTO, UserActivityLogDTO, ShopfaTransactionLogDTO };
+export type { SecurityEventDTO, SecurityReportDTO, SystemLogDTO, UserActivityLogDTO, ShopfaTransactionLogDTO };
 export { SystemLogLevel } from "@complaint-system/shared";
 
 export interface PagedListResult<T> {
@@ -14,6 +23,7 @@ export interface PagedListResult<T> {
 export type SystemLogListResult = PagedListResult<SystemLogDTO>;
 export type UserActivityLogListResult = PagedListResult<UserActivityLogDTO>;
 export type ShopfaTransactionLogListResult = PagedListResult<ShopfaTransactionLogDTO>;
+export type SecurityEventListResult = PagedListResult<SecurityEventDTO>;
 
 export interface ListSystemLogsParams {
   page: number;
@@ -33,4 +43,19 @@ export interface ListShopfaTransactionLogsParams {
   pageSize: number;
   success?: boolean;
   search?: string;
+}
+
+export interface ListSecurityEventsParams {
+  page: number;
+  pageSize: number;
+  type?: SecurityEventType;
+  severity?: SecuritySeverity;
+  search?: string;
+  from?: string;
+  to?: string;
+}
+
+export interface SecurityReportParams {
+  from: string;
+  to: string;
 }

@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { setCredentials } from "../../../store/authSlice";
 import { useLoginMutation } from "../api/authApi";
-import { getApiErrorMessage } from "../../../utils/apiError";
+import { getApiErrorMessage, getApiErrorStatus } from "../../../utils/apiError";
 
 export function LoginPage() {
   const { t } = useTranslation(["auth", "common"]);
@@ -116,7 +116,13 @@ export function LoginPage() {
             fullWidth
           />
 
-          {error && <Alert severity="error">{getApiErrorMessage(error) ?? t("auth:login.error")}</Alert>}
+          {error && (
+            <Alert severity="error">
+              {getApiErrorStatus(error) === 429
+                ? t("auth:login.tooManyAttempts")
+                : (getApiErrorMessage(error) ?? t("auth:login.error"))}
+            </Alert>
+          )}
 
           <Button
             type="submit"

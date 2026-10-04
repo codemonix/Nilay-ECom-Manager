@@ -18,7 +18,10 @@ beforeAll(async () => {
   await mongoose.connect(process.env.MONGODB_URI!);
 });
 
+const { resetLoginThrottle } = await import("../src/services/loginThrottle");
+
 afterEach(async () => {
+  resetLoginThrottle();
   const collections = mongoose.connection.collections;
   await Promise.all(Object.values(collections).map((c) => c.deleteMany({})));
 });

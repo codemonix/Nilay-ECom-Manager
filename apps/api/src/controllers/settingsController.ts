@@ -1,11 +1,12 @@
 import type { Request, Response } from "express";
-import type { DataSource, SystemLogLevel } from "@complaint-system/shared";
+import { SecurityEventType, type DataSource, type SystemLogLevel } from "@complaint-system/shared";
 import { asyncHandler } from "../utils/asyncHandler";
 import { sendSuccess } from "../utils/apiResponse";
 import { ApiError } from "../utils/ApiError";
 import * as settingsService from "../services/settingsService";
 import * as orderImportService from "../services/orderImportService";
 import * as backupService from "../services/backupService";
+import * as securityEventService from "../services/securityEventService";
 import type { UpdateSessionSettingsInput, UpdateUploadSettingsInput } from "../validators/settingsValidators";
 
 export const getSettings = asyncHandler(async (_req: Request, res: Response) => {
@@ -32,6 +33,7 @@ export const updateSystemLogLevel = asyncHandler(async (req: Request, res: Respo
 
 export const updateSessionSettings = asyncHandler(async (req: Request, res: Response) => {
   const settings = await settingsService.setSessionTtls(req.body as UpdateSessionSettingsInput);
+  securityEventService.record(req, SecurityEventType.SESSION_SETTINGS_CHANGED, { details: { changes: req.body } });
   return sendSuccess(res, settings);
 });
 
@@ -60,24 +62,28 @@ export const importOrders = asyncHandler(async (req: Request, res: Response) => 
   return sendSuccess(res, result);
 });
 
-export const backupSettings = asyncHandler(async (_req: Request, res: Response) => {
+export const backupSettings = asyncHandler(async (req: Request, res: Response) => {
   const backup = await backupService.createSettingsBackup();
+  securityEventService.record(req, SecurityEventType.SETTINGS_BACKUP_DOWNLOADED);
   res.setHeader("Content-Disposition", "attachment; filename=settings-backup.json");
   return res.json(backup);
 });
 
 export const restoreSettings = asyncHandler(async (req: Request, res: Response) => {
   await backupService.restoreSettingsBackup(req.body);
+  securityEventService.record(req, SecurityEventType.SETTINGS_RESTORED);
   return sendSuccess(res, { restored: true });
 });
 
-export const backupData = asyncHandler(async (_req: Request, res: Response) => {
+export const backupData = asyncHandler(async (req: Request, res: Response) => {
   const backup = await backupService.createDataBackup();
+  securityEventService.record(req, SecurityEventType.DATA_BACKUP_DOWNLOADED);
   res.setHeader("Content-Disposition", "attachment; filename=system-data-backup.json");
   return res.json(backup);
 });
 
 export const restoreData = asyncHandler(async (req: Request, res: Response) => {
   await backupService.restoreDataBackup(req.body);
+  securityEventService.record(req, SecurityEventType.DATA_RESTORED);
   return sendSuccess(res, { restored: true });
 });

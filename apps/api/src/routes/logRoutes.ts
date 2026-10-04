@@ -5,6 +5,8 @@ import {
   listSystemLogsQuerySchema,
   listUserActivityLogsQuerySchema,
   listShopfaTransactionLogsQuerySchema,
+  listSecurityEventsQuerySchema,
+  securityReportQuerySchema,
 } from "../validators/logValidators";
 
 export const logRoutes = Router();
@@ -16,3 +18,5 @@ logRoutes.get(
   validate(listShopfaTransactionLogsQuerySchema, "query"),
   logController.listShopfaTransactionLogs,
 );
+logRoutes.get("/security", validate(listSecurityEventsQuerySchema, "query"), logController.listSecurityEvents);
+logRoutes.get("/security/report", validate(securityReportQuerySchema, "query"), logController.getSecurityReport);

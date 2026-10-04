@@ -88,6 +88,7 @@ caseSchema.index({ "customer.externalCustomerId": 1 });
 caseSchema.index({ status: 1, priority: 1, lastActivityAt: -1 });
 caseSchema.index({ assignedTo: 1, status: 1, lastActivityAt: -1 });
 caseSchema.index({ createdAt: -1 });
+caseSchema.index({ "relatedOrders.orderNumber": 1 });
 caseSchema.index({ subject: "text", description: "text", caseNumber: "text" });
 
 export type CaseSchemaType = InferSchemaType<typeof caseSchema>;

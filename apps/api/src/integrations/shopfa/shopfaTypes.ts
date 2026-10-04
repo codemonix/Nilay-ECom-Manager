@@ -210,6 +210,48 @@ export interface ShopfaClient {
    * No `note` requested so it pages at 500. Live-API only.
    */
   listOrdersByStatuses(statusCodes: number[], range: ShopfaOrderDateWindow | null): Promise<ShopfaStatusOrder[]>;
+  /**
+   * Orders of any status and date matching `query`, summarized like
+   * listOrdersByStatuses, newest first -- backs Reporting's order history
+   * search. Uses the same `search=` as findOrdersByCustomerQuery (buyer
+   * name/family/mobile by substring) which also matches the order number
+   * (`session`), as getOrderDetailsByNumber relies on. Capped at a few pages
+   * of the most recent matches. Live-API only.
+   */
+  searchOrdersForHistory(query: string): Promise<ShopfaOrderSearchScan>;
+  /**
+   * Shopfa's own activity log for one order, oldest first -- the list the
+   * Shopfa panel shows under "نمایش فعالیت ها" (creation, items added or
+   * removed, payment attempts, shipping method, every status change). Read
+   * from `/api/system/logs`, which is NOT in Shopfa's published spec:
+   * confirmed live (2026-10-04, test order 4783608554) that it exists, that
+   * `search=<order number>` narrows it to entries mentioning that order,
+   * and that it pages with `limit`/`page`, newest first. No other filter
+   * (`session`, `id`, `q`, ...) has any effect. Live-API only.
+   */
+  listOrderActivities(orderNumber: string): Promise<ShopfaOrderActivityScan>;
+}
+
+export interface ShopfaOrderActivity {
+  id: string;
+  event: string;
+  /** The status title, when the event is a status change. */
+  statusTitle: string | null;
+  at: Date | null;
+  actorName: string | null;
+}
+
+export interface ShopfaOrderActivityScan {
+  /** Oldest first. */
+  activities: ShopfaOrderActivity[];
+  /** True when the scan stopped at its page cap, so the oldest entries are missing. */
+  truncated: boolean;
+}
+
+export interface ShopfaOrderSearchScan {
+  orders: ShopfaStatusOrder[];
+  /** True when the scan stopped at its page cap before exhausting the search results. */
+  truncated: boolean;
 }
 
 export interface ShopfaPackingOrderItem {

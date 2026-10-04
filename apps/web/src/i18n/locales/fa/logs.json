@@ -1,10 +1,11 @@
 {
   "title": "گزارش‌ها",
-  "description": "سه گزارش مستقل: فعالیت کارکنان در سیستم، هر تماس با API شاپفا، و رویدادهای داخلی سیستم در سطح گزارش تنظیم‌شده.",
+  "description": "چهار گزارش مستقل: فعالیت کارکنان در سیستم، رویدادهای امنیتی (ورود ناموفق، دسترسی ردشده، اقدامات حساس مدیریتی)، هر تماس با API شاپفا، و رویدادهای داخلی سیستم در سطح گزارش تنظیم‌شده.",
   "resultsCount_one": "{{count}} مورد",
   "resultsCount_other": "{{count}} مورد",
   "tabs": {
     "activity": "فعالیت کاربران",
+    "security": "امنیت",
     "shopfa": "تراکنش‌های شاپفا",
     "system": "گزارش سیستم"
   },
@@ -51,6 +52,75 @@
       "level": "سطح",
       "message": "پیام",
       "context": "زمینه"
+    }
+  },
+  "security": {
+    "searchPlaceholder": "جستجو بر اساس IP، حساب، کاربر یا مسیر",
+    "empty": "در این بازه رویداد امنیتی ثبت نشده است",
+    "eventsTitle": "رویدادهای امنیتی",
+    "allTypes": "همه رویدادها",
+    "allSeverities": "همه سطوح",
+    "severity": {
+      "high": "زیاد",
+      "medium": "متوسط",
+      "low": "کم"
+    },
+    "types": {
+      "login_failed": "ورود ناموفق",
+      "login_throttled": "ورود مسدود شد (تلاش بیش از حد)",
+      "invalid_access_token": "توکن نامعتبر یا جعلی",
+      "refresh_token_reuse": "استفاده مجدد از توکن نشست سرقت‌شده",
+      "unauthenticated_access": "دسترسی بدون ورود",
+      "access_denied": "دسترسی رد شد",
+      "password_change_failed": "رمز عبور فعلی اشتباه",
+      "user_created": "ایجاد کاربر",
+      "user_updated": "تغییر کاربر",
+      "user_password_reset": "بازنشانی رمز عبور توسط مدیر",
+      "session_settings_changed": "تغییر تنظیمات نشست",
+      "settings_backup_downloaded": "دانلود پشتیبان تنظیمات",
+      "settings_restored": "بازیابی تنظیمات",
+      "data_backup_downloaded": "دانلود پشتیبان کامل داده‌ها",
+      "data_restored": "بازیابی کامل داده‌ها"
+    },
+    "columns": {
+      "time": "زمان",
+      "event": "رویداد",
+      "user": "کاربر واردشده",
+      "account": "حساب هدف",
+      "ip": "آدرس IP",
+      "request": "درخواست"
+    },
+    "report": {
+      "title": "گزارش فعالیت‌های مشکوک",
+      "flagsTitle": "موارد علامت‌خورده",
+      "noFlags": "در این بازه الگوی مشکوکی دیده نشد.",
+      "topIpsTitle": "فعال‌ترین IPهای مبدأ",
+      "targetedTitle": "حساب‌هایی که بیشتر هدف قرار گرفته‌اند",
+      "byTypeTitle": "رویدادها بر اساس نوع",
+      "columns": {
+        "subject": "IP / حساب / کاربر",
+        "reason": "الگو",
+        "count": "تعداد",
+        "lastSeen": "آخرین مشاهده",
+        "events": "رویدادها",
+        "failedLogins": "ورود ناموفق",
+        "accounts": "حساب‌های امتحان‌شده",
+        "ips": "IPهای مبدأ"
+      },
+      "reasons": {
+        "brute_force": "حدس رمز عبور",
+        "credential_stuffing": "حساب‌های متعدد از یک IP",
+        "targeted_account": "حساب تحت حمله",
+        "privilege_probing": "تلاش برای صفحات غیرمجاز",
+        "token_tampering": "دستکاری توکن"
+      },
+      "reasonHelp": {
+        "brute_force": "۱۰ ورود ناموفق یا بیشتر از این IP",
+        "credential_stuffing": "ورود ناموفق به ۳ حساب مختلف یا بیشتر از این IP",
+        "targeted_account": "۵ ورود ناموفق یا بیشتر به این حساب",
+        "privilege_probing": "دسترسی این کاربر ۵ بار یا بیشتر رد شده است",
+        "token_tampering": "توکن دسترسی جعلی/دستکاری‌شده یا توکن نشست سرقت‌شده از این IP ارسال شده است"
+      }
     }
   }
 }

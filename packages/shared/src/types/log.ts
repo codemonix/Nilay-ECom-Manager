@@ -1,4 +1,4 @@
-import type { SystemLogLevel } from "../constants/logEnums";
+import type { SecurityEventType, SecuritySeverity, SystemLogLevel } from "../constants/logEnums";
 
 /** One internal system log line, persisted alongside the console output -- see config/mongoLogTransport.ts. */
 export interface SystemLogDTO {
@@ -78,4 +78,69 @@ export interface LogCollectionSizeDTO {
 export interface LogSizesDTO {
   userActivity: LogCollectionSizeDTO;
   shopfaTransactions: LogCollectionSizeDTO;
+}
+
+/** One security-relevant event -- see SecurityEventType and apps/api/src/services/securityEventService.ts. */
+export interface SecurityEventDTO {
+  id: string;
+  type: SecurityEventType;
+  severity: SecuritySeverity;
+  /** The signed-in user who caused it, when known. */
+  userId: string | null;
+  userName: string | null;
+  /** The account being targeted (e.g. the email typed on a failed login). */
+  targetEmail: string | null;
+  ip: string | null;
+  userAgent: string | null;
+  method: string | null;
+  path: string | null;
+  details: unknown;
+  createdAt: string;
+}
+
+export interface SecurityEventListQuery {
+  page?: number;
+  pageSize?: number;
+  type?: SecurityEventType;
+  severity?: SecuritySeverity;
+  search?: string;
+  from?: string;
+  to?: string;
+}
+
+/** An IP address or account the report flags, with why. */
+export interface SecurityReportFlagDTO {
+  kind: "ip" | "account" | "user";
+  /** The IP, the targeted email, or the signed-in user's name. */
+  subject: string;
+  reason: "brute_force" | "credential_stuffing" | "targeted_account" | "privilege_probing" | "token_tampering";
+  count: number;
+  lastSeenAt: string;
+}
+
+export interface SecurityReportIpRowDTO {
+  ip: string;
+  total: number;
+  failedLogins: number;
+  distinctAccounts: number;
+  lastSeenAt: string;
+}
+
+export interface SecurityReportAccountRowDTO {
+  email: string;
+  failedLogins: number;
+  distinctIps: number;
+  lastSeenAt: string;
+}
+
+/** Aggregated view of SecurityEvent over a date range, for the Logs page's Security tab. */
+export interface SecurityReportDTO {
+  from: string;
+  to: string;
+  total: number;
+  bySeverity: Record<SecuritySeverity, number>;
+  byType: Array<{ type: SecurityEventType; count: number }>;
+  flags: SecurityReportFlagDTO[];
+  topIps: SecurityReportIpRowDTO[];
+  targetedAccounts: SecurityReportAccountRowDTO[];
 }

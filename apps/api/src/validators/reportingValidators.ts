@@ -1,8 +1,11 @@
 import { z } from "zod";
 import {
   CATEGORY_TREND_WINDOWS,
+  DEFAULT_ORDER_HISTORY_REPORT_RANGE_DAYS,
   DEFAULT_SHORTAGE_REPORT_RANGE_DAYS,
   DEFAULT_SHORTAGE_REPORT_STATUS_CODES,
+  ORDER_HISTORY_REPORT_MIN_QUERY_LENGTH,
+  ORDER_HISTORY_REPORT_RANGE_DAYS_VALUES,
   SHOPFA_ORDER_STATUS_OPTIONS,
   SHORTAGE_REPORT_RANGE_DAYS_VALUES,
 } from "@complaint-system/shared";
@@ -100,3 +103,34 @@ export const categoryTrendsQuerySchema = z
     }
   });
 export type CategoryTrendsQuery = z.infer<typeof categoryTrendsQuerySchema>;
+
+/** Exactly one of `query` (phone number, order number or customer name) or `statusCode`; `days` only applies to the by-status form. */
+export const orderHistoryReportQuerySchema = z
+  .object({
+    query: z
+      .string()
+      .trim()
+      .min(ORDER_HISTORY_REPORT_MIN_QUERY_LENGTH, `Enter at least ${ORDER_HISTORY_REPORT_MIN_QUERY_LENGTH} characters`)
+      .optional(),
+    statusCode: z.coerce
+      .number()
+      .refine((code) => VALID_STATUS_CODES.has(code), `statusCode must be one of: ${Array.from(VALID_STATUS_CODES).join(", ")}`)
+      .optional(),
+    days: z.coerce
+      .number()
+      .optional()
+      .default(DEFAULT_ORDER_HISTORY_REPORT_RANGE_DAYS)
+      .refine((value): value is (typeof ORDER_HISTORY_REPORT_RANGE_DAYS_VALUES)[number] =>
+        (ORDER_HISTORY_REPORT_RANGE_DAYS_VALUES as readonly number[]).includes(value),
+      {
+        message: `days must be one of: ${ORDER_HISTORY_REPORT_RANGE_DAYS_VALUES.join(", ")}`,
+      }),
+  })
+  .refine((value) => (value.query !== undefined) !== (value.statusCode !== undefined), {
+    message: "Provide exactly one of query or statusCode",
+  });
+export type OrderHistoryReportQuery = z.infer<typeof orderHistoryReportQuerySchema>;
+
+/** Order numbers are Shopfa's numeric `session`; anything else would turn the activity log's free-text search into a way to read unrelated entries. */
+export const orderActivitiesParamSchema = z.object({ orderNumber: z.string().regex(/^\d{4,20}$/, "Expected an order number") });
+export type OrderActivitiesParam = z.infer<typeof orderActivitiesParamSchema>;

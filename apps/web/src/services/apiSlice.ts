@@ -108,6 +108,7 @@ export const apiSlice = createApi({
     "ImportedOrder",
     "ImportedOrderList",
     "SystemLogList",
+    "SecurityEventList",
     "UserActivityLogList",
     "ShopfaTransactionLogList",
     "LogSizes",

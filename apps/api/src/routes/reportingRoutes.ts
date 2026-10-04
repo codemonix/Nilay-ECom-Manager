@@ -7,6 +7,8 @@ import {
   categoryTrendsQuerySchema,
   customerReportQuerySchema,
   itemSalesQuerySchema,
+  orderActivitiesParamSchema,
+  orderHistoryReportQuerySchema,
   productSearchQuerySchema,
   shortageReportQuerySchema,
 } from "../validators/reportingValidators";
@@ -52,6 +54,21 @@ reportingRoutes.get(
   requireReportAccess(ReportKey.CATEGORY_TRENDS),
   validate(categoryTrendsQuerySchema, "query"),
   reportingController.getCategoryTrends,
+);
+
+reportingRoutes.get(
+  "/order-history",
+  requireReportAccess(ReportKey.ORDER_HISTORY),
+  validate(orderHistoryReportQuerySchema, "query"),
+  reportingController.getOrderHistoryReport,
+);
+
+// Loaded per order as its card is opened: one Shopfa call each, too slow to do for a whole result list.
+reportingRoutes.get(
+  "/order-history/:orderNumber/activities",
+  requireReportAccess(ReportKey.ORDER_HISTORY),
+  validate(orderActivitiesParamSchema, "params"),
+  reportingController.getOrderActivities,
 );
 
 // Opened from links inside several reports, so any report permission suffices.

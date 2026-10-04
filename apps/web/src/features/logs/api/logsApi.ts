@@ -1,9 +1,19 @@
-import type { ApiResponse, SystemLogDTO, UserActivityLogDTO, ShopfaTransactionLogDTO } from "@complaint-system/shared";
+import type {
+  ApiResponse,
+  SecurityEventDTO,
+  SecurityReportDTO,
+  ShopfaTransactionLogDTO,
+  SystemLogDTO,
+  UserActivityLogDTO,
+} from "@complaint-system/shared";
 import { apiSlice } from "../../../services/apiSlice";
 import type {
   ListSystemLogsParams,
   ListUserActivityLogsParams,
   ListShopfaTransactionLogsParams,
+  ListSecurityEventsParams,
+  SecurityEventListResult,
+  SecurityReportParams,
   SystemLogListResult,
   UserActivityLogListResult,
   ShopfaTransactionLogListResult,
@@ -53,7 +63,25 @@ export const logsApi = apiSlice.injectEndpoints({
         toPagedResult(response),
       providesTags: [{ type: "ShopfaTransactionLogList", id: "LIST" }],
     }),
+
+    listSecurityEvents: builder.query<SecurityEventListResult, ListSecurityEventsParams>({
+      query: (params) => ({ url: "/logs/security", params }),
+      transformResponse: (response: ApiResponse<SecurityEventDTO[]> & { meta?: ApiMeta }) => toPagedResult(response),
+      providesTags: [{ type: "SecurityEventList", id: "LIST" }],
+    }),
+
+    getSecurityReport: builder.query<SecurityReportDTO, SecurityReportParams>({
+      query: (params) => ({ url: "/logs/security/report", params }),
+      transformResponse: (response: ApiResponse<SecurityReportDTO>) => unwrap(response),
+      providesTags: [{ type: "SecurityEventList", id: "REPORT" }],
+    }),
   }),
 });
 
-export const { useListSystemLogsQuery, useListUserActivityLogsQuery, useListShopfaTransactionLogsQuery } = logsApi;
+export const {
+  useListSystemLogsQuery,
+  useListUserActivityLogsQuery,
+  useListShopfaTransactionLogsQuery,
+  useListSecurityEventsQuery,
+  useGetSecurityReportQuery,
+} = logsApi;

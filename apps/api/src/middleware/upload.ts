@@ -13,18 +13,28 @@ if (!fs.existsSync(uploadRoot)) {
   fs.mkdirSync(uploadRoot, { recursive: true });
 }
 
-const ALLOWED_MIME_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "application/pdf",
-]);
+/**
+ * Allowed upload types and the extension each is stored under. The stored
+ * extension comes from this map, never from the client's filename: files
+ * are served back from /uploads on the app's own origin, so a "photo.html"
+ * or "x.js" sent with a spoofed image/png type must not land on disk as
+ * .html/.js (stored XSS).
+ */
+const EXTENSION_BY_MIME_TYPE: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "image/gif": ".gif",
+  "application/pdf": ".pdf",
+};
+
+/** Extensions /uploads serves inline; anything else is forced to download (see app.ts). */
+export const SAFE_UPLOAD_EXTENSIONS = new Set([...Object.values(EXTENSION_BY_MIME_TYPE), ".jpeg"]);
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadRoot),
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
+    const ext = EXTENSION_BY_MIME_TYPE[file.mimetype] ?? "";
     const safeName = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}${ext}`;
     cb(null, safeName);
   },
@@ -34,7 +44,7 @@ export const upload = multer({
   storage,
   limits: { fileSize: env.MAX_UPLOAD_SIZE_MB * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
+    if (!(file.mimetype in EXTENSION_BY_MIME_TYPE)) {
       cb(ApiError.badRequest(`Unsupported file type: ${file.mimetype}`));
       return;
     }

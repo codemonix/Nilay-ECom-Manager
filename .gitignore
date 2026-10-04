@@ -12,3 +12,7 @@ apps/api/uploads/*
 !apps/api/uploads/.gitkeep
 .vscode/
 *.tsbuildinfo
+
+# Real exports (customer PII) -- never commit
+data/
+*.xlsx

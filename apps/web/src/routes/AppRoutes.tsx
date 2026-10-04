@@ -20,6 +20,7 @@ import { ShortageReportPage } from "../features/reporting/pages/ShortageReportPa
 import { CustomerReportPage } from "../features/reporting/pages/CustomerReportPage";
 import { CategoryTrendsReportPage } from "../features/reporting/pages/CategoryTrendsReportPage";
 import { ItemSalesReportPage } from "../features/reporting/pages/ItemSalesReportPage";
+import { OrderHistoryReportPage } from "../features/reporting/pages/OrderHistoryReportPage";
 import { ReportingOrderDetailsPage } from "../features/reporting/pages/ReportingOrderDetailsPage";
 import { OrderPrecheckPage } from "../features/orderPrecheck/pages/OrderPrecheckPage";
 import { PackingPage } from "../features/packing/pages/PackingPage";
@@ -193,6 +194,14 @@ export function AppRoutes() {
                   element={
                     <RequireReportAccess reportKey={ReportKey.CATEGORY_TRENDS}>
                       <CategoryTrendsReportPage />
+                    </RequireReportAccess>
+                  }
+                />
+                <Route
+                  path="/reporting/order-history"
+                  element={
+                    <RequireReportAccess reportKey={ReportKey.ORDER_HISTORY}>
+                      <OrderHistoryReportPage />
                     </RequireReportAccess>
                   }
                 />

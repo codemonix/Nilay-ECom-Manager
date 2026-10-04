@@ -14,6 +14,7 @@ import LinkIcon from "@mui/icons-material/Link";
 import AllInboxIcon from "@mui/icons-material/AllInbox";
 import PersonSearchIcon from "@mui/icons-material/PersonSearch";
 import InsightsIcon from "@mui/icons-material/Insights";
+import HistoryIcon from "@mui/icons-material/History";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import ReportProblemIcon from "@mui/icons-material/ReportProblem";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
@@ -132,6 +133,13 @@ export const REPORT_CHILD_ITEMS: NavItem[] = [
     labelKey: "navigation:reportsNav.categoryTrends",
     icon: <InsightsIcon />,
     path: "/reporting/category-trends",
+  },
+  {
+    key: MenuKey.REPORTING,
+    reportKey: ReportKey.ORDER_HISTORY,
+    labelKey: "navigation:reportsNav.orderHistory",
+    icon: <HistoryIcon />,
+    path: "/reporting/order-history",
   },
   {
     key: MenuKey.REPORTING,

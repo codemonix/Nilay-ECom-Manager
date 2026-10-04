@@ -55,7 +55,16 @@ export {
   ATTACHMENT_SUBJECT_TYPE_VALUES,
 } from "./constants/packageEnums";
 
-export { SystemLogLevel, SYSTEM_LOG_LEVEL_VALUES, SYSTEM_LOG_LEVEL_SEVERITY } from "./constants/logEnums";
+export {
+  SystemLogLevel,
+  SYSTEM_LOG_LEVEL_VALUES,
+  SYSTEM_LOG_LEVEL_SEVERITY,
+  SecurityEventType,
+  SECURITY_EVENT_TYPE_VALUES,
+  SecuritySeverity,
+  SECURITY_SEVERITY_VALUES,
+  SECURITY_EVENT_SEVERITY,
+} from "./constants/logEnums";
 
 export type {
   CaseCustomerSnapshot,
@@ -106,6 +115,12 @@ export type {
   ShopfaTransactionLogListQuery,
   LogCollectionSizeDTO,
   LogSizesDTO,
+  SecurityEventDTO,
+  SecurityEventListQuery,
+  SecurityReportDTO,
+  SecurityReportFlagDTO,
+  SecurityReportIpRowDTO,
+  SecurityReportAccountRowDTO,
 } from "./types/log";
 
 export type {
@@ -186,6 +201,19 @@ export type {
   OrdersByStatusRangeDays,
 } from "./types/ordersByStatus";
 export { ORDERS_BY_STATUS_RANGE_DAYS_VALUES, DEFAULT_ORDERS_BY_STATUS_RANGE_DAYS } from "./types/ordersByStatus";
+export type {
+  OrderActivitiesDTO,
+  OrderActivityDTO,
+  OrderHistoryCaseDTO,
+  OrderHistoryReportOrderDTO,
+  OrderHistoryReportResultDTO,
+  OrderHistoryReportRangeDays,
+} from "./types/orderHistoryReport";
+export {
+  ORDER_HISTORY_REPORT_RANGE_DAYS_VALUES,
+  DEFAULT_ORDER_HISTORY_REPORT_RANGE_DAYS,
+  ORDER_HISTORY_REPORT_MIN_QUERY_LENGTH,
+} from "./types/orderHistoryReport";
 
 export type {
   PackingItemDTO,

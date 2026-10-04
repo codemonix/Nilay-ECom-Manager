@@ -30,7 +30,7 @@ transition), `422` (validation error), `502` (Shopfa upstream error).
 
 | Method | Path | Body | Notes |
 |---|---|---|---|
-| POST | `/auth/login` | `{ email, password }` | Returns `{ token, user }` and sets the `refresh_token` httpOnly cookie |
+| POST | `/auth/login` | `{ email, password }` | Returns `{ token, user }` and sets the `refresh_token` httpOnly cookie; `429` with `Retry-After` after 5 failures for one account (or 20 for any accounts) from one IP within 15 minutes |
 | POST | `/auth/refresh` | — (cookie) | Rotates the refresh cookie, returns `{ token, user }`; `401` if missing/expired/revoked |
 | POST | `/auth/logout` | — (cookie) | Revokes the refresh token and clears the cookie |
 | GET | `/auth/me` | — | Current user |
@@ -111,12 +111,30 @@ are stored with explicit `$oid` and `$date` markers so references survive a
 restore. Backup downloads are the raw JSON envelope rather than the standard
 success wrapper, and can be posted directly to the matching restore endpoint.
 
+All four endpoints are **admin-only**, even for staff granted the Settings
+menu: a data backup contains every user's password hash, and a data restore
+replaces the users collection. Each download/restore is recorded as a
+security event.
+
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/settings/backup` | Settings singleton only; does not include Shopfa credentials or derived configuration |
 | POST | `/settings/restore` | Replaces the settings singleton after schema validation; operational data is untouched |
 | GET | `/settings/data-backup` | Users, cases, case events, attachment metadata and files, imported orders, and counters |
 | POST | `/settings/data-restore` | Validates all documents, references, and attachment checksums before replacing those operational collections |
+
+## Security events (Logs permission)
+
+Failed and throttled logins, forged/invalid access tokens, reused refresh
+tokens, requests to protected routes without a session, `403`s, failed
+password changes, and sensitive admin actions (user changes, password
+resets, session settings, backups/restores) are recorded in the
+`SecurityEvent` collection (kept 180 days).
+
+| Method | Path | Query | Notes |
+|---|---|---|---|
+| GET | `/logs/security` | `page, pageSize, type, severity, search, from, to` | Paged event list; `search` matches IP, target email, user name or path |
+| GET | `/logs/security/report` | `from, to` (default: last 7 days) | Counts by type/severity, top source IPs, most-targeted accounts, and `flags`: brute force (≥10 failed logins from an IP), credential stuffing (≥3 accounts from an IP), targeted account (≥5 failures), privilege probing (≥5 `403`s for a user), token tampering |
 
 ## Example: create a case
 

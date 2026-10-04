@@ -1,10 +1,11 @@
 {
   "title": "Logs",
-  "description": "Three independent audit trails: what staff did in the system, every call made to the Shopfa API, and internal system events at the configured log level.",
+  "description": "Four independent audit trails: what staff did in the system, security events (failed logins, denied access, sensitive admin actions), every call made to the Shopfa API, and internal system events at the configured log level.",
   "resultsCount_one": "{{count}} entry",
   "resultsCount_other": "{{count}} entries",
   "tabs": {
     "activity": "User Activity",
+    "security": "Security",
     "shopfa": "Shopfa Transactions",
     "system": "System Log"
   },
@@ -51,6 +52,75 @@
       "level": "Level",
       "message": "Message",
       "context": "Context"
+    }
+  },
+  "security": {
+    "searchPlaceholder": "Search by IP, account, user or path",
+    "empty": "No security events in this period",
+    "eventsTitle": "Security events",
+    "allTypes": "All events",
+    "allSeverities": "All severities",
+    "severity": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "types": {
+      "login_failed": "Failed login",
+      "login_throttled": "Login blocked (too many attempts)",
+      "invalid_access_token": "Invalid or forged token",
+      "refresh_token_reuse": "Stolen session token reused",
+      "unauthenticated_access": "Access without signing in",
+      "access_denied": "Access denied",
+      "password_change_failed": "Wrong current password",
+      "user_created": "User created",
+      "user_updated": "User changed",
+      "user_password_reset": "Password reset by admin",
+      "session_settings_changed": "Session settings changed",
+      "settings_backup_downloaded": "Settings backup downloaded",
+      "settings_restored": "Settings restored",
+      "data_backup_downloaded": "Full data backup downloaded",
+      "data_restored": "Full data restored"
+    },
+    "columns": {
+      "time": "Time",
+      "event": "Event",
+      "user": "Signed-in user",
+      "account": "Target account",
+      "ip": "IP Address",
+      "request": "Request"
+    },
+    "report": {
+      "title": "Suspicious activity report",
+      "flagsTitle": "Flagged",
+      "noFlags": "No suspicious patterns in this period.",
+      "topIpsTitle": "Most active source IPs",
+      "targetedTitle": "Most targeted accounts",
+      "byTypeTitle": "Events by type",
+      "columns": {
+        "subject": "IP / account / user",
+        "reason": "Pattern",
+        "count": "Count",
+        "lastSeen": "Last seen",
+        "events": "Events",
+        "failedLogins": "Failed logins",
+        "accounts": "Accounts tried",
+        "ips": "Source IPs"
+      },
+      "reasons": {
+        "brute_force": "Password guessing",
+        "credential_stuffing": "Many accounts from one IP",
+        "targeted_account": "Account under attack",
+        "privilege_probing": "Probing restricted pages",
+        "token_tampering": "Token tampering"
+      },
+      "reasonHelp": {
+        "brute_force": "10 or more failed logins from this IP",
+        "credential_stuffing": "Failed logins against 3 or more different accounts from this IP",
+        "targeted_account": "5 or more failed logins against this account",
+        "privilege_probing": "This signed-in user was refused access 5 or more times",
+        "token_tampering": "A forged/altered access token or a reused (stolen) session token came from this IP"
+      }
     }
   }
 }

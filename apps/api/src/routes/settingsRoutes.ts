@@ -32,7 +32,11 @@ settingsRoutes.patch("/uploads", validate(updateUploadSettingsSchema), settingsC
 settingsRoutes.get("/log-sizes", settingsController.getLogSizes);
 settingsRoutes.post("/shopfa/test-connection", settingsController.testShopfaConnection);
 settingsRoutes.post("/orders/import", uploadOrdersFile.single("file"), settingsController.importOrders);
-settingsRoutes.get("/backup", settingsController.backupSettings);
-settingsRoutes.post("/restore", settingsController.restoreSettings);
-settingsRoutes.get("/data-backup", settingsController.backupData);
-settingsRoutes.post("/data-restore", settingsController.restoreData);
+// A data backup carries every user's password hash, and a restore replaces
+// the users collection wholesale (i.e. can mint an admin account), so both
+// directions are admin-only even for staff granted the Settings menu.
+const adminOnly = requireRole(StaffRole.ADMIN);
+settingsRoutes.get("/backup", adminOnly, settingsController.backupSettings);
+settingsRoutes.post("/restore", adminOnly, settingsController.restoreSettings);
+settingsRoutes.get("/data-backup", adminOnly, settingsController.backupData);
+settingsRoutes.post("/data-restore", adminOnly, settingsController.restoreData);

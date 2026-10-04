@@ -34,6 +34,18 @@ export const caseRepository = {
     return CaseModel.findOne({ caseNumber });
   },
 
+  /** Every case linked to any of the given orders, newest first. Chunked like packingRecordRepository.findByOrderNumbers. */
+  async findByOrderNumbers(orderNumbers: string[]): Promise<CaseDocument[]> {
+    const CHUNK = 1000;
+    const found = new Map<string, CaseDocument>();
+    for (let i = 0; i < orderNumbers.length; i += CHUNK) {
+      const cases = await CaseModel.find({ "relatedOrders.orderNumber": { $in: orderNumbers.slice(i, i + CHUNK) } });
+      // A case linked to orders in two chunks would otherwise come back twice.
+      for (const caseDoc of cases) found.set(String(caseDoc._id), caseDoc as CaseDocument);
+    }
+    return Array.from(found.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  },
+
   async list(query: ListCasesQuery) {
     const filter: Record<string, unknown> = {};
 

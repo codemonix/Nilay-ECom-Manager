@@ -4,7 +4,14 @@ import { sendSuccess } from "../utils/apiResponse";
 import * as systemLogService from "../services/systemLogService";
 import * as userActivityLogService from "../services/userActivityLogService";
 import * as shopfaTransactionLogService from "../services/shopfaTransactionLogService";
-import type { ListSystemLogsQuery, ListUserActivityLogsQuery, ListShopfaTransactionLogsQuery } from "../validators/logValidators";
+import * as securityEventService from "../services/securityEventService";
+import type {
+  ListSecurityEventsQuery,
+  ListSystemLogsQuery,
+  ListUserActivityLogsQuery,
+  ListShopfaTransactionLogsQuery,
+  SecurityReportQuery,
+} from "../validators/logValidators";
 
 export const listSystemLogs = asyncHandler(async (req: Request, res: Response) => {
   const query = req.query as unknown as ListSystemLogsQuery;
@@ -37,4 +44,20 @@ export const listShopfaTransactionLogs = asyncHandler(async (req: Request, res: 
     total: result.total,
     totalPages: result.totalPages,
   });
+});
+
+export const listSecurityEvents = asyncHandler(async (req: Request, res: Response) => {
+  const query = req.query as unknown as ListSecurityEventsQuery;
+  const result = await securityEventService.listSecurityEvents(query);
+  return sendSuccess(res, result.items, 200, {
+    page: result.page,
+    pageSize: result.pageSize,
+    total: result.total,
+    totalPages: result.totalPages,
+  });
+});
+
+export const getSecurityReport = asyncHandler(async (req: Request, res: Response) => {
+  const query = req.query as unknown as SecurityReportQuery;
+  return sendSuccess(res, await securityEventService.buildSecurityReport(query));
 });

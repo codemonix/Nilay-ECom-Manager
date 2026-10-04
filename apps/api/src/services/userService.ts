@@ -43,4 +43,5 @@ export async function resetPassword(id: string, newPassword: string) {
   user.passwordHash = await hashPassword(newPassword);
   await user.save();
   await refreshTokenRepository.revokeAllForUser(id);
+  return user;
 }

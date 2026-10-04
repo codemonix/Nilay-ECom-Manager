@@ -9,7 +9,7 @@ import { authenticate } from "./middleware/authenticate";
 import { activityLogger } from "./middleware/activityLogger";
 import { errorHandler } from "./middleware/errorHandler";
 import { notFoundHandler } from "./middleware/notFound";
-import { UPLOAD_ROOT } from "./middleware/upload";
+import { SAFE_UPLOAD_EXTENSIONS, UPLOAD_ROOT } from "./middleware/upload";
 
 export function createApp(): Express {
   const app = express();
@@ -37,7 +37,16 @@ export function createApp(): Express {
   app.use(
     "/uploads",
     helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }),
-    express.static(UPLOAD_ROOT),
+    express.static(UPLOAD_ROOT, {
+      // Defense in depth for files stored before extensions were derived
+      // from the MIME type (see middleware/upload.ts): anything that isn't
+      // an image/PDF is downloaded, never rendered on the app's origin.
+      setHeaders: (res, filePath) => {
+        if (!SAFE_UPLOAD_EXTENSIONS.has(path.extname(filePath).toLowerCase())) {
+          res.setHeader("Content-Disposition", "attachment");
+        }
+      },
+    }),
   );
 
   app.use("/api", apiRouter);

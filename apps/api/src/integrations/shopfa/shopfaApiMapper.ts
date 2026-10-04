@@ -8,11 +8,13 @@ import type {
   ShopfaApiOrderListResponse,
   ShopfaApiProduct,
   ShopfaApiProductListResponse,
+  ShopfaApiSystemLog,
   ShopfaApiUser,
   ShopfaApiUserListResponse,
 } from "./shopfaApiTypes";
 import type {
   ShopfaCustomerOrderRef,
+  ShopfaOrderActivity,
   ShopfaPackingOrder,
   ShopfaPrecheckOrder,
   ShopfaStatusOrder,
@@ -237,6 +239,34 @@ export function mapApiOrderToStatusOrder(raw: ShopfaApiOrder, statusCode: number
     shippingMethodId: order.shippingMethodId,
     itemCount: order.items.length,
     totalQuantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
+  };
+}
+
+/** "سبد 123 در وضعیت ارسال شده قرار گرفت" -- how Shopfa's activity log words a status change. */
+const ACTIVITY_STATUS_CHANGE = /در وضعیت (.+) قرار گرفت/;
+
+/** Whether an activity-log event is about this order: its number must appear as a whole number, not inside a longer one (the log's `search` is a plain substring match). */
+export function activityMentionsOrder(event: string, orderNumber: string): boolean {
+  let from = 0;
+  for (;;) {
+    const at = event.indexOf(orderNumber, from);
+    if (at === -1) return false;
+    const before = event[at - 1];
+    const after = event[at + orderNumber.length];
+    if (!(before && /\d/.test(before)) && !(after && /\d/.test(after))) return true;
+    from = at + 1;
+  }
+}
+
+export function mapApiLogToOrderActivity(raw: ShopfaApiSystemLog): ShopfaOrderActivity {
+  const event = (raw.log_event ?? "").trim();
+  const actorName = [raw.log_firstname, raw.log_lastname].map((part) => (part ?? "").trim()).filter(Boolean).join(" ");
+  return {
+    id: String(raw.log_id),
+    event,
+    statusTitle: ACTIVITY_STATUS_CHANGE.exec(event)?.[1]?.trim() ?? null,
+    at: toDateOrNull(raw.log_date),
+    actorName: actorName || null,
   };
 }
 

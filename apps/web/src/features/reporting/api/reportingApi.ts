@@ -7,6 +7,9 @@ import type {
   ItemSalesCategoryDTO,
   ItemSalesProductSearchResultDTO,
   ItemSalesResultDTO,
+  OrderActivitiesDTO,
+  OrderHistoryReportRangeDays,
+  OrderHistoryReportResultDTO,
   ReportingOrderDetailsDTO,
   ShortageReportRangeDays,
   ShortageReportResultDTO,
@@ -35,6 +38,9 @@ export interface GetItemSalesReportArgs {
   from: string;
   to: string;
 }
+
+/** Either a search (`query`) or a status with its last-updated time frame -- see orderHistoryReportQuerySchema. */
+export type GetOrderHistoryReportArgs = { query: string } | { statusCode: number; days: OrderHistoryReportRangeDays };
 
 export const reportingApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -69,6 +75,16 @@ export const reportingApi = apiSlice.injectEndpoints({
       query: (q) => ({ url: "/reporting/item-sales/products", params: { q } }),
       transformResponse: (response: ApiResponse<ItemSalesProductSearchResultDTO[]>) => unwrap(response),
     }),
+    /** Orders found by status or search, each with its recorded status changes, packing pictures and linked cases -- see OrderHistoryReportResultDTO. */
+    getOrderHistoryReport: builder.query<OrderHistoryReportResultDTO, GetOrderHistoryReportArgs>({
+      query: (params) => ({ url: "/reporting/order-history", params }),
+      transformResponse: (response: ApiResponse<OrderHistoryReportResultDTO>) => unwrap(response),
+    }),
+    /** Shopfa's own activity log for one order (the panel's "نمایش فعالیت ها") -- see OrderActivitiesDTO. */
+    getOrderActivities: builder.query<OrderActivitiesDTO, string>({
+      query: (orderNumber) => `/reporting/order-history/${encodeURIComponent(orderNumber)}/activities`,
+      transformResponse: (response: ApiResponse<OrderActivitiesDTO>) => unwrap(response),
+    }),
     /** One live Shopfa order by its order number -- see ReportingOrderDetailsDTO. */
     getReportingOrderDetails: builder.query<ReportingOrderDetailsDTO, string>({
       query: (orderNumber) => `/reporting/orders/${encodeURIComponent(orderNumber)}`,
@@ -82,6 +98,8 @@ export const {
   useGetReportingOrderDetailsQuery,
   useLazyGetCustomerReportQuery,
   useLazyGetItemSalesReportQuery,
+  useLazyGetOrderHistoryReportQuery,
+  useGetOrderActivitiesQuery,
   useGetCategoryTrendsQuery,
   useGetItemSalesCategoriesQuery,
   useSearchItemSalesProductsQuery,

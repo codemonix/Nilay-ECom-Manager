@@ -9,6 +9,8 @@ import type {
   ShopfaOrderAdminNote,
   ShopfaCustomerOrderRef,
   ShopfaOrderDateWindow,
+  ShopfaOrderActivityScan,
+  ShopfaOrderSearchScan,
   ShopfaStatusOrder,
   ShopfaOrderPrecheckUpdate,
   ShopfaOrderPrecheckUpdateResult,
@@ -215,6 +217,20 @@ export class MockShopfaClient implements ShopfaClient {
   async listOrdersByStatuses(_statusCodes: number[], _range: ShopfaOrderDateWindow): Promise<ShopfaStatusOrder[]> {
     throw ApiError.badRequest(
       "Orders by status requires the Live API data source -- mock order data has no Shopfa status codes to filter by.",
+    );
+  }
+
+  /** No Shopfa order search in this data source. */
+  async searchOrdersForHistory(_query: string): Promise<ShopfaOrderSearchScan> {
+    throw ApiError.badRequest(
+      "The order history report requires the Live API data source -- mock order data has no Shopfa order search.",
+    );
+  }
+
+  /** No Shopfa activity log in this data source. */
+  async listOrderActivities(_orderNumber: string): Promise<ShopfaOrderActivityScan> {
+    throw ApiError.badRequest(
+      "Order activity requires the Live API data source -- mock order data has no Shopfa activity log.",
     );
   }
 }

@@ -5,6 +5,7 @@ import type { UserDocument } from "../models/User";
 import type { SystemLogDocument } from "../models/SystemLog";
 import type { UserActivityLogDocument } from "../models/UserActivityLog";
 import type { ShopfaTransactionLogDocument } from "../models/ShopfaTransactionLog";
+import type { SecurityEventDocument } from "../models/SecurityEvent";
 import type { PackageDocument, PackageItemSubdocument } from "../models/Package";
 import type { PackageEventDocument } from "../models/PackageEvent";
 
@@ -179,6 +180,24 @@ export function serializeShopfaTransactionLog(log: ShopfaTransactionLogDocument)
     success: obj.success,
     durationMs: obj.durationMs,
     errorMessage: obj.errorMessage ?? null,
+    createdAt: obj.createdAt,
+  };
+}
+
+export function serializeSecurityEvent(event: SecurityEventDocument) {
+  const obj = event.toObject();
+  return {
+    id: String(obj._id),
+    type: obj.type,
+    severity: obj.severity,
+    userId: obj.userId ? String(obj.userId) : null,
+    userName: obj.userName ?? null,
+    targetEmail: obj.targetEmail ?? null,
+    ip: obj.ip ?? null,
+    userAgent: obj.userAgent ?? null,
+    method: obj.method ?? null,
+    path: obj.path ?? null,
+    details: obj.details ?? null,
     createdAt: obj.createdAt,
   };
 }

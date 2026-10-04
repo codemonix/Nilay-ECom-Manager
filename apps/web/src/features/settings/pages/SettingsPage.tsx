@@ -25,7 +25,7 @@ export function SettingsPage() {
       <UploadSettingsCard />
       <LogLevelCard />
       <LogSizesCard />
-      <BackupRestoreCard />
+      {isAdmin && <BackupRestoreCard />}
       <ImportedOrdersTable />
     </Stack>
   );

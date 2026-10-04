@@ -3,10 +3,13 @@ import type { CategoryTrendMonths } from "@complaint-system/shared";
 import { asyncHandler } from "../utils/asyncHandler";
 import { sendSuccess } from "../utils/apiResponse";
 import * as reportingService from "../services/reportingService";
+import * as orderHistoryReportService from "../services/orderHistoryReportService";
 import type {
   CategoryTrendsQuery,
   CustomerReportQuery,
   ItemSalesQuery,
+  OrderActivitiesParam,
+  OrderHistoryReportQuery,
   ProductSearchQuery,
   ShortageReportQuery,
 } from "../validators/reportingValidators";
@@ -44,4 +47,18 @@ export const searchProducts = asyncHandler(async (req: Request, res: Response) =
 export const getCategoryTrends = asyncHandler(async (req: Request, res: Response) => {
   const { months, stepDays } = req.query as unknown as CategoryTrendsQuery;
   return sendSuccess(res, await reportingService.buildCategoryTrends(months as CategoryTrendMonths, stepDays));
+});
+
+export const getOrderHistoryReport = asyncHandler(async (req: Request, res: Response) => {
+  const { query, statusCode, days } = req.query as unknown as OrderHistoryReportQuery;
+  const result =
+    query !== undefined
+      ? await orderHistoryReportService.buildOrderHistoryBySearch(query)
+      : await orderHistoryReportService.buildOrderHistoryByStatus(statusCode as number, days);
+  return sendSuccess(res, result);
+});
+
+export const getOrderActivities = asyncHandler(async (req: Request, res: Response) => {
+  const { orderNumber } = req.params as unknown as OrderActivitiesParam;
+  return sendSuccess(res, await orderHistoryReportService.getOrderActivities(orderNumber));
 });

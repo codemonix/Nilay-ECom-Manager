@@ -7,8 +7,9 @@ import { useTranslation } from "react-i18next";
 import { SystemLogsTable } from "../components/SystemLogsTable";
 import { UserActivityLogsTable } from "../components/UserActivityLogsTable";
 import { ShopfaTransactionLogsTable } from "../components/ShopfaTransactionLogsTable";
+import { SecurityLogsPanel } from "../components/SecurityLogsPanel";
 
-type LogTab = "activity" | "shopfa" | "system";
+type LogTab = "activity" | "security" | "shopfa" | "system";
 
 export function LogsPage() {
   const { t } = useTranslation("logs");
@@ -25,11 +26,13 @@ export function LogsPage() {
 
       <Tabs value={tab} onChange={handleChange} sx={{ borderBottom: 1, borderColor: "divider" }}>
         <Tab value="activity" label={t("tabs.activity")} />
+        <Tab value="security" label={t("tabs.security")} />
         <Tab value="shopfa" label={t("tabs.shopfa")} />
         <Tab value="system" label={t("tabs.system")} />
       </Tabs>
 
       {tab === "activity" && <UserActivityLogsTable />}
+      {tab === "security" && <SecurityLogsPanel />}
       {tab === "shopfa" && <ShopfaTransactionLogsTable />}
       {tab === "system" && <SystemLogsTable />}
     </Stack>

@@ -31,6 +31,9 @@ import type {
   ShopfaProductLookup,
   ShopfaShortageReportOrder,
   ShopfaSoldQuantityResult,
+  ShopfaOrderActivity,
+  ShopfaOrderActivityScan,
+  ShopfaOrderSearchScan,
   ShopfaStatusOrder,
   ShopfaSoldQuantityStatusRow,
 } from "./shopfaTypes";
@@ -40,10 +43,13 @@ import type {
   ShopfaApiOrderListResponse,
   ShopfaApiPageListResponse,
   ShopfaApiProductListResponse,
+  ShopfaApiSystemLogListResponse,
   ShopfaApiUserListResponse,
 } from "./shopfaApiTypes";
 import {
   extractOrderDetails,
+  activityMentionsOrder,
+  mapApiLogToOrderActivity,
   mapApiOrderToCustomerReportOrder,
   mapApiOrderToCustomerOrderRef,
   mapApiOrderToPackingOrder,
@@ -1177,6 +1183,76 @@ export class HttpShopfaClient implements ShopfaClient {
       throw ApiError.badGateway("Failed to reach Shopfa order service");
     }
     return results;
+  }
+
+  /** See the ShopfaClient interface doc. */
+  async searchOrdersForHistory(query: string): Promise<ShopfaOrderSearchScan> {
+    const PAGE_SIZE = 100;
+    const MAX_PAGES = 3;
+    const orders: ShopfaStatusOrder[] = [];
+    let truncated = false;
+    try {
+      for (let page = 1; ; page += 1) {
+        const { data } = await this.postWithRetry<ShopfaApiOrderListResponse>(
+          "/api/shop/orders",
+          {},
+          {
+            params: {
+              search: query,
+              limit: PAGE_SIZE,
+              page,
+              sort: "date",
+              order: "desc",
+              fields: "id,session,date,payment_date,update,status,status_title,name,family,mobile,post_method,post_method_title",
+            },
+          },
+        );
+        const baskets = data.baskets ?? [];
+        orders.push(...baskets.map((raw) => mapApiOrderToStatusOrder(raw, Number(raw.status))));
+        if (baskets.length < PAGE_SIZE) break;
+        if (page >= MAX_PAGES) {
+          truncated = true;
+          break;
+        }
+      }
+    } catch (err) {
+      logger.error("Shopfa searchOrdersForHistory failed", { query, err });
+      throw ApiError.badGateway("Failed to reach Shopfa order service");
+    }
+    await this.fillShippingMethodNames(orders);
+    return { orders, truncated };
+  }
+
+  /** See the ShopfaClient interface doc. */
+  async listOrderActivities(orderNumber: string): Promise<ShopfaOrderActivityScan> {
+    const PAGE_SIZE = 100;
+    const MAX_PAGES = 5;
+    const activities: ShopfaOrderActivity[] = [];
+    let truncated = false;
+    try {
+      for (let page = 1; ; page += 1) {
+        const { data } = await this.postWithRetry<ShopfaApiSystemLogListResponse>(
+          "/api/system/logs",
+          {},
+          { params: { search: orderNumber, limit: PAGE_SIZE, page } },
+        );
+        const rows = data.data ?? [];
+        for (const row of rows) {
+          if (activityMentionsOrder(row.log_event ?? "", orderNumber)) activities.push(mapApiLogToOrderActivity(row));
+        }
+        if (rows.length < PAGE_SIZE) break;
+        if (page >= MAX_PAGES) {
+          truncated = true;
+          break;
+        }
+      }
+    } catch (err) {
+      logger.error("Shopfa listOrderActivities failed", { orderNumber, err });
+      throw ApiError.badGateway("Failed to reach Shopfa activity log");
+    }
+    // Shopfa returns the log newest first; a history reads oldest first.
+    activities.reverse();
+    return { activities, truncated };
   }
 
   private async fetchOrdersByUser(userId: string): Promise<ShopfaApiOrder[]> {

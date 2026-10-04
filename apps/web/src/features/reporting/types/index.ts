@@ -9,6 +9,12 @@ import type {
   ItemSalesProductSearchResultDTO,
   ItemSalesResultDTO,
   ItemSalesRowDTO,
+  OrderActivitiesDTO,
+  OrderActivityDTO,
+  OrderHistoryCaseDTO,
+  OrderHistoryReportOrderDTO,
+  OrderHistoryReportRangeDays,
+  OrderHistoryReportResultDTO,
   ReportingOrderDetailsDTO,
   ReportingOrderItemDTO,
   ShopfaOrderStatusOption,
@@ -18,8 +24,11 @@ import type {
   UnresolvedShortageNoteDTO,
 } from "@complaint-system/shared";
 import {
+  DEFAULT_ORDER_HISTORY_REPORT_RANGE_DAYS,
   DEFAULT_SHORTAGE_REPORT_RANGE_DAYS,
   DEFAULT_SHORTAGE_REPORT_STATUS_CODES,
+  ORDER_HISTORY_REPORT_MIN_QUERY_LENGTH,
+  ORDER_HISTORY_REPORT_RANGE_DAYS_VALUES,
   SHOPFA_ORDER_STATUS_OPTIONS,
   SHORTAGE_REPORT_RANGE_DAYS_VALUES,
 } from "@complaint-system/shared";
@@ -35,6 +44,12 @@ export type {
   ItemSalesProductSearchResultDTO,
   ItemSalesResultDTO,
   ItemSalesRowDTO,
+  OrderActivitiesDTO,
+  OrderActivityDTO,
+  OrderHistoryCaseDTO,
+  OrderHistoryReportOrderDTO,
+  OrderHistoryReportRangeDays,
+  OrderHistoryReportResultDTO,
   ReportingOrderDetailsDTO,
   ReportingOrderItemDTO,
   ShopfaOrderStatusOption,
@@ -44,6 +59,9 @@ export type {
   UnresolvedShortageNoteDTO,
 };
 export {
+  DEFAULT_ORDER_HISTORY_REPORT_RANGE_DAYS,
+  ORDER_HISTORY_REPORT_MIN_QUERY_LENGTH,
+  ORDER_HISTORY_REPORT_RANGE_DAYS_VALUES,
   SHOPFA_ORDER_STATUS_OPTIONS,
   DEFAULT_SHORTAGE_REPORT_STATUS_CODES,
   SHORTAGE_REPORT_RANGE_DAYS_VALUES,
