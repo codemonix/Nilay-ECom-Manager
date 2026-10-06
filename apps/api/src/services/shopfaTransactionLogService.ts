@@ -18,6 +18,8 @@ export async function record(data: CreateShopfaTransactionLogData): Promise<void
       ...data,
       endpoint: redactor.scrubString(data.endpoint),
       requestParams: redactor.redact(data.requestParams),
+      requestBody: data.requestBody !== undefined ? redactor.redact(data.requestBody) : undefined,
+      responseBody: data.responseBody !== undefined ? redactor.redact(data.responseBody) : undefined,
       errorMessage: data.errorMessage ? redactor.scrubString(data.errorMessage) : data.errorMessage,
     });
   } catch (err) {

@@ -97,13 +97,30 @@ export async function saveOrderPrecheck(
   confirmStatusChanges = false,
   actor?: WorkflowActor,
 ): Promise<SaveOrderPrecheckResultDTO> {
+  logger.debug("Order Precheck: saveOrderPrecheck called", {
+    orderNumber,
+    items,
+    confirmStatusChanges,
+    actor,
+  });
+
   const client = await getShopfaClient();
   const existing = await client.getOrderAdminNote(orderNumber);
   if (!existing) throw ApiError.notFound("Order not found");
   const details = await client.getOrderDetailsByNumber(orderNumber);
   if (!details) throw ApiError.notFound("Order not found");
+  logger.debug("Order Precheck: current order state", {
+    orderNumber,
+    externalOrderId: existing.externalOrderId,
+    existingNote: existing.note,
+    currentStatusCode: details.statusCode,
+    currentStatusTitle: details.statusTitle,
+    buyerMobile: details.buyerMobile,
+    buyerName: details.buyerName,
+  });
 
   const unavailableProductCodes = items.filter((item) => !item.available).map((item) => item.productCode);
+  logger.debug("Order Precheck: availability computed", { orderNumber, unavailableProductCodes });
   const siblings = await findCustomerSiblingOrders(client, {
     orderNumber,
     buyerMobile: details.buyerMobile,
@@ -122,22 +139,36 @@ export async function saveOrderPrecheck(
   let statusCode: number;
   let changes: RelatedChange[] = [];
   let warning: OrderPrecheckWarning | null = null;
+  let branch: string;
   if (unavailableProductCodes.length === 0) {
     if (siblings.length === 0) {
       statusCode = OrderWorkflowStatus.SENT_TO_POST;
+      branch = "all_available_no_siblings";
     } else if (siblings.every((order) => order.statusCode === OrderWorkflowStatus.ACCOUNTING_APPROVED)) {
       statusCode = OrderWorkflowStatus.SENT_TO_POST;
       changes = moveSiblings(OrderWorkflowStatus.ACCOUNTING_APPROVED, OrderWorkflowStatus.SENT_TO_POST);
+      branch = "all_available_all_siblings_accounting_approved";
     } else if (siblings.some((order) => ORDER_WORKFLOW_NOT_READY_STATUS_CODES.includes(order.statusCode))) {
       statusCode = OrderWorkflowStatus.ACCOUNTING_APPROVED;
+      branch = "all_available_sibling_not_ready";
     } else {
       statusCode = OrderWorkflowStatus.READY_TO_SEND;
       warning = "check_shopfa_panel";
+      branch = "all_available_sibling_in_other_state";
     }
   } else {
     statusCode = OrderWorkflowStatus.WAREHOUSE_PROCESSING;
     changes = moveSiblings(OrderWorkflowStatus.SENT_TO_POST, OrderWorkflowStatus.ACCOUNTING_APPROVED);
+    branch = "some_unavailable";
   }
+  logger.debug("Order Precheck: status machine branch resolved", {
+    orderNumber,
+    branch,
+    computedStatusCode: statusCode,
+    computedStatusTitle: statusTitleForCode(statusCode),
+    warning,
+    siblingChanges: changes,
+  });
 
   const relatedOrders: OrderPrecheckRelatedOrderDTO[] = changes.map((change) => ({
     orderNumber: change.orderNumber,
@@ -148,6 +179,7 @@ export async function saveOrderPrecheck(
 
   // Pulling already-postal-bound orders back is the one destructive-looking side effect: ask first.
   const needsConfirmation = unavailableProductCodes.length > 0 && changes.length > 0 && !confirmStatusChanges;
+  logger.debug("Order Precheck: confirmation gate", { orderNumber, needsConfirmation, confirmStatusChanges });
   if (needsConfirmation) {
     return {
       orderNumber,
@@ -162,8 +194,41 @@ export async function saveOrderPrecheck(
   }
 
   const note = buildOrderPrecheckNote(existing.note, unavailableProductCodes);
+  logger.debug("Order Precheck: writing status change to Shopfa", {
+    orderNumber,
+    externalOrderId: existing.externalOrderId,
+    note,
+    intendedStatusCode: statusCode,
+  });
   const result = await client.updateOrderNoteAndStatus(orderNumber, { note, statusCode });
   if (!result) throw ApiError.notFound("Order not found");
+  logger.debug("Order Precheck: verification re-fetch after write", {
+    orderNumber,
+    intendedStatusCode: statusCode,
+    verifiedStatusCode: result.statusCode,
+    verifiedStatusTitle: result.statusTitle,
+    verifiedNote: result.note,
+  });
+  if (result.statusCode !== statusCode) {
+    // Shopfa answers every write with `successful: true` even when it silently
+    // didn't apply (see docs/order-status-mchine.md's Shopfa notes) -- the
+    // only way to know the write actually landed is this re-fetch. Without
+    // this check the caller would report success while the order is still at
+    // its old status (see the "تست سیستم" incident this logging/check was
+    // added for).
+    logger.error("Order Precheck: Shopfa did not apply the intended status change", {
+      orderNumber,
+      externalOrderId: existing.externalOrderId,
+      noteSent: note,
+      intendedStatusCode: statusCode,
+      intendedStatusTitle: statusTitleForCode(statusCode),
+      actualStatusCode: result.statusCode,
+      actualStatusTitle: result.statusTitle,
+    });
+    throw ApiError.badGateway(
+      `Shopfa did not apply the status change: order is still "${result.statusTitle}" (expected "${statusTitleForCode(statusCode)}")`,
+    );
+  }
   await recordStatusChange({
     orderNumber: result.orderNumber,
     fromStatusCode: details.statusCode,
@@ -177,8 +242,24 @@ export async function saveOrderPrecheck(
   const applied: OrderPrecheckRelatedOrderDTO[] = [];
   for (const [index, change] of changes.entries()) {
     try {
+      logger.debug("Order Precheck: writing sibling status change to Shopfa", {
+        orderNumber: change.orderNumber,
+        fromStatusCode: change.fromStatusCode,
+        intendedStatusCode: change.toStatusCode,
+      });
       const updated = await client.updateOrderStatus(change.orderNumber, change.toStatusCode);
       if (!updated) throw ApiError.notFound("Order not found");
+      logger.debug("Order Precheck: sibling verification re-fetch after write", {
+        orderNumber: change.orderNumber,
+        intendedStatusCode: change.toStatusCode,
+        verifiedStatusCode: updated.statusCode,
+        verifiedStatusTitle: updated.statusTitle,
+      });
+      if (updated.statusCode !== change.toStatusCode) {
+        throw ApiError.badGateway(
+          `Shopfa did not apply the status change: order is still "${updated.statusTitle}" (expected "${statusTitleForCode(change.toStatusCode)}")`,
+        );
+      }
       applied.push(relatedOrders[index]!);
       await recordStatusChange({
         orderNumber: change.orderNumber,
@@ -197,6 +278,15 @@ export async function saveOrderPrecheck(
     }
   }
 
+  logger.debug("Order Precheck: saveOrderPrecheck result", {
+    orderNumber,
+    statusCode: result.statusCode,
+    statusTitle: result.statusTitle || statusTitleForCode(statusCode),
+    unavailableProductCodes,
+    relatedOrders: applied,
+    relatedFailures,
+    warning,
+  });
   return {
     orderNumber: result.orderNumber,
     statusCode: result.statusCode,

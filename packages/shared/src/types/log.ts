@@ -42,12 +42,19 @@ export interface UserActivityLogListQuery {
   to?: string;
 }
 
-/** One outbound call to the live Shopfa HTTP API, captured by the axios interceptors in integrations/shopfa/shopfaClient.ts. */
+/**
+ * One outbound call to the live Shopfa HTTP API, captured by the axios
+ * interceptors in integrations/shopfa/shopfaClient.ts. requestBody/
+ * responseBody are only present when the call was made while the admin
+ * debug log level was active -- null otherwise.
+ */
 export interface ShopfaTransactionLogDTO {
   id: string;
   method: string;
   endpoint: string;
   requestParams: unknown;
+  requestBody: unknown;
+  responseBody: unknown;
   statusCode: number | null;
   success: boolean;
   durationMs: number;

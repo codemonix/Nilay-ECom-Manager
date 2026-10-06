@@ -39,14 +39,32 @@ export async function findCustomerSiblingOrders(
     normalizeMobile(order.buyerMobile) !== null
       ? (order.buyerMobile as string)
       : (normalizeName(order.buyerName).split(" ").sort((a, b) => b.length - a.length)[0] ?? "");
-  if (!searchQuery) return [];
+  if (!searchQuery) {
+    logger.debug("Order workflow: sibling search skipped, no usable mobile or name", {
+      orderNumber: order.orderNumber,
+      buyerMobile: order.buyerMobile,
+      buyerName: order.buyerName,
+    });
+    return [];
+  }
   const myKey = customerGroupKey(order);
-  return (await client.findOrdersByCustomerQuery(searchQuery)).filter(
+  const rawResults = await client.findOrdersByCustomerQuery(searchQuery);
+  const siblings = rawResults.filter(
     (other) =>
       other.orderNumber !== order.orderNumber &&
       customerGroupKey(other) === myKey &&
       !ORDER_WORKFLOW_SIBLING_EXCLUDED_STATUS_CODES.includes(other.statusCode),
   );
+  logger.debug("Order workflow: sibling search", {
+    orderNumber: order.orderNumber,
+    searchQuery,
+    myKey,
+    rawResultCount: rawResults.length,
+    rawResults: rawResults.map((o) => ({ orderNumber: o.orderNumber, statusCode: o.statusCode, groupKey: customerGroupKey(o) })),
+    siblingCount: siblings.length,
+    siblings: siblings.map((o) => ({ orderNumber: o.orderNumber, statusCode: o.statusCode, statusTitle: o.statusTitle })),
+  });
+  return siblings;
 }
 
 /**

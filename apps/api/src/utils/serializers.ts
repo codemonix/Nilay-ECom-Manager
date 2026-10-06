@@ -176,6 +176,8 @@ export function serializeShopfaTransactionLog(log: ShopfaTransactionLogDocument)
     method: obj.method,
     endpoint: obj.endpoint,
     requestParams: obj.requestParams ?? null,
+    requestBody: obj.requestBody ?? null,
+    responseBody: obj.responseBody ?? null,
     statusCode: obj.statusCode ?? null,
     success: obj.success,
     durationMs: obj.durationMs,

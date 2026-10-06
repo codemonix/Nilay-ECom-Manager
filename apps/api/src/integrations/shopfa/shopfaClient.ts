@@ -230,7 +230,7 @@ export class HttpShopfaClient implements ShopfaClient {
       (response) => {
         const bodyError = readBodyError(response.config.url, response.data);
         if (!bodyError) {
-          this.logTransaction(response.config, response.status, true);
+          this.logTransaction(response.config, response.status, true, undefined, response.data);
           return response;
         }
         const codeSuffix = bodyError.code !== null ? ` (error_code ${bodyError.code})` : "";
@@ -239,6 +239,7 @@ export class HttpShopfaClient implements ShopfaClient {
           response.status,
           false,
           `Shopfa error in HTTP ${response.status} response${codeSuffix}: ${bodyError.message}`,
+          response.data,
         );
         const error = new ShopfaResponseError(bodyError.message, response.config.url ?? "", response.status, bodyError.code);
         if (isWriteEndpoint(response.config.url)) return Promise.reject(error);
@@ -247,7 +248,7 @@ export class HttpShopfaClient implements ShopfaClient {
       },
       (err) => {
         if (axios.isAxiosError(err) && err.config) {
-          this.logTransaction(err.config, err.response?.status ?? null, false, err.message);
+          this.logTransaction(err.config, err.response?.status ?? null, false, err.message, err.response?.data);
         }
         return Promise.reject(err);
       },
@@ -258,21 +259,28 @@ export class HttpShopfaClient implements ShopfaClient {
    * Fire-and-forget record of one Shopfa call for the admin Logs page (see
    * ShopfaTransactionLog / shopfaTransactionLogService). `private_key` is
    * stripped from the logged params so the API token never lands at rest in
-   * the database.
+   * the database. The full request/response bodies are only attached while
+   * the admin debug log level is active (see docs/order-status-mchine.md's
+   * Shopfa notes on silent no-op writes) -- at normal verbosity only the
+   * lightweight summary (method, endpoint, params, status, duration) is kept.
    */
   private logTransaction(
     config: AxiosRequestConfig,
     statusCode: number | null,
     success: boolean,
     errorMessage?: string,
+    responseBody?: unknown,
   ): void {
     const startedAt = (config as RequestConfigWithTiming).shopfaLogStartedAt;
     const allParams = (config.params ?? {}) as Record<string, unknown>;
     const requestParams = Object.fromEntries(Object.entries(allParams).filter(([key]) => key !== "private_key"));
+    const debugActive = logger.isLevelEnabled("debug");
     void recordShopfaTransaction({
       method: (config.method ?? "post").toUpperCase(),
       endpoint: config.url ?? "",
       requestParams,
+      requestBody: debugActive ? config.data : undefined,
+      responseBody: debugActive ? responseBody : undefined,
       statusCode,
       success,
       durationMs: startedAt ? Date.now() - startedAt : 0,

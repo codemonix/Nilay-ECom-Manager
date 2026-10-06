@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
@@ -15,14 +15,74 @@ import Chip from "@mui/material/Chip";
 import Skeleton from "@mui/material/Skeleton";
 import Typography from "@mui/material/Typography";
 import Tooltip from "@mui/material/Tooltip";
+import IconButton from "@mui/material/IconButton";
+import Collapse from "@mui/material/Collapse";
+import Box from "@mui/material/Box";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { useTranslation } from "react-i18next";
 import { useListShopfaTransactionLogsQuery } from "../api/logsApi";
+import type { ShopfaTransactionLogDTO } from "../types";
 import { EmptyState } from "../../../components/EmptyState";
 import { Ltr } from "../../../components/Ltr";
 import { formatDateTime } from "../../../utils/localeFormat";
 import { useActiveLanguage } from "../../../i18n/useActiveLanguage";
 
 const DEFAULT_PAGE_SIZE = 20;
+
+/** One labeled JSON block inside an expanded transaction row, or nothing when there's no value to show. */
+function JsonDetail({ label, value }: { label: string; value: unknown }) {
+  if (value === null || value === undefined) return null;
+  return (
+    <Box>
+      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+        {label}
+      </Typography>
+      <Box
+        component="pre"
+        sx={{
+          m: 0,
+          p: 1,
+          bgcolor: "action.hover",
+          borderRadius: 1,
+          fontSize: 12,
+          overflowX: "auto",
+          direction: "ltr",
+          textAlign: "left",
+        }}
+      >
+        {typeof value === "string" ? value : JSON.stringify(value, null, 2)}
+      </Box>
+    </Box>
+  );
+}
+
+function ShopfaTransactionLogDetailRow({ log, columnCount }: { log: ShopfaTransactionLogDTO; columnCount: number }) {
+  const { t } = useTranslation(["logs", "common"]);
+  const hasBodies = log.requestBody !== null || log.responseBody !== null;
+  return (
+    <TableRow>
+      <TableCell sx={{ py: 0, border: 0 }} colSpan={columnCount}>
+        <Collapse in timeout="auto" unmountOnExit>
+          <Stack spacing={1.5} sx={{ py: 1.5 }}>
+            <JsonDetail label={t("logs:shopfa.details.requestParams")} value={log.requestParams} />
+            {hasBodies ? (
+              <>
+                <JsonDetail label={t("logs:shopfa.details.requestBody")} value={log.requestBody} />
+                <JsonDetail label={t("logs:shopfa.details.responseBody")} value={log.responseBody} />
+              </>
+            ) : (
+              <Typography variant="caption" color="text.secondary">
+                {t("logs:shopfa.details.noBodyCaptured")}
+              </Typography>
+            )}
+            {log.errorMessage && <JsonDetail label={t("logs:shopfa.details.errorMessage")} value={log.errorMessage} />}
+          </Stack>
+        </Collapse>
+      </TableCell>
+    </TableRow>
+  );
+}
 
 export function ShopfaTransactionLogsTable() {
   const { t } = useTranslation(["logs", "common"]);
@@ -32,6 +92,7 @@ export function ShopfaTransactionLogsTable() {
   const [outcome, setOutcome] = useState<"" | "true" | "false">("");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -96,6 +157,7 @@ export function ShopfaTransactionLogsTable() {
             <Table size="small">
               <TableHead>
                 <TableRow>
+                  <TableCell sx={{ width: 40 }} />
                   <TableCell>{t("logs:shopfa.columns.time")}</TableCell>
                   <TableCell>{t("logs:shopfa.columns.endpoint")}</TableCell>
                   <TableCell align="right">{t("logs:shopfa.columns.status")}</TableCell>
@@ -104,33 +166,44 @@ export function ShopfaTransactionLogsTable() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {data.items.map((log) => (
-                  <TableRow key={log.id} hover>
-                    <TableCell sx={{ whiteSpace: "nowrap" }}>
-                      <Ltr>{formatDateTime(log.createdAt, language)}</Ltr>
-                    </TableCell>
-                    <TableCell>
-                      <Ltr>
-                        {log.method} {log.endpoint}
-                      </Ltr>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Ltr>{log.statusCode ?? "—"}</Ltr>
-                    </TableCell>
-                    <TableCell>
-                      {log.success ? (
-                        <Chip size="small" label={t("logs:shopfa.success")} color="success" variant="outlined" />
-                      ) : (
-                        <Tooltip title={log.errorMessage ?? ""}>
-                          <Chip size="small" label={t("logs:shopfa.failed")} color="error" variant="outlined" />
-                        </Tooltip>
-                      )}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Ltr>{log.durationMs}ms</Ltr>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {data.items.map((log) => {
+                  const isExpanded = expandedId === log.id;
+                  return (
+                    <Fragment key={log.id}>
+                      <TableRow hover>
+                        <TableCell>
+                          <IconButton size="small" onClick={() => setExpandedId(isExpanded ? null : log.id)}>
+                            {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                          </IconButton>
+                        </TableCell>
+                        <TableCell sx={{ whiteSpace: "nowrap" }}>
+                          <Ltr>{formatDateTime(log.createdAt, language)}</Ltr>
+                        </TableCell>
+                        <TableCell>
+                          <Ltr>
+                            {log.method} {log.endpoint}
+                          </Ltr>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Ltr>{log.statusCode ?? "—"}</Ltr>
+                        </TableCell>
+                        <TableCell>
+                          {log.success ? (
+                            <Chip size="small" label={t("logs:shopfa.success")} color="success" variant="outlined" />
+                          ) : (
+                            <Tooltip title={log.errorMessage ?? ""}>
+                              <Chip size="small" label={t("logs:shopfa.failed")} color="error" variant="outlined" />
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                        <TableCell align="right">
+                          <Ltr>{log.durationMs}ms</Ltr>
+                        </TableCell>
+                      </TableRow>
+                      {isExpanded && <ShopfaTransactionLogDetailRow log={log} columnCount={6} />}
+                    </Fragment>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>

@@ -7,6 +7,10 @@ export interface CreateShopfaTransactionLogData {
   method: string;
   endpoint: string;
   requestParams?: unknown;
+  /** Only populated at debug log level -- see shopfaClient.ts's logTransaction. */
+  requestBody?: unknown;
+  /** Only populated at debug log level -- see shopfaClient.ts's logTransaction. */
+  responseBody?: unknown;
   statusCode: number | null;
   success: boolean;
   durationMs: number;

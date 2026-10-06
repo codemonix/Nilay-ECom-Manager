@@ -40,7 +40,15 @@
       "endpoint": "Endpoint",
       "status": "HTTP Status",
       "outcome": "Outcome",
-      "duration": "Duration"
+      "duration": "Duration",
+      "details": "Details"
+    },
+    "details": {
+      "requestParams": "Request query params",
+      "requestBody": "Request body",
+      "responseBody": "Response body",
+      "errorMessage": "Error",
+      "noBodyCaptured": "Not captured -- the system debug log level was off when this call was made"
     }
   },
   "system": {
@@ -51,7 +59,11 @@
       "time": "Time",
       "level": "Level",
       "message": "Message",
-      "context": "Context"
+      "context": "Context",
+      "details": "Details"
+    },
+    "details": {
+      "meta": "Details"
     }
   },
   "security": {

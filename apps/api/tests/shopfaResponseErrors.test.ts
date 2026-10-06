@@ -4,7 +4,9 @@ import type { AxiosAdapter, InternalAxiosRequestConfig } from "axios";
 const recordTransaction = vi.fn();
 
 vi.mock("../src/services/shopfaTransactionLogService", () => ({ record: recordTransaction }));
-vi.mock("../src/config/logger", () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() } }));
+vi.mock("../src/config/logger", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn(), isLevelEnabled: () => false },
+}));
 
 const { HttpShopfaClient } = await import("../src/integrations/shopfa/shopfaClient");
 

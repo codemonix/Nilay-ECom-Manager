@@ -58,15 +58,29 @@ async function claim(recordId: string, allowFailed: boolean): Promise<PackingRec
  */
 async function push(record: PackingRecordDocument): Promise<PackingRecordDocument> {
   const attempts = (record.syncAttempts ?? 0) + 1;
+  logger.debug("Packing: pushing packed order to Shopfa", {
+    orderNumber: record.orderNumber,
+    packingRecordId: String(record._id),
+    attempt: attempts,
+    photoCount: record.photoCount ?? 0,
+    intendedStatusCode: OrderWorkflowStatus.SENT,
+  });
   try {
     const client = await getShopfaClient();
     const existing = await client.getOrderAdminNote(record.orderNumber);
     if (!existing) throw new PermanentSyncError("Order not found on Shopfa");
+    const note = buildPackingPhotoNote(existing.note, record.photoCount ?? 0);
     const result = await client.updateOrderNoteAndStatus(record.orderNumber, {
-      note: buildPackingPhotoNote(existing.note, record.photoCount ?? 0),
+      note,
       statusCode: OrderWorkflowStatus.SENT,
     });
     if (!result) throw new PermanentSyncError("Order not found on Shopfa");
+    logger.debug("Packing: verification re-fetch after write", {
+      orderNumber: record.orderNumber,
+      intendedStatusCode: OrderWorkflowStatus.SENT,
+      verifiedStatusCode: result.statusCode,
+      verifiedStatusTitle: result.statusTitle,
+    });
     if (result.statusCode !== OrderWorkflowStatus.SENT) {
       throw new Error(`Shopfa reports status ${result.statusCode} after the write, expected ${OrderWorkflowStatus.SENT}`);
     }

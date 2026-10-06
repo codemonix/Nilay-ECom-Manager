@@ -40,7 +40,15 @@
       "endpoint": "مسیر",
       "status": "کد HTTP",
       "outcome": "نتیجه",
-      "duration": "مدت زمان"
+      "duration": "مدت زمان",
+      "details": "جزئیات"
+    },
+    "details": {
+      "requestParams": "پارامترهای درخواست",
+      "requestBody": "بدنه درخواست",
+      "responseBody": "بدنه پاسخ",
+      "errorMessage": "خطا",
+      "noBodyCaptured": "ثبت نشده -- هنگام این تماس، سطح گزارش اشکال‌زدایی فعال نبوده است"
     }
   },
   "system": {
@@ -51,7 +59,11 @@
       "time": "زمان",
       "level": "سطح",
       "message": "پیام",
-      "context": "زمینه"
+      "context": "زمینه",
+      "details": "جزئیات"
+    },
+    "details": {
+      "meta": "جزئیات"
     }
   },
   "security": {

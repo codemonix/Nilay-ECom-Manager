@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
@@ -14,15 +14,53 @@ import TablePagination from "@mui/material/TablePagination";
 import Chip from "@mui/material/Chip";
 import Skeleton from "@mui/material/Skeleton";
 import Typography from "@mui/material/Typography";
+import IconButton from "@mui/material/IconButton";
+import Collapse from "@mui/material/Collapse";
+import Box from "@mui/material/Box";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { useTranslation } from "react-i18next";
 import { SystemLogLevel, SYSTEM_LOG_LEVEL_VALUES } from "@complaint-system/shared";
 import { useListSystemLogsQuery } from "../api/logsApi";
+import type { SystemLogDTO } from "../types";
 import { EmptyState } from "../../../components/EmptyState";
 import { Ltr } from "../../../components/Ltr";
 import { formatDateTime } from "../../../utils/localeFormat";
 import { useActiveLanguage } from "../../../i18n/useActiveLanguage";
 
 const DEFAULT_PAGE_SIZE = 20;
+
+function SystemLogDetailRow({ log, columnCount }: { log: SystemLogDTO; columnCount: number }) {
+  const { t } = useTranslation(["logs", "common"]);
+  return (
+    <TableRow>
+      <TableCell sx={{ py: 0, border: 0 }} colSpan={columnCount}>
+        <Collapse in timeout="auto" unmountOnExit>
+          <Box sx={{ py: 1.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+              {t("logs:system.details.meta")}
+            </Typography>
+            <Box
+              component="pre"
+              sx={{
+                m: 0,
+                p: 1,
+                bgcolor: "action.hover",
+                borderRadius: 1,
+                fontSize: 12,
+                overflowX: "auto",
+                direction: "ltr",
+                textAlign: "left",
+              }}
+            >
+              {JSON.stringify(log.meta, null, 2)}
+            </Box>
+          </Box>
+        </Collapse>
+      </TableCell>
+    </TableRow>
+  );
+}
 
 const LEVEL_COLOR: Record<SystemLogLevel, "error" | "warning" | "info" | "default"> = {
   [SystemLogLevel.ERROR]: "error",
@@ -40,6 +78,7 @@ export function SystemLogsTable() {
   const [level, setLevel] = useState<SystemLogLevel | "">("");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -107,6 +146,7 @@ export function SystemLogsTable() {
             <Table size="small">
               <TableHead>
                 <TableRow>
+                  <TableCell sx={{ width: 40 }} />
                   <TableCell>{t("logs:system.columns.time")}</TableCell>
                   <TableCell>{t("logs:system.columns.level")}</TableCell>
                   <TableCell>{t("logs:system.columns.message")}</TableCell>
@@ -114,18 +154,32 @@ export function SystemLogsTable() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {data.items.map((log) => (
-                  <TableRow key={log.id} hover>
-                    <TableCell sx={{ whiteSpace: "nowrap" }}>
-                      <Ltr>{formatDateTime(log.createdAt, language)}</Ltr>
-                    </TableCell>
-                    <TableCell>
-                      <Chip size="small" label={t(`logs:levels.${log.level}`)} color={LEVEL_COLOR[log.level]} />
-                    </TableCell>
-                    <TableCell sx={{ maxWidth: 480, overflowWrap: "anywhere" }}>{log.message}</TableCell>
-                    <TableCell>{log.context ?? "—"}</TableCell>
-                  </TableRow>
-                ))}
+                {data.items.map((log) => {
+                  const hasMeta = log.meta !== null && log.meta !== undefined;
+                  const isExpanded = hasMeta && expandedId === log.id;
+                  return (
+                    <Fragment key={log.id}>
+                      <TableRow hover>
+                        <TableCell>
+                          {hasMeta && (
+                            <IconButton size="small" onClick={() => setExpandedId(isExpanded ? null : log.id)}>
+                              {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                            </IconButton>
+                          )}
+                        </TableCell>
+                        <TableCell sx={{ whiteSpace: "nowrap" }}>
+                          <Ltr>{formatDateTime(log.createdAt, language)}</Ltr>
+                        </TableCell>
+                        <TableCell>
+                          <Chip size="small" label={t(`logs:levels.${log.level}`)} color={LEVEL_COLOR[log.level]} />
+                        </TableCell>
+                        <TableCell sx={{ maxWidth: 480, overflowWrap: "anywhere" }}>{log.message}</TableCell>
+                        <TableCell>{log.context ?? "—"}</TableCell>
+                      </TableRow>
+                      {isExpanded && <SystemLogDetailRow log={log} columnCount={5} />}
+                    </Fragment>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
