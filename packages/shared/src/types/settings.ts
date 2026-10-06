@@ -52,6 +52,19 @@ export interface AppConfigDTO {
   maxImageUploadSizeMB: number;
 }
 
+/**
+ * Which build is running (GET /api/version). Produced automatically by
+ * scripts/version.mjs -- see the "Versioning" section of the README.
+ */
+export interface VersionInfoDTO {
+  /** MAJOR.MINOR.PATCH, or "unknown" if it could not be determined. */
+  version: string;
+  /** Short git commit hash; empty when unknown. */
+  commit: string;
+  /** ISO timestamp of the commit the build was made from; empty when unknown. */
+  buildDate: string;
+}
+
 /** Result of a live, read-only ping to Shopfa's /api/system/info -- lets the Settings page show whether the app can actually reach the shop, independent of the data-source toggle. */
 export interface ShopfaConnectionTestResultDTO {
   ok: boolean;

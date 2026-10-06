@@ -5,6 +5,7 @@ import type {
   SessionSettingsInputDTO,
   SystemLogLevel,
   UploadSettingsInputDTO,
+  VersionInfoDTO,
 } from "@complaint-system/shared";
 import { apiSlice } from "../../../services/apiSlice";
 import type { AppSettingsDTO, ImportOrdersResultDTO, ShopfaConnectionTestResultDTO, LogSizesDTO } from "../types";
@@ -63,6 +64,12 @@ export const settingsApi = apiSlice.injectEndpoints({
       invalidatesTags: ["Settings"],
     }),
 
+    /** The API's own build -- the web bundle's is in config/appVersion.ts. */
+    getApiVersion: builder.query<VersionInfoDTO, void>({
+      query: () => "/version",
+      transformResponse: (response: ApiResponse<VersionInfoDTO>) => unwrap(response),
+    }),
+
     getLogSizes: builder.query<LogSizesDTO, void>({
       query: () => "/settings/log-sizes",
       transformResponse: (response: ApiResponse<LogSizesDTO>) => unwrap(response),
@@ -89,6 +96,7 @@ export const {
   useUpdateSessionSettingsMutation,
   useUpdateUploadSettingsMutation,
   useGetLogSizesQuery,
+  useGetApiVersionQuery,
   useTestShopfaConnectionMutation,
   useImportOrdersFileMutation,
 } = settingsApi;

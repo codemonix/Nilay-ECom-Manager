@@ -31,6 +31,15 @@ COPY --from=build /repo/packages/shared/dist packages/shared/dist
 COPY --from=build /repo/apps/api/package.json apps/api/package.json
 COPY --from=build /repo/apps/api/dist apps/api/dist
 
+# The image has no git history, so the version computed by
+# scripts/version.mjs is passed in by whoever builds it (CI does this) and
+# read back at runtime by src/config/version.ts. Declared last so a new
+# version never invalidates the layers above.
+ARG APP_VERSION=
+ARG APP_COMMIT=
+ARG APP_BUILD_DATE=
+ENV APP_VERSION=${APP_VERSION} APP_COMMIT=${APP_COMMIT} APP_BUILD_DATE=${APP_BUILD_DATE}
+
 WORKDIR /repo/apps/api
 EXPOSE 4000
 CMD ["node", "dist/src/server.js"]

@@ -16,6 +16,7 @@ import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { logoutSession } from "../../../services/apiSlice";
 import { ChangePasswordDialog } from "./ChangePasswordDialog";
 import { QuickAccessMenuDialog } from "./QuickAccessMenuDialog";
+import { AppVersion } from "../../../components/AppVersion";
 
 function initials(name: string): string {
   return name
@@ -87,6 +88,8 @@ export function UserMenu() {
           </ListItemIcon>
           <ListItemText>{t("auth:userMenu.logout")}</ListItemText>
         </MenuItem>
+        <Divider />
+        <AppVersion sx={{ px: 2, pt: 0.5 }} />
       </Menu>
       <ChangePasswordDialog open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
       <QuickAccessMenuDialog open={quickAccessOpen} onClose={() => setQuickAccessOpen(false)} />

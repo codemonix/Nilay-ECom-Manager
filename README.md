@@ -161,6 +161,27 @@ an ESM build for the Vite/Rollup frontend bundle — see
 [docs/architecture.md](docs/architecture.md#shared-package-dual-build)), then
 `apps/api` (`tsc`) and `apps/web` (`tsc` + `vite build`).
 
+### Versioning
+
+The version is derived from git automatically -- there is no number to bump
+on each change. It has the form `MAJOR.MINOR.PATCH`:
+
+- `MAJOR.MINOR` come from `"version"` in the root `package.json`. Edit that
+  by hand only to mark a bigger release (its own third number is ignored).
+- `PATCH` is the number of commits since that line last changed, so every
+  commit raises it by one and it restarts from 0 after a `MAJOR.MINOR` bump.
+
+`node scripts/version.mjs` prints the current value. The web app shows it on
+the login page, in the account menu, and on Settings ("System Version",
+alongside the API's own version from `GET /api/version`).
+
+Docker builds have no git history, so
+[.github/workflows/docker-publish.yml](.github/workflows/docker-publish.yml)
+computes the version and passes it to both images as build args; each image
+is also tagged with it, so `IMAGE_TAG=1.0.14` pins a deployment. For a
+manual `docker compose build`, run
+`eval "$(node scripts/version.mjs --export)"` first.
+
 ## 12. Shopfa integration
 
 See [docs/architecture.md](docs/architecture.md#shopfa-integration) for the

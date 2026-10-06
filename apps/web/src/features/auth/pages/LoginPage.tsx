@@ -14,6 +14,7 @@ import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { setCredentials } from "../../../store/authSlice";
 import { useLoginMutation } from "../api/authApi";
 import { getApiErrorMessage, getApiErrorStatus } from "../../../utils/apiError";
+import { AppVersion } from "../../../components/AppVersion";
 
 export function LoginPage() {
   const { t } = useTranslation(["auth", "common"]);
@@ -133,6 +134,8 @@ export function LoginPage() {
           >
             {isLoading ? t("auth:login.submitting") : t("auth:login.submit")}
           </Button>
+
+          <AppVersion sx={{ textAlign: "center" }} />
         </Stack>
       </Paper>
     </Box>

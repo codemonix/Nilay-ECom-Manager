@@ -21,6 +21,13 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # scripts/version.mjs counts commits, so it needs the full history.
+          fetch-depth: 0
+
+      - name: Compute version
+        id: version
+        run: node scripts/version.mjs --github >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@v3
 
@@ -36,8 +43,13 @@ jobs:
           context: .
           file: apps/api/Dockerfile
           push: true
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.version }}
+            APP_COMMIT=${{ steps.version.outputs.commit }}
+            APP_BUILD_DATE=${{ steps.version.outputs.build_date }}
           tags: |
             ${{ env.IMAGE_API }}:latest
+            ${{ env.IMAGE_API }}:${{ steps.version.outputs.version }}
             ${{ env.IMAGE_API }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -54,8 +66,12 @@ jobs:
           push: true
           build-args: |
             VITE_API_URL=${{ vars.VITE_API_URL }}
+            APP_VERSION=${{ steps.version.outputs.version }}
+            APP_COMMIT=${{ steps.version.outputs.commit }}
+            APP_BUILD_DATE=${{ steps.version.outputs.build_date }}
           tags: |
             ${{ env.IMAGE_WEB }}:latest
+            ${{ env.IMAGE_WEB }}:${{ steps.version.outputs.version }}
             ${{ env.IMAGE_WEB }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

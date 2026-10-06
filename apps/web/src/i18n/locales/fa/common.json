@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "عملیات کسب‌وکار",
-    "shortTitle": "بیزآپس"
+    "shortTitle": "بیزآپس",
+    "version": "نسخه"
   },
   "actions": {
     "save": "ذخیره",

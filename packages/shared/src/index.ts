@@ -92,6 +92,7 @@ export type { ApiSuccess, ApiFailure, ApiResponse, PaginatedResult } from "./typ
 export type {
   AppSettingsDTO,
   AppConfigDTO,
+  VersionInfoDTO,
   SessionSettingsInputDTO,
   UploadSettingsInputDTO,
   LastImportSummaryDTO,

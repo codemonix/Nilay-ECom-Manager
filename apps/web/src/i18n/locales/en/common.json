@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "Business Operations",
-    "shortTitle": "BizOps"
+    "shortTitle": "BizOps",
+    "version": "Version"
   },
   "actions": {
     "save": "Save",

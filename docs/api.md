@@ -38,7 +38,12 @@ transition), `422` (validation error), `502` (Shopfa upstream error).
 
 ## Health
 
-`GET /health` → `{ status, uptimeSeconds, database, timestamp }`
+`GET /health` → `{ status, version, uptimeSeconds, database, timestamp }`
+
+## Version
+
+`GET /version` → `{ version, commit, buildDate }` — the running API build
+(any authenticated user). See the "Versioning" section of the README.
 
 ## Cases
 

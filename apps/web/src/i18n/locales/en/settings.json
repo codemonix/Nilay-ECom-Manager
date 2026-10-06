@@ -43,6 +43,15 @@
       "debug": "Debug (most verbose)"
     }
   },
+  "version": {
+    "title": "System Version",
+    "web": "Web app",
+    "api": "API server",
+    "buildDate": "Build date",
+    "unavailable": "Unknown",
+    "error": "Could not load the API server version",
+    "mismatch": "A newer version has been deployed. Reload the page to update."
+  },
   "logSizes": {
     "title": "Log Storage",
     "description": "User activity and Shopfa transaction logs are kept indefinitely (the system log is automatically capped at 60 days / 50 MB -- see the Logs page).",

@@ -24,6 +24,15 @@ ARG VITE_API_URL=/api
 ENV VITE_API_URL=${VITE_API_URL}
 
 RUN npm run build --workspace=packages/shared
+
+# The build context has no git history, so the version computed by
+# scripts/version.mjs is passed in by whoever builds the image (CI does
+# this) and baked into the bundle by vite.config.ts.
+ARG APP_VERSION=
+ARG APP_COMMIT=
+ARG APP_BUILD_DATE=
+ENV APP_VERSION=${APP_VERSION} APP_COMMIT=${APP_COMMIT} APP_BUILD_DATE=${APP_BUILD_DATE}
+
 RUN npm run build --workspace=apps/web
 
 FROM nginx:1.27-alpine AS runtime

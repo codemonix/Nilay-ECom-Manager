@@ -1,6 +1,7 @@
 import { createApp } from "./app";
 import { connectDatabase } from "./config/db";
 import { env } from "./config/env";
+import { versionInfo } from "./config/version";
 import { logger, applyLogLevel } from "./config/logger";
 import * as settingsService from "./services/settingsService";
 import { startSystemLogRetentionJob } from "./jobs/systemLogRetentionJob";
@@ -16,7 +17,7 @@ async function main() {
 
   const app = createApp();
   app.listen(env.PORT, () => {
-    logger.info(`API server listening on port ${env.PORT} (${env.NODE_ENV})`);
+    logger.info(`API server v${versionInfo.version} listening on port ${env.PORT} (${env.NODE_ENV})`);
     if (env.SHOPFA_MOCK) {
       logger.info("Shopfa integration running in MOCK mode (SHOPFA_MOCK=true)");
     }
