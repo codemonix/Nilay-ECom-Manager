@@ -51,6 +51,7 @@ export const ReportKey = {
   ITEM_SALES: "report:itemSales",
   CATEGORY_TRENDS: "report:categoryTrends",
   ORDER_HISTORY: "report:orderHistory",
+  ORDER_AUDIT: "report:orderAudit",
 } as const;
 export type ReportKey = (typeof ReportKey)[keyof typeof ReportKey];
 export const REPORT_KEY_VALUES = Object.values(ReportKey);

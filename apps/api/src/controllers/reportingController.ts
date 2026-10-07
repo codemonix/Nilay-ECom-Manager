@@ -4,11 +4,13 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { sendSuccess } from "../utils/apiResponse";
 import * as reportingService from "../services/reportingService";
 import * as orderHistoryReportService from "../services/orderHistoryReportService";
+import * as orderAuditReportService from "../services/orderAuditReportService";
 import type {
   CategoryTrendsQuery,
   CustomerReportQuery,
   ItemSalesQuery,
   OrderActivitiesParam,
+  OrderAuditReportQuery,
   OrderHistoryReportQuery,
   ProductSearchQuery,
   ShortageReportQuery,
@@ -61,4 +63,9 @@ export const getOrderHistoryReport = asyncHandler(async (req: Request, res: Resp
 export const getOrderActivities = asyncHandler(async (req: Request, res: Response) => {
   const { orderNumber } = req.params as unknown as OrderActivitiesParam;
   return sendSuccess(res, await orderHistoryReportService.getOrderActivities(orderNumber));
+});
+
+export const getOrderAuditReport = asyncHandler(async (req: Request, res: Response) => {
+  const query = req.query as unknown as OrderAuditReportQuery;
+  return sendSuccess(res, await orderAuditReportService.buildOrderAuditReport(query));
 });

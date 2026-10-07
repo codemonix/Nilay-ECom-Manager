@@ -26,6 +26,7 @@ const attachmentSchema = new Schema(
 );
 
 attachmentSchema.index({ subjectType: 1, subjectId: 1, createdAt: -1 });
+attachmentSchema.index({ subjectType: 1, createdAt: -1 });
 
 export type AttachmentSchemaType = InferSchemaType<typeof attachmentSchema>;
 export type AttachmentDocument = HydratedDocument<AttachmentSchemaType> & { _id: Types.ObjectId };

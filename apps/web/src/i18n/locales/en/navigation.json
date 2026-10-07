@@ -46,7 +46,8 @@
     "itemSales": "Item Sales Report",
     "shortage": "Shortage Report",
     "categoryTrends": "Category Sales Trends",
-    "orderHistory": "Order History"
+    "orderHistory": "Order History",
+    "orderAudit": "Order Activity Log"
   },
   "ordersNav": {
     "precheck": "Order Pre-Check",

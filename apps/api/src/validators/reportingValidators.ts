@@ -1,14 +1,19 @@
 import { z } from "zod";
 import {
   CATEGORY_TREND_WINDOWS,
+  DEFAULT_ORDER_AUDIT_REPORT_PAGE_SIZE,
   DEFAULT_ORDER_HISTORY_REPORT_RANGE_DAYS,
   DEFAULT_SHORTAGE_REPORT_RANGE_DAYS,
   DEFAULT_SHORTAGE_REPORT_STATUS_CODES,
+  ORDER_AUDIT_EVENT_TYPE_VALUES,
+  ORDER_AUDIT_REPORT_PAGE_SIZES,
   ORDER_HISTORY_REPORT_MIN_QUERY_LENGTH,
   ORDER_HISTORY_REPORT_RANGE_DAYS_VALUES,
   SHOPFA_ORDER_STATUS_OPTIONS,
   SHORTAGE_REPORT_RANGE_DAYS_VALUES,
 } from "@complaint-system/shared";
+import type { OrderAuditEventType } from "@complaint-system/shared";
+import { objectIdSchema } from "./commonValidators";
 
 const VALID_STATUS_CODES = new Set(SHOPFA_ORDER_STATUS_OPTIONS.map((option) => option.code));
 
@@ -134,3 +139,33 @@ export type OrderHistoryReportQuery = z.infer<typeof orderHistoryReportQuerySche
 /** Order numbers are Shopfa's numeric `session`; anything else would turn the activity log's free-text search into a way to read unrelated entries. */
 export const orderActivitiesParamSchema = z.object({ orderNumber: z.string().regex(/^\d{4,20}$/, "Expected an order number") });
 export type OrderActivitiesParam = z.infer<typeof orderActivitiesParamSchema>;
+
+/** A period (at most a year), optionally narrowed to one user, one order and/or one kind of action. */
+export const orderAuditReportQuerySchema = z
+  .object({
+    ...dateWindowShape,
+    userId: objectIdSchema.optional(),
+    // Typed on a Persian keyboard as often as not; stored order numbers use ASCII digits.
+    orderNumber: z
+      .string()
+      .trim()
+      .min(1)
+      .max(40)
+      .transform((value) => value.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))))
+      .optional(),
+    type: z
+      .string()
+      .refine((value): value is OrderAuditEventType => (ORDER_AUDIT_EVENT_TYPE_VALUES as string[]).includes(value), {
+        message: `type must be one of: ${ORDER_AUDIT_EVENT_TYPE_VALUES.join(", ")}`,
+      })
+      .optional(),
+    page: z.coerce.number().int().min(1).max(1000).default(1),
+    pageSize: z.coerce
+      .number()
+      .default(DEFAULT_ORDER_AUDIT_REPORT_PAGE_SIZE)
+      .refine((value) => (ORDER_AUDIT_REPORT_PAGE_SIZES as readonly number[]).includes(value), {
+        message: `pageSize must be one of: ${ORDER_AUDIT_REPORT_PAGE_SIZES.join(", ")}`,
+      }),
+  })
+  .superRefine(refineDateWindow);
+export type OrderAuditReportQuery = z.infer<typeof orderAuditReportQuerySchema>;

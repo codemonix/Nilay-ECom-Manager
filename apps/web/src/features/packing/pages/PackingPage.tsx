@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
-import { DataSource } from "@complaint-system/shared";
+import { DataSource, type CreateOrderCaseResultDTO } from "@complaint-system/shared";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Card from "@mui/material/Card";
@@ -49,6 +49,8 @@ import {
 import { decideMove, decideSave } from "../utils/packingFlow";
 import { PackingItemTile } from "../components/PackingItemTile";
 import { ConfirmSendDialog } from "../components/ConfirmSendDialog";
+import { OrderCaseButton } from "../../complaints/components/OrderCaseButton";
+import { describeOrderCaseResult } from "../../complaints/utils/orderCaseResult";
 import { FinishCustomerDialog } from "../components/FinishCustomerDialog";
 import CloseIcon from "@mui/icons-material/Close";
 import { CameraCaptureDialog } from "../../../components/CameraCaptureDialog";
@@ -90,6 +92,7 @@ const hasCameraApi = typeof navigator !== "undefined" && !!navigator.mediaDevice
  */
 export function PackingPage() {
   const { t } = useTranslation("packing");
+  const { t: tCases } = useTranslation("complaints");
   const language = useActiveLanguage();
   const { data: appConfig } = useGetAppConfigQuery();
   const prepareUpload = usePrepareImageUpload();
@@ -366,6 +369,18 @@ export function PackingPage() {
     }
   };
 
+  /** A case moves the order to "در حال پیگیری", i.e. out of this queue -- unless Shopfa could not be updated, in which case it stays. */
+  const handleCaseCreated = (orderNumber: string, result: CreateOrderCaseResultDTO) => {
+    const outcome = describeOrderCaseResult(result, tCases);
+    setSendError(null);
+    setSendSuccessMessage(outcome.severity === "success" ? outcome.message : null);
+    setSyncNotice(outcome.severity === "warning" ? outcome.message : null);
+    if (!result.orderSynced) return;
+    setOrders((prev) => (prev ? prev.filter((order) => order.orderNumber !== orderNumber) : prev));
+    setPackedKeys((prev) => new Set([...prev].filter((key) => key.slice(0, key.indexOf(":")) !== orderNumber)));
+    setCurrentIndex((idx) => Math.max(0, Math.min(idx, visibleOrders.length - 2)));
+  };
+
   const handleSendClick = () => {
     if (!groupComplete || compressingPhotos > 0) return;
     if (decideSave({ photoCount: groupPhotos.length }) === "send") {
@@ -542,6 +557,10 @@ export function PackingPage() {
                       })}
                     />
                   )}
+                  <OrderCaseButton
+                    orderNumber={currentOrder.orderNumber}
+                    onCreated={(result) => handleCaseCreated(currentOrder.orderNumber, result)}
+                  />
                 </Stack>
               </Stack>
               

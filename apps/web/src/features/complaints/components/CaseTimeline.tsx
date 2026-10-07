@@ -16,6 +16,7 @@ const EVENT_DOT_COLOR: Record<string, string> = {
   reopened: "warning.main",
   closed: "grey.500",
   status_changed: "info.main",
+  order_status_changed: "info.main",
   priority_changed: "warning.main",
 };
 

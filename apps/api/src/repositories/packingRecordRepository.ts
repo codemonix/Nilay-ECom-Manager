@@ -1,5 +1,7 @@
+import { Types } from "mongoose";
 import { ShopfaSyncStatus } from "@complaint-system/shared";
 import { PackingRecordModel, type PackingRecordDocument } from "../models/PackingRecord";
+import type { OrderAuditFilter } from "./orderStatusChangeRepository";
 
 export interface CreatePackingRecordData {
   externalOrderId: string;
@@ -20,6 +22,14 @@ export interface ListPackingRecordsParams {
   search?: string;
 }
 
+function auditQuery(filter: OrderAuditFilter) {
+  return {
+    sentAt: { $gte: filter.from, $lte: filter.to },
+    ...(filter.userId ? { sentBy: new Types.ObjectId(filter.userId) } : {}),
+    ...(filter.orderNumber ? { orderNumber: filter.orderNumber } : {}),
+  };
+}
+
 export const packingRecordRepository = {
   /** Newest first, so callers wanting "the latest record per order" can keep the first they see. Chunked so a page of thousands of order numbers stays a reasonable query. */
   async findByOrderNumbers(orderNumbers: string[]): Promise<PackingRecordDocument[]> {
@@ -37,6 +47,28 @@ export const packingRecordRepository = {
 
   async findById(id: string): Promise<PackingRecordDocument | null> {
     return PackingRecordModel.findById(id);
+  },
+
+  async findByIds(ids: string[]): Promise<PackingRecordDocument[]> {
+    if (ids.length === 0) return [];
+    return PackingRecordModel.find({ _id: { $in: ids } });
+  },
+
+  /** Newest first, at most `limit`. */
+  async listForAudit(filter: OrderAuditFilter, limit: number): Promise<PackingRecordDocument[]> {
+    return PackingRecordModel.find(auditQuery(filter)).sort({ sentAt: -1, _id: -1 }).limit(limit);
+  },
+
+  async countForAudit(filter: OrderAuditFilter): Promise<number> {
+    return PackingRecordModel.countDocuments(auditQuery(filter));
+  },
+
+  async countForAuditByActor(filter: OrderAuditFilter): Promise<{ actorId: string | null; actorName: string | null; count: number }[]> {
+    const rows = await PackingRecordModel.aggregate<{ _id: { id: Types.ObjectId | null; name: string | null }; count: number }>([
+      { $match: auditQuery(filter) },
+      { $group: { _id: { id: "$sentBy", name: "$sentByName" }, count: { $sum: 1 } } },
+    ]);
+    return rows.map((row) => ({ actorId: row._id.id ? String(row._id.id) : null, actorName: row._id.name ?? null, count: row.count }));
   },
 
   /** Newest first. */

@@ -53,6 +53,8 @@ export const CaseSource = {
   SOCIAL_MEDIA: "social_media",
   SHOPFA: "shopfa",
   IN_PERSON: "in_person",
+  /** Raised by our own staff while working an order (Order Precheck, Packing, Status Check) rather than by a customer contact. */
+  INTERNAL: "internal",
   OTHER: "other",
 } as const;
 export type CaseSource = (typeof CaseSource)[keyof typeof CaseSource];
@@ -87,6 +89,8 @@ export const CaseEventType = {
   ASSIGNMENT_CHANGED: "assignment_changed",
   PRIORITY_CHANGED: "priority_changed",
   ORDER_LINKED: "order_linked",
+  /** A linked order's Shopfa status was changed from the case (see caseOrderSyncService.changeOrderStatusFromCase). */
+  ORDER_STATUS_CHANGED: "order_status_changed",
   ITEM_LINKED: "item_linked",
   ATTACHMENT_ADDED: "attachment_added",
   RESOLVED: "resolved",

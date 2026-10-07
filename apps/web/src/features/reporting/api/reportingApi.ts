@@ -8,6 +8,8 @@ import type {
   ItemSalesProductSearchResultDTO,
   ItemSalesResultDTO,
   OrderActivitiesDTO,
+  OrderAuditEventType,
+  OrderAuditReportResultDTO,
   OrderHistoryReportRangeDays,
   OrderHistoryReportResultDTO,
   ReportingOrderDetailsDTO,
@@ -41,6 +43,17 @@ export interface GetItemSalesReportArgs {
 
 /** Either a search (`query`) or a status with its last-updated time frame -- see orderHistoryReportQuerySchema. */
 export type GetOrderHistoryReportArgs = { query: string } | { statusCode: number; days: OrderHistoryReportRangeDays };
+
+/** A period, optionally narrowed to one user, one order and/or one kind of action -- see orderAuditReportQuerySchema. */
+export interface GetOrderAuditReportArgs {
+  from: string;
+  to: string;
+  userId?: string;
+  orderNumber?: string;
+  type?: OrderAuditEventType;
+  page: number;
+  pageSize: number;
+}
 
 export const reportingApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -85,6 +98,11 @@ export const reportingApi = apiSlice.injectEndpoints({
       query: (orderNumber) => `/reporting/order-history/${encodeURIComponent(orderNumber)}/activities`,
       transformResponse: (response: ApiResponse<OrderActivitiesDTO>) => unwrap(response),
     }),
+    /** Who did what to which order in the period, newest first, with per-user totals -- see OrderAuditReportResultDTO. */
+    getOrderAuditReport: builder.query<OrderAuditReportResultDTO, GetOrderAuditReportArgs>({
+      query: (params) => ({ url: "/reporting/order-audit", params }),
+      transformResponse: (response: ApiResponse<OrderAuditReportResultDTO>) => unwrap(response),
+    }),
     /** One live Shopfa order by its order number -- see ReportingOrderDetailsDTO. */
     getReportingOrderDetails: builder.query<ReportingOrderDetailsDTO, string>({
       query: (orderNumber) => `/reporting/orders/${encodeURIComponent(orderNumber)}`,
@@ -100,6 +118,7 @@ export const {
   useLazyGetItemSalesReportQuery,
   useLazyGetOrderHistoryReportQuery,
   useGetOrderActivitiesQuery,
+  useLazyGetOrderAuditReportQuery,
   useGetCategoryTrendsQuery,
   useGetItemSalesCategoriesQuery,
   useSearchItemSalesProductsQuery,

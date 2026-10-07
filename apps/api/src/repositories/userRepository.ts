@@ -17,6 +17,12 @@ export const userRepository = {
     return UserModel.find().sort({ name: 1 });
   },
 
+  /** Active or not: for resolving the names behind stored user ids. */
+  async findByIds(ids: string[]): Promise<UserDocument[]> {
+    if (ids.length === 0) return [];
+    return UserModel.find({ _id: { $in: ids } });
+  },
+
   async findById(id: string): Promise<UserDocument | null> {
     return UserModel.findById(id);
   },

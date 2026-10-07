@@ -1,4 +1,9 @@
-import type { ApiResponse } from "@complaint-system/shared";
+import type {
+  ApiResponse,
+  CreateOrderCaseRequestDTO,
+  CreateOrderCaseResultDTO,
+  OrderCaseContextDTO,
+} from "@complaint-system/shared";
 import { apiSlice } from "../../../services/apiSlice";
 import type {
   AttachmentDTO,
@@ -125,6 +130,28 @@ export const casesApi = apiSlice.injectEndpoints({
       ],
     }),
 
+    /** Moves a linked order on to the status picked while resolving the case. */
+    changeCaseOrderStatus: builder.mutation<CaseDTO, { caseId: string; orderNumber: string; statusCode: number }>({
+      query: ({ caseId, ...body }) => ({ url: `/cases/${caseId}/order-status`, method: "POST", body }),
+      transformResponse: (response: ApiResponse<CaseDTO>) => unwrap(response),
+      invalidatesTags: (_r, _e, { caseId }) => [
+        { type: "Case", id: caseId },
+        { type: "CaseEvents", id: caseId },
+      ],
+    }),
+
+    /** An order's items and already-open cases, for raising a case from an order screen. */
+    getOrderCaseContext: builder.query<OrderCaseContextDTO, string>({
+      query: (orderNumber) => `/order-cases/${orderNumber}`,
+      transformResponse: (response: ApiResponse<OrderCaseContextDTO>) => unwrap(response),
+    }),
+
+    createOrderCase: builder.mutation<CreateOrderCaseResultDTO, CreateOrderCaseRequestDTO & { orderNumber: string }>({
+      query: ({ orderNumber, ...body }) => ({ url: `/order-cases/${orderNumber}`, method: "POST", body }),
+      transformResponse: (response: ApiResponse<CreateOrderCaseResultDTO>) => unwrap(response),
+      invalidatesTags: [{ type: "CaseList", id: "LIST" }],
+    }),
+
     linkItem: builder.mutation<CaseDTO, { caseId: string; externalItemId: string; sku: string; title: string }>({
       query: ({ caseId, ...body }) => ({ url: `/cases/${caseId}/items`, method: "POST", body }),
       transformResponse: (response: ApiResponse<CaseDTO>) => unwrap(response),
@@ -186,6 +213,9 @@ export const {
   useAssignCaseMutation,
   useLinkOrderMutation,
   useLinkItemMutation,
+  useChangeCaseOrderStatusMutation,
+  useGetOrderCaseContextQuery,
+  useCreateOrderCaseMutation,
   useAddTagMutation,
   useRemoveTagMutation,
   useListAttachmentsQuery,

@@ -31,8 +31,9 @@ import { StatusDialog } from "./dialogs/StatusDialog";
 import { PriorityDialog } from "./dialogs/PriorityDialog";
 import { AssignDialog } from "./dialogs/AssignDialog";
 import { NoteDialog } from "./dialogs/NoteDialog";
+import { ResolveCaseDialog } from "./dialogs/ResolveCaseDialog";
 
-type DialogKind = "status" | "priority" | "assign" | "internalNote" | "customerNote" | null;
+type DialogKind = "resolve" | "status" | "priority" | "assign" | "internalNote" | "customerNote" | null;
 
 export function CaseHeader({ caseData }: { caseData: CaseDTO }) {
   const { t } = useTranslation("complaints");
@@ -48,6 +49,13 @@ export function CaseHeader({ caseData }: { caseData: CaseDTO }) {
   const canReopen =
     allowedNext.includes(CaseStatus.OPEN) &&
     (caseData.status === CaseStatus.RESOLVED || caseData.status === CaseStatus.CLOSED);
+
+  /** Resolving always goes through ResolveCaseDialog: it takes the "how it was resolved" text and asks whether linked orders should change status too. */
+  const [resolveReason, setResolveReason] = useState("");
+  const requestResolve = (reason = "") => {
+    setResolveReason(reason);
+    setOpenDialog("resolve");
+  };
 
   const quickTransition = (status: CaseStatus) => changeStatus({ caseId: caseData.id, status });
 
@@ -96,7 +104,7 @@ export function CaseHeader({ caseData }: { caseData: CaseDTO }) {
                 color="success"
                 startIcon={<CheckCircleIcon />}
                 disabled={isTransitioning}
-                onClick={() => quickTransition(CaseStatus.RESOLVED)}
+                onClick={() => requestResolve()}
               >
                 {t("detail.actions.resolve")}
               </Button>
@@ -222,6 +230,13 @@ export function CaseHeader({ caseData }: { caseData: CaseDTO }) {
         onClose={() => setOpenDialog(null)}
         caseId={caseData.id}
         currentStatus={caseData.status}
+        onResolveRequested={requestResolve}
+      />
+      <ResolveCaseDialog
+        open={openDialog === "resolve"}
+        onClose={() => setOpenDialog(null)}
+        caseData={caseData}
+        reason={resolveReason}
       />
       <PriorityDialog
         open={openDialog === "priority"}

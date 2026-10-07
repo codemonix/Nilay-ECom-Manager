@@ -8,6 +8,7 @@ import {
   customerReportQuerySchema,
   itemSalesQuerySchema,
   orderActivitiesParamSchema,
+  orderAuditReportQuerySchema,
   orderHistoryReportQuerySchema,
   productSearchQuerySchema,
   shortageReportQuerySchema,
@@ -69,6 +70,13 @@ reportingRoutes.get(
   requireReportAccess(ReportKey.ORDER_HISTORY),
   validate(orderActivitiesParamSchema, "params"),
   reportingController.getOrderActivities,
+);
+
+reportingRoutes.get(
+  "/order-audit",
+  requireReportAccess(ReportKey.ORDER_AUDIT),
+  validate(orderAuditReportQuerySchema, "query"),
+  reportingController.getOrderAuditReport,
 );
 
 // Opened from links inside several reports, so any report permission suffices.

@@ -42,6 +42,8 @@ export function describeEvent(event: CaseEventDTO, t: TFunction<"complaints">): 
       return t("events.assignment_changed", { toUserName: data.toUserName });
     case "order_linked":
       return t("events.order_linked", { orderNumber: data.orderNumber });
+    case "order_status_changed":
+      return t("events.order_status_changed", { orderNumber: data.orderNumber, status: data.statusTitle });
     case "item_linked":
       return t("events.item_linked", { title: data.title, sku: data.sku });
     case "attachment_added":

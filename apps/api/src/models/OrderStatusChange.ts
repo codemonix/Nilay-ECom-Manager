@@ -22,6 +22,8 @@ const orderStatusChangeSchema = new Schema(
   { timestamps: false },
 );
 
+orderStatusChangeSchema.index({ changedAt: -1 });
+
 export type OrderStatusChangeSchemaType = InferSchemaType<typeof orderStatusChangeSchema>;
 export type OrderStatusChangeDocument = HydratedDocument<OrderStatusChangeSchemaType> & { _id: Types.ObjectId };
 export const OrderStatusChangeModel = model("OrderStatusChange", orderStatusChangeSchema);

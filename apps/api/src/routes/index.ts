@@ -20,6 +20,7 @@ import { orderPrecheckRoutes } from "./orderPrecheckRoutes";
 import { packingRoutes } from "./packingRoutes";
 import { orderHistoryRoutes } from "./orderHistoryRoutes";
 import { ordersByStatusRoutes } from "./ordersByStatusRoutes";
+import { orderCaseRoutes } from "./orderCaseRoutes";
 import { requireAnyPermission, requireAnyReportAccess, requireAuth, requirePermission } from "../middleware/authenticate";
 
 export const apiRouter = Router();
@@ -47,5 +48,12 @@ apiRouter.use(
   requireAuth,
   requireAnyPermission(MenuKey.ORDER_CHECK, MenuKey.PACKING),
   orderHistoryRoutes,
+);
+// Raising a case from an order screen: open to whoever works orders, not only to the Cases menu.
+apiRouter.use(
+  "/order-cases",
+  requireAuth,
+  requireAnyPermission(MenuKey.CASES, MenuKey.ORDER_CHECK, MenuKey.PACKING, MenuKey.ORDERS_BY_STATUS),
+  orderCaseRoutes,
 );
 apiRouter.use("/order-status", requireAuth, requirePermission(MenuKey.ORDERS_BY_STATUS), ordersByStatusRoutes);

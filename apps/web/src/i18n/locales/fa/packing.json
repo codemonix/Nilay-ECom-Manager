@@ -94,6 +94,7 @@
   "statusHistoryEmpty": "تغییر وضعیتی ثبت نشده است.",
   "statusSource": {
     "precheck": "پیش‌بررسی سفارش",
-    "packing": "بسته‌بندی"
+    "packing": "بسته‌بندی",
+    "case": "پرونده"
   }
 }

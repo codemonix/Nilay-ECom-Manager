@@ -46,7 +46,8 @@
     "itemSales": "گزارش فروش کالا",
     "shortage": "گزارش کمبود",
     "categoryTrends": "روند فروش دسته‌بندی‌ها",
-    "orderHistory": "تاریخچه سفارش‌ها"
+    "orderHistory": "تاریخچه سفارش‌ها",
+    "orderAudit": "تغییرات سفارشها"
   },
   "ordersNav": {
     "precheck": "بررسی اولیه سفارش",

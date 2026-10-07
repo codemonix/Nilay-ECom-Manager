@@ -11,6 +11,9 @@ import type {
   ItemSalesRowDTO,
   OrderActivitiesDTO,
   OrderActivityDTO,
+  OrderAuditEventDTO,
+  OrderAuditReportResultDTO,
+  OrderAuditUserSummaryDTO,
   OrderHistoryCaseDTO,
   OrderHistoryReportOrderDTO,
   OrderHistoryReportRangeDays,
@@ -24,7 +27,11 @@ import type {
   UnresolvedShortageNoteDTO,
 } from "@complaint-system/shared";
 import {
+  DEFAULT_ORDER_AUDIT_REPORT_PAGE_SIZE,
   DEFAULT_ORDER_HISTORY_REPORT_RANGE_DAYS,
+  ORDER_AUDIT_EVENT_TYPE_VALUES,
+  ORDER_AUDIT_REPORT_PAGE_SIZES,
+  OrderAuditEventType,
   DEFAULT_SHORTAGE_REPORT_RANGE_DAYS,
   DEFAULT_SHORTAGE_REPORT_STATUS_CODES,
   ORDER_HISTORY_REPORT_MIN_QUERY_LENGTH,
@@ -34,6 +41,9 @@ import {
 } from "@complaint-system/shared";
 
 export type {
+  OrderAuditEventDTO,
+  OrderAuditReportResultDTO,
+  OrderAuditUserSummaryDTO,
   CategoryTrendMonths,
   CategoryTrendResultDTO,
   CategoryTrendSeriesDTO,
@@ -59,6 +69,10 @@ export type {
   UnresolvedShortageNoteDTO,
 };
 export {
+  DEFAULT_ORDER_AUDIT_REPORT_PAGE_SIZE,
+  ORDER_AUDIT_EVENT_TYPE_VALUES,
+  ORDER_AUDIT_REPORT_PAGE_SIZES,
+  OrderAuditEventType,
   DEFAULT_ORDER_HISTORY_REPORT_RANGE_DAYS,
   ORDER_HISTORY_REPORT_MIN_QUERY_LENGTH,
   ORDER_HISTORY_REPORT_RANGE_DAYS_VALUES,

@@ -212,7 +212,7 @@ export async function getOrderDetails(orderNumber: string): Promise<ReportingOrd
  * values from date inputs; anchoring them to that offset makes "to
  * 2026-09-20" include the whole of that day in store time.
  */
-function resolveDateWindow(from: string, to: string): { from: Date; to: Date } {
+export function resolveDateWindow(from: string, to: string): { from: Date; to: Date } {
   return { from: new Date(`${from}T00:00:00+03:30`), to: new Date(`${to}T23:59:59+03:30`) };
 }
 

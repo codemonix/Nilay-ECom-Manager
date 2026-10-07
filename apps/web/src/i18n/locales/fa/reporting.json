@@ -202,5 +202,40 @@
     "activityDate": "تاریخ",
     "activityEvent": "فعالیت",
     "activityActor": "توسط"
+  },
+  "orderAudit": {
+    "title": "تغییرات سفارشها",
+    "description": "چه کسی روی کدام سفارش چه کاری انجام داده است: همه تغییر وضعیت‌های انجام‌شده از پیش‌بررسی سفارش و بسته‌بندی، سفارش‌های ارسال‌شده از بسته‌بندی و عکس‌های بارگذاری‌شده، از جدید به قدیم. تغییرهایی که خارج از این سامانه انجام شده (مثلاً در پنل شاپفا) اینجا نمایش داده نمی‌شود؛ فعالیت‌های شاپفا برای هر سفارش در گزارش «تاریخچه سفارش‌ها» قابل مشاهده است.",
+    "user": "کاربر",
+    "allUsers": "همه کاربران",
+    "orderNumber": "شماره سفارش",
+    "orderNumberPlaceholder": "همه سفارش‌ها",
+    "action": "نوع فعالیت",
+    "allActions": "همه فعالیت‌ها",
+    "type": {
+      "status_changed": "تغییر وضعیت",
+      "order_packed": "ارسال سفارش",
+      "photos_uploaded": "بارگذاری عکس"
+    },
+    "generate": "نمایش فعالیت‌ها",
+    "generateError": "بارگیری فعالیت سفارش‌ها ممکن نشد",
+    "rangeShown": "{{formatted}} فعالیت از {{from}} تا {{to}}",
+    "rangeShown_other": "{{formatted}} فعالیت از {{from}} تا {{to}}",
+    "empty": "هیچ فعالیت ثبت‌شده‌ای با این فیلترها پیدا نشد.",
+    "summaryTitle": "جمع فعالیت هر کاربر",
+    "statusChanges": "تغییر وضعیت",
+    "ordersPacked": "سفارش ارسال‌شده",
+    "photosUploaded": "عکس",
+    "unknownUser": "کاربر نامشخص",
+    "date": "تاریخ",
+    "order": "سفارش",
+    "details": "کار انجام‌شده",
+    "statusChanged": "وضعیت را از «{{from}}» به «{{to}}» تغییر داد",
+    "statusChangedNoFrom": "وضعیت را به «{{to}}» تغییر داد",
+    "orderPacked": "سفارش را از بسته‌بندی ارسال کرد",
+    "orderPackedFor": "سفارش را از بسته‌بندی ارسال کرد ({{buyer}})",
+    "photosUploadedFor": "{{formatted}} عکس برای سفارش بارگذاری کرد",
+    "photosUploadedFor_other": "{{formatted}} عکس برای سفارش بارگذاری کرد",
+    "photoAlt": "عکس بسته‌بندی"
   }
 }

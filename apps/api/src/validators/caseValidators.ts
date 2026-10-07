@@ -4,6 +4,7 @@ import {
   CASE_CONTACT_PLATFORM_VALUES,
   CASE_CONTACT_PLATFORMS_REQUIRING_ID,
   CASE_PRIORITY_VALUES,
+  CASE_RESOLVE_ORDER_STATUS_CODES,
   CASE_SOURCE_VALUES,
   CASE_STATUS_VALUES,
   CaseSource,
@@ -98,6 +99,11 @@ export const addNoteSchema = z.object({
 export const linkOrderSchema = z.object({
   externalOrderId: z.string().min(1),
   orderNumber: z.string().min(1),
+});
+
+export const changeOrderStatusSchema = z.object({
+  orderNumber: z.string().min(1),
+  statusCode: z.number().int().refine((code) => CASE_RESOLVE_ORDER_STATUS_CODES.includes(code), "This status cannot be set from a case"),
 });
 
 export const linkItemSchema = z.object({

@@ -7,6 +7,7 @@ import {
   addNoteSchema,
   assignCaseSchema,
   changeContactPointSchema,
+  changeOrderStatusSchema,
   changePrioritySchema,
   changeStatusSchema,
   createCaseSchema,
@@ -71,6 +72,14 @@ caseRoutes.post(
   validate(idParamSchema, "params"),
   validate(linkOrderSchema),
   caseController.linkOrder,
+);
+
+/** Moves a linked order on to the status picked while resolving the case (see CASE_RESOLVE_ORDER_STATUS_CODES). */
+caseRoutes.post(
+  "/:id/order-status",
+  validate(idParamSchema, "params"),
+  validate(changeOrderStatusSchema),
+  caseController.changeOrderStatus,
 );
 
 caseRoutes.post(

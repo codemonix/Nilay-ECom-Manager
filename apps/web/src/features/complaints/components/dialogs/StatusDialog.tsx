@@ -9,7 +9,7 @@ import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
 import Alert from "@mui/material/Alert";
 import { useTranslation } from "react-i18next";
-import { CASE_STATUS_TRANSITIONS, type CaseStatus } from "@complaint-system/shared";
+import { CASE_STATUS_TRANSITIONS, CaseStatus } from "@complaint-system/shared";
 import { useChangeStatusMutation } from "../../api/casesApi";
 
 interface StatusDialogProps {
@@ -17,9 +17,11 @@ interface StatusDialogProps {
   onClose: () => void;
   caseId: string;
   currentStatus: CaseStatus;
+  /** Resolving is handed over (with the typed reason) to ResolveCaseDialog, which takes the resolution text and asks about linked orders' status. */
+  onResolveRequested?: (reason: string) => void;
 }
 
-export function StatusDialog({ open, onClose, caseId, currentStatus }: StatusDialogProps) {
+export function StatusDialog({ open, onClose, caseId, currentStatus, onResolveRequested }: StatusDialogProps) {
   const { t } = useTranslation("complaints");
   const [status, setStatus] = useState<CaseStatus | "">("");
   const [reason, setReason] = useState("");
@@ -35,6 +37,11 @@ export function StatusDialog({ open, onClose, caseId, currentStatus }: StatusDia
 
   const handleSubmit = async () => {
     if (!status) return;
+    if (status === CaseStatus.RESOLVED && onResolveRequested) {
+      handleClose();
+      onResolveRequested(reason);
+      return;
+    }
     await changeStatus({ caseId, status, reason: reason || undefined }).unwrap();
     handleClose();
   };

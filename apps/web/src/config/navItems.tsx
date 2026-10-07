@@ -15,6 +15,7 @@ import AllInboxIcon from "@mui/icons-material/AllInbox";
 import PersonSearchIcon from "@mui/icons-material/PersonSearch";
 import InsightsIcon from "@mui/icons-material/Insights";
 import HistoryIcon from "@mui/icons-material/History";
+import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import ReportProblemIcon from "@mui/icons-material/ReportProblem";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
@@ -140,6 +141,13 @@ export const REPORT_CHILD_ITEMS: NavItem[] = [
     labelKey: "navigation:reportsNav.orderHistory",
     icon: <HistoryIcon />,
     path: "/reporting/order-history",
+  },
+  {
+    key: MenuKey.REPORTING,
+    reportKey: ReportKey.ORDER_AUDIT,
+    labelKey: "navigation:reportsNav.orderAudit",
+    icon: <FactCheckOutlinedIcon />,
+    path: "/reporting/order-audit",
   },
   {
     key: MenuKey.REPORTING,

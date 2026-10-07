@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DataSource } from "@complaint-system/shared";
+import { DataSource, type CreateOrderCaseResultDTO } from "@complaint-system/shared";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Card from "@mui/material/Card";
@@ -32,6 +32,8 @@ import {
 } from "../types";
 import { OrderPrecheckItemCard } from "../components/OrderPrecheckItemCard";
 import { ConfirmRelatedChangesDialog } from "../components/ConfirmRelatedChangesDialog";
+import { OrderCaseButton } from "../../complaints/components/OrderCaseButton";
+import { describeOrderCaseResult } from "../../complaints/utils/orderCaseResult";
 import { FixedActionBar } from "../../../components/FixedActionBar";
 import { useGetAppConfigQuery } from "../../settings/api/settingsApi";
 import { getApiErrorMessage } from "../../../utils/apiError";
@@ -71,6 +73,7 @@ function statusTitle(code: number): string {
  */
 export function OrderPrecheckPage() {
   const { t } = useTranslation("orderPrecheck");
+  const { t: tCases } = useTranslation("complaints");
   const language = useActiveLanguage();
   const { data: appConfig } = useGetAppConfigQuery();
   const isLiveApi = appConfig?.dataSource === DataSource.LIVE_API;
@@ -189,6 +192,17 @@ export function OrderPrecheckPage() {
     }
   };
 
+  /** A case moves the order to "در حال پیگیری", i.e. out of this queue -- unless Shopfa could not be updated, in which case it stays. */
+  const handleCaseCreated = (orderNumber: string, result: CreateOrderCaseResultDTO) => {
+    const outcome = describeOrderCaseResult(result, tCases);
+    setSaveError(null);
+    setSaveSuccessMessage(outcome.severity === "success" ? outcome.message : null);
+    setSaveWarning(outcome.severity === "warning" ? outcome.message : null);
+    if (!result.orderSynced) return;
+    setOrders((prev) => (prev ? prev.filter((order) => order.orderNumber !== orderNumber) : prev));
+    setCurrentIndex((idx) => Math.max(0, Math.min(idx, visibleOrders.length - 2)));
+  };
+
   return (
     <Stack spacing={2}>
       <Typography variant="h1">{t("title")}</Typography>
@@ -298,7 +312,13 @@ export function OrderPrecheckPage() {
                     {currentOrder.statusTitle}
                   </Typography>
                 </Stack>
-                <Chip label={t("progress", { current: currentIndex + 1, total: visibleOrders.length })} />
+                <Stack alignItems="flex-end" spacing={1}>
+                  <Chip label={t("progress", { current: currentIndex + 1, total: visibleOrders.length })} />
+                  <OrderCaseButton
+                    orderNumber={currentOrder.orderNumber}
+                    onCreated={(result) => handleCaseCreated(currentOrder.orderNumber, result)}
+                  />
+                </Stack>
               </Stack>
             </CardContent>
           </Card>

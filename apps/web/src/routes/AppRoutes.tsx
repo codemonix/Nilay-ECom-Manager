@@ -21,6 +21,7 @@ import { CustomerReportPage } from "../features/reporting/pages/CustomerReportPa
 import { CategoryTrendsReportPage } from "../features/reporting/pages/CategoryTrendsReportPage";
 import { ItemSalesReportPage } from "../features/reporting/pages/ItemSalesReportPage";
 import { OrderHistoryReportPage } from "../features/reporting/pages/OrderHistoryReportPage";
+import { OrderAuditReportPage } from "../features/reporting/pages/OrderAuditReportPage";
 import { ReportingOrderDetailsPage } from "../features/reporting/pages/ReportingOrderDetailsPage";
 import { OrderPrecheckPage } from "../features/orderPrecheck/pages/OrderPrecheckPage";
 import { PackingPage } from "../features/packing/pages/PackingPage";
@@ -202,6 +203,14 @@ export function AppRoutes() {
                   element={
                     <RequireReportAccess reportKey={ReportKey.ORDER_HISTORY}>
                       <OrderHistoryReportPage />
+                    </RequireReportAccess>
+                  }
+                />
+                <Route
+                  path="/reporting/order-audit"
+                  element={
+                    <RequireReportAccess reportKey={ReportKey.ORDER_AUDIT}>
+                      <OrderAuditReportPage />
                     </RequireReportAccess>
                   }
                 />

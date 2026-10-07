@@ -94,6 +94,7 @@
   "statusHistoryEmpty": "No status changes recorded.",
   "statusSource": {
     "precheck": "Order precheck",
-    "packing": "Packing"
+    "packing": "Packing",
+    "case": "Case"
   }
 }

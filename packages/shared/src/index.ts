@@ -217,6 +217,21 @@ export {
 } from "./types/orderHistoryReport";
 
 export type {
+  OrderAuditEventDTO,
+  OrderAuditStatusChangedEventDTO,
+  OrderAuditOrderPackedEventDTO,
+  OrderAuditPhotosUploadedEventDTO,
+  OrderAuditUserSummaryDTO,
+  OrderAuditReportResultDTO,
+} from "./types/orderAuditReport";
+export {
+  OrderAuditEventType,
+  ORDER_AUDIT_EVENT_TYPE_VALUES,
+  ORDER_AUDIT_REPORT_PAGE_SIZES,
+  DEFAULT_ORDER_AUDIT_REPORT_PAGE_SIZE,
+} from "./types/orderAuditReport";
+
+export type {
   PackingItemDTO,
   PackingOrderDTO,
   PackingListResultDTO,
@@ -236,6 +251,15 @@ export {
   PACKING_RANGE_DAYS_VALUES,
   DEFAULT_PACKING_RANGE_DAYS,
 } from "./types/packing";
+
+export type {
+  OrderCaseItemDTO,
+  OrderCaseContextDTO,
+  CreateOrderCaseRequestDTO,
+  CreateOrderCaseResultDTO,
+  ChangeCaseOrderStatusRequestDTO,
+} from "./types/orderCase";
+export { ORDER_FOLLOW_UP_STATUS_CODE, CASE_RESOLVE_ORDER_STATUS_CODES } from "./types/orderCase";
 
 export type {
   OrderWorkflowStatusCode,

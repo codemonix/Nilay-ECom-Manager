@@ -202,5 +202,40 @@
     "activityDate": "Date",
     "activityEvent": "Activity",
     "activityActor": "By"
+  },
+  "orderAudit": {
+    "title": "Order Activity Log",
+    "description": "Who did what to which order: every status change made from Order Pre-Check and Packing, every order sent from Packing and every picture uploaded with it, newest first. Changes made outside this system (e.g. in the Shopfa panel) are not listed here; see an order's Shopfa activity in the Order History report.",
+    "user": "User",
+    "allUsers": "All users",
+    "orderNumber": "Order number",
+    "orderNumberPlaceholder": "All orders",
+    "action": "Action",
+    "allActions": "All actions",
+    "type": {
+      "status_changed": "Status change",
+      "order_packed": "Order sent",
+      "photos_uploaded": "Picture upload"
+    },
+    "generate": "Show activity",
+    "generateError": "Could not load the order activity",
+    "rangeShown": "{{formatted}} action from {{from}} to {{to}}",
+    "rangeShown_other": "{{formatted}} actions from {{from}} to {{to}}",
+    "empty": "No recorded action matches these filters.",
+    "summaryTitle": "Totals per user",
+    "statusChanges": "Status changes",
+    "ordersPacked": "Orders sent",
+    "photosUploaded": "Pictures",
+    "unknownUser": "Unknown user",
+    "date": "Date",
+    "order": "Order",
+    "details": "What was done",
+    "statusChanged": "Changed the status from «{{from}}» to «{{to}}»",
+    "statusChangedNoFrom": "Changed the status to «{{to}}»",
+    "orderPacked": "Sent the order from Packing",
+    "orderPackedFor": "Sent the order from Packing ({{buyer}})",
+    "photosUploadedFor": "Uploaded {{formatted}} picture for the order",
+    "photosUploadedFor_other": "Uploaded {{formatted}} pictures for the order",
+    "photoAlt": "Packing picture"
   }
 }

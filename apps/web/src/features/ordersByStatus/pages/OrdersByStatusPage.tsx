@@ -2,8 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DataSource,
   DEFAULT_ORDERS_BY_STATUS_RANGE_DAYS,
+  ORDER_FOLLOW_UP_STATUS_CODE,
   ORDERS_BY_STATUS_RANGE_DAYS_VALUES,
   SHOPFA_ORDER_STATUS_OPTIONS,
+  type CreateOrderCaseResultDTO,
   type OrdersByStatusRangeDays,
   type OrdersByStatusResultDTO,
 } from "@complaint-system/shared";
@@ -33,6 +35,8 @@ import { resolveUploadUrl } from "../../../utils/attachments";
 import { formatDateTime } from "../../../utils/localeFormat";
 import { matchesOrderSearch, normalizeSearchQuery } from "../../../utils/orderSearch";
 import { useActiveLanguage } from "../../../i18n/useActiveLanguage";
+import { OrderCaseButton } from "../../complaints/components/OrderCaseButton";
+import { describeOrderCaseResult } from "../../complaints/utils/orderCaseResult";
 
 const PAGE_STEP = 50;
 /** "پردازش انبار" -- a sensible first look; staff pick whichever statuses they need. */
@@ -49,6 +53,7 @@ const DEFAULT_STATUS_CODES = [8];
  */
 export function OrdersByStatusPage() {
   const { t } = useTranslation("ordersByStatus");
+  const { t: tCases } = useTranslation("complaints");
   const language = useActiveLanguage();
   const { data: appConfig } = useGetAppConfigQuery();
   const isLiveApi = appConfig?.dataSource === DataSource.LIVE_API;
@@ -58,6 +63,7 @@ export function OrdersByStatusPage() {
   const [result, setResult] = useState<OrdersByStatusResultDTO | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_STEP);
+  const [caseNotice, setCaseNotice] = useState<ReturnType<typeof describeOrderCaseResult> | null>(null);
   /** What was last sent to the API, so Retry re-runs that request rather than unapplied selections. */
   const appliedRef = useRef({ statusCodes: DEFAULT_STATUS_CODES, days: DEFAULT_ORDERS_BY_STATUS_RANGE_DAYS });
 
@@ -69,6 +75,27 @@ export function OrdersByStatusPage() {
     const data = await fetchOrders({ statusCodes, days: selectedDays }).unwrap().catch(() => null);
     setResult(data);
     setVisibleCount(PAGE_STEP);
+    setCaseNotice(null);
+  };
+
+  /** Shows the order as "در حال پیگیری" right away instead of reloading the whole list from Shopfa. */
+  const handleCaseCreated = (orderNumber: string, created: CreateOrderCaseResultDTO) => {
+    setCaseNotice(describeOrderCaseResult(created, tCases));
+    if (!created.orderSynced) return;
+    const statusTitle =
+      SHOPFA_ORDER_STATUS_OPTIONS.find((option) => option.code === ORDER_FOLLOW_UP_STATUS_CODE)?.statusTitle ?? "";
+    setResult((prev) =>
+      prev
+        ? {
+            ...prev,
+            orders: prev.orders.map((order) =>
+              order.orderNumber === orderNumber
+                ? { ...order, statusCode: ORDER_FOLLOW_UP_STATUS_CODE, statusTitle }
+                : order,
+            ),
+          }
+        : prev,
+    );
   };
 
   useEffect(() => {
@@ -158,6 +185,12 @@ export function OrdersByStatusPage() {
         />
       )}
 
+      {caseNotice && (
+        <Alert severity={caseNotice.severity} onClose={() => setCaseNotice(null)}>
+          {caseNotice.message}
+        </Alert>
+      )}
+
       {result && !isFetching && (
         <>
           <Typography variant="caption" color="text.secondary">
@@ -245,6 +278,12 @@ export function OrdersByStatusPage() {
                           label={t("itemsSummary", { items: order.itemCount, quantity: order.totalQuantity })}
                         />
                       </Stack>
+                      <Box>
+                        <OrderCaseButton
+                          orderNumber={order.orderNumber}
+                          onCreated={(created) => handleCaseCreated(order.orderNumber, created)}
+                        />
+                      </Box>
                       {order.packingPhotoUrls.length > 0 && (
                         <Stack spacing={0.5} sx={{ pt: 0.5 }}>
                           <Typography variant="caption" color="text.secondary">

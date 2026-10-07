@@ -36,7 +36,8 @@
     "social_media": "Social Media",
     "shopfa": "Shopfa",
     "in_person": "In Person",
-    "other": "Other"
+    "other": "Other",
+    "internal": "Internal (staff)"
   },
   "contactPlatform": {
     "instagram": "Instagram",
@@ -190,7 +191,17 @@
       "tag": "Tag"
     },
     "notFound": "Case not found",
-    "unassigned": "Unassigned"
+    "unassigned": "Unassigned",
+    "resolveDialog": {
+      "title": "Resolve case",
+      "question": "Do you also want to change the status of the order linked to this case?",
+      "orderLabel": "New status of order {{orderNumber}}",
+      "keepStatus": "No change",
+      "orderError": "The case was resolved, but the order status was not changed: {{message}}",
+      "retry": "Try again",
+      "resolution": "How was the case resolved? (optional)",
+      "resolutionHelp": "Describe how the case was resolved; it is kept on the case timeline."
+    }
   },
   "events": {
     "created": "Case created",
@@ -214,11 +225,28 @@
     "tag_added": "Tag added: {{tag}}",
     "tag_removed": "Tag removed: {{tag}}",
     "by": "by {{name}}",
-    "bySystem": "by system"
+    "bySystem": "by system",
+    "order_status_changed": "Order {{orderNumber}} status changed to \"{{status}}\""
   },
   "attachments": {
     "empty": "No attachments yet",
     "upload": "Upload File",
     "uploadedBy": "Uploaded by {{name}}"
+  },
+  "orderCase": {
+    "title": "Create a case for order {{orderNumber}}",
+    "description": "Saving sets the order to \"در حال پیگیری\" (being followed up) and writes the case number into the order's admin note on Shopfa.",
+    "reason": "Reason for the case",
+    "items": "Item involved (optional)",
+    "itemsHelp": "Pick the item(s) if the case is about specific ones",
+    "itemsLoading": "Loading the order's items…",
+    "noItems": "No items found for this order",
+    "itemsLoadError": "The order's items could not be loaded; you can still create the case without picking an item.",
+    "explanation": "Explanation (optional)",
+    "subject": "{{reason}} - order {{orderNumber}}",
+    "alreadyOpen_one": "This order already has an open case:",
+    "alreadyOpen_other": "This order already has {{count}} open cases:",
+    "created": "Case {{caseNumber}} was created and order {{orderNumber}} is now being followed up.",
+    "createdNotSynced": "Case {{caseNumber}} was created, but order {{orderNumber}} could not be updated on Shopfa. Set the follow-up status and the case number by hand in the Shopfa panel."
   }
 }

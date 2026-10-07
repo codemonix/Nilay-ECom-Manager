@@ -32,7 +32,9 @@ export const listCases = asyncHandler(async (req: Request, res: Response) => {
 export const createCase = asyncHandler(async (req: Request, res: Response) => {
   const input = req.body as CreateCaseInput;
   const { case: caseDoc } = await caseService.createCase(input, req.currentUser);
-  await Promise.all(caseDoc.relatedOrders.map((o) => caseOrderSyncService.markOrderFollowedUp(o.orderNumber)));
+  await Promise.all(
+    caseDoc.relatedOrders.map((o) => caseOrderSyncService.markOrderFollowedUp(o.orderNumber, caseDoc, req.currentUser)),
+  );
   return sendCreated(res, serializeCase(caseDoc));
 });
 
@@ -86,7 +88,18 @@ export const assignCase = asyncHandler(async (req: Request, res: Response) => {
 export const linkOrder = asyncHandler(async (req: Request, res: Response) => {
   const order = req.body as { externalOrderId: string; orderNumber: string };
   const { case: caseDoc } = await caseService.linkOrder(req.params.id as string, order, req.currentUser);
-  await caseOrderSyncService.markOrderFollowedUp(order.orderNumber);
+  await caseOrderSyncService.markOrderFollowedUp(order.orderNumber, caseDoc, req.currentUser);
+  return sendSuccess(res, serializeCase(caseDoc));
+});
+
+export const changeOrderStatus = asyncHandler(async (req: Request, res: Response) => {
+  const { orderNumber, statusCode } = req.body as { orderNumber: string; statusCode: number };
+  const { case: caseDoc } = await caseOrderSyncService.changeOrderStatusFromCase(
+    req.params.id as string,
+    orderNumber,
+    statusCode,
+    req.currentUser,
+  );
   return sendSuccess(res, serializeCase(caseDoc));
 });
 

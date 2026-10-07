@@ -64,6 +64,8 @@ export const ORDER_WORKFLOW_NOT_READY_STATUS_CODES: number[] = [
 export enum OrderStatusChangeSource {
   PRECHECK = "precheck",
   PACKING = "packing",
+  /** A case opened against the order ("در حال پیگیری") or the status staff picked when resolving it. */
+  CASE = "case",
 }
 
 /**
